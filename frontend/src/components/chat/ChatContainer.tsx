@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { useChat } from "@/hooks/useChat";
 import { MessageList } from "./MessageList";
-import { ChatInput } from "./ChatInput";
+import { ChatInput, type ChatInputHandle } from "./ChatInput";
 import { TypingIndicator } from "./TypingIndicator";
 import { VehicleSearch } from "./VehicleSearch";
 import { VehiclePhotoCard } from "./VehiclePhotoCard";
@@ -24,12 +24,18 @@ export function ChatContainer() {
     resetChat,
   } = useChat();
 
+  // D) diagnosing 中の ChatInput に対して「自由入力」ボタンからフォーカスできるよう ref を保持
+  const chatInputRef = useRef<ChatInputHandle>(null);
+
   useEffect(() => {
     startSession();
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const prompt = latestResponse?.prompt;
   const isDone = currentStep === "done" || currentStep === "expired";
+  const isDiagnosing = currentStep === "diagnosing";
+
+  // ── ハンドラー ────────────────────────────────────────────────────────
 
   const handleVehicleSelect = (vehicleId: string, displayName: string) => {
     sendAction("select_vehicle", vehicleId, displayName);
@@ -39,8 +45,32 @@ export function ChatContainer() {
     sendAction("confirm", value, label);
   };
 
+  /** provide_answer 後の yes / no / book 専用（sendAction） */
   const handleResolved = (value: string, label: string) => {
     sendAction("resolved", value, label);
+  };
+
+  /**
+   * D) diagnosing 中の全 single_choice に使う統合ハンドラー。
+   * - yes / no / book → sendAction("resolved", ...) （provide_answer 後の選択肢）
+   * - それ以外 → sendMessage(label) （質問への回答）
+   */
+  const handleDiagnosingChoice = (value: string, label: string) => {
+    if (value === "yes" || value === "no" || value === "book") {
+      sendAction("resolved", value, label);
+    } else {
+      sendMessage(label);
+    }
+  };
+
+  /** D) diagnosis_candidates ボタン押下 → メッセージ送信 */
+  const handleCandidateSelect = (_value: string, label: string) => {
+    sendMessage(label);
+  };
+
+  /** D) 「✏️ 自由入力」押下 → ChatInput にフォーカスするだけ（送信しない） */
+  const handleFreeInput = () => {
+    chatInputRef.current?.focus();
   };
 
   const handleReservationChoice = (value: string, label: string) => {
@@ -92,16 +122,28 @@ export function ChatContainer() {
             />
           )}
 
-        {!isLoading &&
-          prompt?.type === "single_choice" &&
-          prompt.choices &&
-          !isDone && (
-            <ChoiceButtons
-              choices={prompt.choices}
-              onSelect={handleResolved}
-              disabled={isLoading}
-            />
-          )}
+        {/* single_choice:
+            - diagnosing 中 → handleDiagnosingChoice（yes/no/book は resolved、それ以外は sendMessage）
+            - それ以外 → handleResolved（sendAction） */}
+        {!isLoading && prompt?.type === "single_choice" && prompt.choices && !isDone && (
+          <ChoiceButtons
+            choices={prompt.choices}
+            onSelect={isDiagnosing ? handleDiagnosingChoice : handleResolved}
+            onFreeInput={isDiagnosing ? handleFreeInput : undefined}
+            disabled={isLoading}
+          />
+        )}
+
+        {/* diagnosis_candidates: 2列グリッド、候補選択は sendMessage */}
+        {!isLoading && prompt?.type === "diagnosis_candidates" && prompt.choices && !isDone && (
+          <ChoiceButtons
+            choices={prompt.choices}
+            onSelect={handleCandidateSelect}
+            onFreeInput={handleFreeInput}
+            disabled={isLoading}
+            grid
+          />
+        )}
 
         {!isLoading &&
           prompt?.type === "reservation_choice" &&
@@ -137,11 +179,13 @@ export function ChatContainer() {
             />
           )}
 
-        {!isLoading &&
-          prompt?.type === "text" &&
-          (currentStep === "free_text" || currentStep === "diagnosing") && (
-            <ChatInput onSend={sendMessage} disabled={isLoading} />
-          )}
+        {/* D) free_text は text のみ、diagnosing は prompt タイプ問わず常時入力可 */}
+        {!isLoading && !isDone && currentStep === "free_text" && prompt?.type === "text" && (
+          <ChatInput onSend={sendMessage} disabled={isLoading} />
+        )}
+        {!isLoading && !isDone && isDiagnosing && (
+          <ChatInput ref={chatInputRef} onSend={sendMessage} disabled={isLoading} />
+        )}
 
         {isDone && (
           <div className="text-center">

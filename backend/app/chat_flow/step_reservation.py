@@ -29,11 +29,17 @@ async def handle_reservation(session: SessionState, request: ChatRequest) -> Cha
 
     # Handle user choice
     if request.action == "reservation_choice":
-        if request.action_value == "yes":
+        action_val = request.action_value or ""
+        if action_val == "dispatch":
+            session.booking_type = "dispatch"
+            session.current_step = ChatStep.BOOKING_INFO
+            return await handle_booking_info(session, request)
+        elif action_val in ("yes", "visit"):
+            session.booking_type = session.booking_type or "visit"
             session.current_step = ChatStep.BOOKING_INFO
             return await handle_booking_info(session, request)
         else:
-            # User declines booking
+            # "no" / "skip" / anything else → 予約しない
             session.current_step = ChatStep.DONE
             message = "承知しました。症状が続く場合は、お近くのディーラーまたは整備工場にご相談ください。\n安全運転をお願いいたします。"
             return ChatResponse(

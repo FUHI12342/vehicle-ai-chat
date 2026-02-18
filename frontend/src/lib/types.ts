@@ -36,6 +36,7 @@ export interface PromptInfo {
   type:
     | "text"
     | "single_choice"
+    | "diagnosis_candidates"
     | "vehicle_search"
     | "photo_confirm"
     | "reservation_choice"

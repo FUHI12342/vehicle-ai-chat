@@ -37,3 +37,4 @@ class SessionState(BaseModel):
     booking_type: str | None = None
     booking_data: dict = {}
     last_questions: list[str] = []
+    candidates_shown: bool = False
