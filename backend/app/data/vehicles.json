@@ -1,0 +1,29 @@
+[
+  {
+    "id": "30TA06210_web",
+    "make": "ホンダ",
+    "model": "アコード",
+    "year": 2011,
+    "trim": "Z",
+    "photo_url": "/vehicles/HO_S084_F001_M003_1_L.jpg",
+    "manual_available": false
+  },
+  {
+    "id": "honda_civic_2023",
+    "make": "ホンダ",
+    "model": "シビック",
+    "year": 2023,
+    "trim": "EX",
+    "photo_url": "/vehicles/honda_civic.png",
+    "manual_available": false
+  },
+  {
+    "id": "honda_fit_2023",
+    "make": "ホンダ",
+    "model": "フィット",
+    "year": 2023,
+    "trim": "e:HEV HOME",
+    "photo_url": "/vehicles/honda_fit.png",
+    "manual_available": false
+  }
+]

@@ -1,0 +1,44 @@
+export const ja = {
+  app: {
+    title: "車両AI問診チャット",
+    subtitle: "車両トラブル診断アシスタント",
+  },
+  chat: {
+    placeholder: "症状を入力してください...",
+    send: "送信",
+    newSession: "新しい問診を開始",
+    sessionExpired: "セッションの有効期限が切れました",
+  },
+  vehicle: {
+    searchPlaceholder: "メーカー名や車種名で検索...",
+    searching: "検索中...",
+    noResults: "該当する車両が見つかりませんでした",
+    confirm: "この車でお間違いないですか？",
+    yes: "はい、この車です",
+    no: "いいえ、違います",
+  },
+  urgency: {
+    low: "低",
+    medium: "中",
+    high: "高",
+    critical: "緊急",
+    requiresVisit: "ディーラーへの来店をお勧めします",
+    bookAppointment: "予約する",
+  },
+  provider: {
+    title: "LLMプロバイダー",
+    notConfigured: "未設定",
+    active: "使用中",
+  },
+  steps: {
+    vehicle_id: "車種選択",
+    photo_confirm: "写真確認",
+    free_text: "症状入力",
+    diagnosing: "問診中",
+    urgency_check: "緊急度判定",
+    reservation: "予約確認",
+    booking_info: "予約情報入力",
+    booking_confirm: "予約内容確認",
+    done: "完了",
+  },
+} as const;
