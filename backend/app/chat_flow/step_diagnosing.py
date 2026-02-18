@@ -290,6 +290,7 @@ async def handle_diagnosing(session: SessionState, request: ChatRequest) -> Chat
     urgency_flag = result.get("urgency_flag", "none")
     reasoning = result.get("reasoning", "")
     choices = result.get("choices")
+    can_drive_llm: bool | None = result.get("can_drive")  # True / False / None
 
     logger.info(f"Diagnostic action={action}, urgency={urgency_flag}, reasoning={reasoning}")
 
@@ -309,6 +310,7 @@ async def handle_diagnosing(session: SessionState, request: ChatRequest) -> Chat
             message = result.get("message", message)
             urgency_flag = result.get("urgency_flag", urgency_flag)
             choices = result.get("choices")
+            can_drive_llm = result.get("can_drive", can_drive_llm)
         except Exception as e:
             logger.warning(f"Retry LLM call failed: {e}")
             action = "provide_answer"
@@ -316,7 +318,8 @@ async def handle_diagnosing(session: SessionState, request: ChatRequest) -> Chat
     # 7. Check urgency_flag from LLM
     if urgency_flag in ("high", "critical"):
         session.urgency_level = urgency_flag
-        session.can_drive = urgency_flag != "critical"
+        # LLM の can_drive 優先。None なら urgency_flag で推定（critical → False）
+        session.can_drive = can_drive_llm if can_drive_llm is not None else (urgency_flag != "critical")
         if urgency_flag == "critical":
             session.current_step = ChatStep.RESERVATION
             session.conversation_history.append({"role": "assistant", "content": message})
@@ -338,32 +341,41 @@ async def handle_diagnosing(session: SessionState, request: ChatRequest) -> Chat
 
         # C) high/critical → 強い警告 + 予約導線（reservation_choice）
         if urgency_flag in ("high", "critical"):
+            # True のときだけ自走可。False も None（不明）も → 自走禁止扱い
+            effective_can_drive = can_drive_llm if can_drive_llm is True else False
             session.urgency_level = urgency_flag
-            session.can_drive = urgency_flag != "critical"
+            session.can_drive = effective_can_drive
             session.current_step = ChatStep.RESERVATION
-            if urgency_flag == "critical":
+
+            if not effective_can_drive:
                 warning = (
+                    "🚨【自走禁止】すぐに運転を中止し、安全な場所に停車してください。\n\n"
                     f"{message}\n\n"
-                    "🚨 危険です。すぐに運転を中止し、安全な場所に停車してください。\n"
                     "ロードサービスへの連絡を強くお勧めします。"
                 )
+                reservation_choices = [
+                    {"value": "dispatch", "label": "ロードサービスを呼ぶ"},
+                    {"value": "skip", "label": "今は予約しない"},
+                ]
             else:
                 warning = (
+                    "⚠️【早急な点検推奨】無理な運転は避けてください。\n\n"
                     f"{message}\n\n"
-                    "⚠️ 早急にディーラーまたは整備工場での点検をお勧めします。\n"
-                    "このまま放置すると危険が増す可能性があります。"
+                    "早急にディーラーまたは整備工場での点検をお勧めします。"
                 )
+                reservation_choices = [
+                    {"value": "dispatch", "label": "ロードサービスを呼ぶ"},
+                    {"value": "visit", "label": "ディーラーに持ち込む"},
+                    {"value": "skip", "label": "今は予約しない"},
+                ]
+
             return ChatResponse(
                 session_id=session.session_id,
                 current_step=ChatStep.RESERVATION.value,
                 prompt=PromptInfo(
                     type="reservation_choice",
                     message=warning,
-                    choices=[
-                        {"value": "dispatch", "label": "ロードサービスを呼ぶ"},
-                        {"value": "visit", "label": "ディーラーに持ち込む"},
-                        {"value": "skip", "label": "今は予約しない"},
-                    ],
+                    choices=reservation_choices,
                     booking_type=session.booking_type,
                 ),
                 rag_sources=rag_sources,

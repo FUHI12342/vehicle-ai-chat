@@ -35,6 +35,25 @@ async def handle_reservation(session: SessionState, request: ChatRequest) -> Cha
             session.current_step = ChatStep.BOOKING_INFO
             return await handle_booking_info(session, request)
         elif action_val in ("yes", "visit"):
+            # backend 二重安全: can_drive が True 以外（False / None）なら visit を拒否
+            if action_val == "visit" and session.can_drive is not True:
+                logger.warning(f"visit received but can_drive={session.can_drive!r} — rejecting")
+                return ChatResponse(
+                    session_id=session.session_id,
+                    current_step=ChatStep.RESERVATION.value,
+                    prompt=PromptInfo(
+                        type="reservation_choice",
+                        message=(
+                            "🚫 自走での来店は危険です。\n"
+                            "現在の状態では自走での来店はお勧めできません。ロードサービスをご利用ください。"
+                        ),
+                        choices=[
+                            {"value": "dispatch", "label": "ロードサービスを呼ぶ"},
+                            {"value": "skip", "label": "今は予約しない"},
+                        ],
+                        booking_type="dispatch",
+                    ),
+                )
             session.booking_type = session.booking_type or "visit"
             session.current_step = ChatStep.BOOKING_INFO
             return await handle_booking_info(session, request)

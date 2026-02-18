@@ -6,7 +6,7 @@ DIAGNOSTIC_SCHEMA = {
     "strict": True,
     "schema": {
         "type": "object",
-        "required": ["action", "message", "urgency_flag", "reasoning", "term_to_clarify", "choices"],
+        "required": ["action", "message", "urgency_flag", "reasoning", "term_to_clarify", "choices", "can_drive"],
         "additionalProperties": False,
         "properties": {
             "action": {
@@ -33,6 +33,10 @@ DIAGNOSTIC_SCHEMA = {
                 "type": ["array", "null"],
                 "items": {"type": "string"},
                 "description": "ユーザーに提示する選択肢（任意）",
+            },
+            "can_drive": {
+                "type": ["boolean", "null"],
+                "description": "走行可能か。判定できない段階は null。迷ったら必ず false（安全側）",
             },
         },
     },
