@@ -1,5 +1,45 @@
 """Structured Outputs JSON Schema definitions for OpenAI response_format."""
 
+# 仕様確認用スキーマ
+SPEC_CLASSIFICATION_SCHEMA = {
+    "name": "spec_classification",
+    "strict": True,
+    "schema": {
+        "type": "object",
+        "required": [
+            "is_spec_behavior",
+            "confidence",
+            "explanation",
+            "manual_reference",
+            "reasoning",
+        ],
+        "additionalProperties": False,
+        "properties": {
+            "is_spec_behavior": {
+                "type": "boolean",
+                "description": "仕様通りの正常動作かどうか",
+            },
+            "confidence": {
+                "type": "string",
+                "enum": ["high", "medium", "low"],
+                "description": "判定の確信度",
+            },
+            "explanation": {
+                "type": "string",
+                "description": "ユーザー向け解説（素人向け・200文字以内）",
+            },
+            "manual_reference": {
+                "type": "string",
+                "description": "マニュアル参照（例: p.142 アイドリングストップ）",
+            },
+            "reasoning": {
+                "type": "string",
+                "description": "内部ログ用の判断理由",
+            },
+        },
+    },
+}
+
 # 問診ループ用スキーマ
 DIAGNOSTIC_SCHEMA = {
     "name": "diagnostic_response",

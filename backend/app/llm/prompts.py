@@ -73,6 +73,36 @@ URGENCY_ASSESSMENT_PROMPT = """以下の車両症状の緊急度を評価して�
 - critical の場合: can_drive = false
 - それ以外: can_drive = true"""
 
+SPEC_CLASSIFICATION_PROMPT = """あなたは車両マニュアルの専門家です。
+ユーザーが報告した症状が「仕様通りの正常動作」か「不具合の可能性」かを判定してください。
+
+【車両情報】{make} {model} {year}年式
+
+【ユーザーの症状】
+{symptom}
+
+【マニュアルからの関連情報】
+{rag_context}
+
+【判定基準】
+- is_spec_behavior = true にすべき場合:
+  - マニュアルに正常動作として明確に記載されている
+  - 操作手順の不慣れや仕様の誤解と判断できる
+  - 例: アイドリングストップ、ハイブリッド車のエンジン停止、回生ブレーキの感触
+- is_spec_behavior = false にすべき場合:
+  - 安全に関わる可能性がある
+  - マニュアルに該当する記載がない
+  - 症状の記述が曖昧で判断できない
+  - 異常を示唆する症状（異音、振動、警告灯、煙、異臭など）
+
+【重要ルール】
+- 迷ったら必ず is_spec_behavior = false にしてください（安全側に倒す）
+- confidence = "high" のときのみ is_spec_behavior = true を許可します
+- confidence が "medium" や "low" の場合は is_spec_behavior = false にしてください
+- explanation はユーザー（車の素人）が読んで理解できるやさしい言葉で、200文字以内で書いてください
+- 専門用語にはカッコ書きで説明を添えてください
+- manual_reference にはマニュアルのページ番号やセクション名を記載してください"""
+
 RAG_ANSWER_PROMPT = """以下は車両マニュアルから検索された関連情報です。この情報を元に、ユーザーの質問に対して分かりやすく回答してください。
 
 ## 車両情報

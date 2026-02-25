@@ -34,6 +34,7 @@ export const ja = {
     vehicle_id: "車種選択",
     photo_confirm: "写真確認",
     free_text: "症状入力",
+    spec_check: "仕様確認",
     diagnosing: "問診中",
     urgency_check: "緊急度判定",
     reservation: "予約確認",

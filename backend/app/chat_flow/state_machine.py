@@ -3,6 +3,7 @@ from app.models.chat import ChatRequest, ChatResponse, PromptInfo
 from app.chat_flow.step1_vehicle_id import handle_vehicle_id
 from app.chat_flow.step2_photo_confirm import handle_photo_confirm
 from app.chat_flow.step3_free_text import handle_free_text
+from app.chat_flow.step_spec_check import handle_spec_check
 from app.chat_flow.step_diagnosing import handle_diagnosing
 from app.chat_flow.step_urgency import handle_urgency_check
 from app.chat_flow.step_reservation import (
@@ -16,6 +17,7 @@ STEP_HANDLERS = {
     ChatStep.VEHICLE_ID: handle_vehicle_id,
     ChatStep.PHOTO_CONFIRM: handle_photo_confirm,
     ChatStep.FREE_TEXT: handle_free_text,
+    ChatStep.SPEC_CHECK: handle_spec_check,
     ChatStep.DIAGNOSING: handle_diagnosing,
     ChatStep.URGENCY_CHECK: handle_urgency_check,
     ChatStep.RESERVATION: handle_reservation,

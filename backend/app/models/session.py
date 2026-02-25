@@ -6,6 +6,7 @@ class ChatStep(str, Enum):
     VEHICLE_ID = "vehicle_id"
     PHOTO_CONFIRM = "photo_confirm"
     FREE_TEXT = "free_text"
+    SPEC_CHECK = "spec_check"
     DIAGNOSING = "diagnosing"
     URGENCY_CHECK = "urgency_check"
     RESERVATION = "reservation"
@@ -38,3 +39,5 @@ class SessionState(BaseModel):
     booking_data: dict = {}
     last_questions: list[str] = []
     candidates_shown: bool = False
+    spec_check_shown: bool = False
+    spec_rag_sources: list[dict] = []
