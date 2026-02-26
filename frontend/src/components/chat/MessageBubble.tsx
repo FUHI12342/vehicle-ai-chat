@@ -8,12 +8,14 @@ interface MessageBubbleProps {
 
 export function MessageBubble({ message, onRewind, showRewind }: MessageBubbleProps) {
   const isUser = message.role === "user";
+  // ユーザー: 短めの吹き出し、アシスタント: 長文回答が読みやすいよう広め
+  const maxWidth = isUser ? "max-w-[75%]" : "max-w-[90%]";
 
   return (
     <div className={`flex ${isUser ? "justify-end" : "justify-start"} animate-fade-in`}>
-      <div className={isUser ? "flex flex-col items-end" : ""}>
+      <div className={`${maxWidth} ${isUser ? "flex flex-col items-end" : ""}`}>
         <div
-          className={`max-w-[80%] px-4 py-3 rounded-2xl text-sm leading-relaxed whitespace-pre-wrap ${
+          className={`px-4 py-3 rounded-2xl text-sm leading-relaxed whitespace-pre-wrap break-words ${
             isUser
               ? "bg-blue-600 text-white rounded-br-sm"
               : "bg-gray-100 text-gray-800 rounded-bl-sm"

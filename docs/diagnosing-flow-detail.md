@@ -219,12 +219,15 @@ provide_answer
 
 ### 選択肢（choices）の処理
 
+**設計方針**: ハードコードされた用語変換辞書は使用しない。LLMが返した選択肢をそのまま表示する。
+専門用語の素人向け説明はLLMがプロンプト指示に従って生成する（マニュアル用語 + カッコ書き説明）。
+
 ```
 LLM が choices: ["選択肢A", "選択肢B", "選択肢C"] を返却
   ↓
 _append_default_choices(choices)
   1. LLM選択肢の重複排除（seen セット）
-  2. value = label = LLMが返した文字列そのまま
+  2. value = label = LLMが返した文字列そのまま（変換なし）
   3. 末尾に「わからない」「✏️ 自由入力」を追加（重複除外）
   ↓
 [
@@ -235,6 +238,16 @@ _append_default_choices(choices)
   {value: "free_input", label: "✏️ 自由入力"},
 ]
 ```
+
+**フロントエンド側**: `ChatContainer.tsx` でも選択肢はLLMの返却値をそのまま使用。
+ハードコードされたラベル変換マップ（LABEL_MAP）やヒントマップ（HINT_MAP）は廃止済み。
+
+**選択肢の品質担保**: プロンプト（DIAGNOSTIC_PROMPT）で以下を指示:
+- choices は質問の回答として直接適切なもののみ
+- 質問と無関係な選択肢は絶対に入れないこと
+- 重複禁止
+- 専門用語にはカッコ書きで素人向け説明を添える
+- マニュアルの用語を使う場合もカッコ書きで説明を添える
 
 ---
 
@@ -490,7 +503,7 @@ DIAGNOSTIC_SCHEMA = {
         "properties": {
             "action": {"type": "string", "enum": [...]},
             "message": {"type": "string"},
-            "choices": {"type": ["array", "null"], "items": {"type": "string"}, "uniqueItems": True},
+            "choices": {"type": ["array", "null"], "items": {"type": "string"}},
             ...
         }
     }
@@ -659,3 +672,12 @@ except (json.JSONDecodeError, Exception) as e:
 2. **フィールド保証**: choices, can_drive, manual_coverage 等が必ず存在 → `result.get()` で KeyError なし
 3. **パース不要**: 自由文からの正規表現パースが不要 → コード簡潔化・バグ低減
 4. **strict モード**: スキーマ違反がAPI側で検出 → アプリ側での型チェック不要
+
+### Structured Outputs の制約（注意点）
+
+OpenAI の strict モードでは、JSON Schema の一部キーワードが使用不可:
+- `uniqueItems` — 使用不可（配列の重複排除はアプリ側で実装）
+- `pattern` — 使用不可
+- `minItems` / `maxItems` — 使用不可（プロンプトで「3〜4個」と指示）
+
+そのため、**型制約はスキーマ、意味制約・数量制約はプロンプト、重複排除はアプリコード**の三層で担保する設計。

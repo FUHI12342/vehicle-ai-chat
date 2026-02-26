@@ -44,26 +44,26 @@ export function MessageList({ messages, currentStep, onRewind }: MessageListProp
               showRewind={showRewind}
             />
             {msg.urgency && msg.urgency.level !== "low" && (
-              <div className="max-w-[80%]">
+              <div className="max-w-[90%]">
                 <UrgencyAlert urgency={msg.urgency} />
               </div>
             )}
             {msg.manualCoverage === "not_covered" && (
-              <div className="max-w-[80%]">
+              <div className="max-w-[90%]">
                 <div className="inline-block bg-yellow-100 text-yellow-800 border border-yellow-300 rounded-lg px-3 py-1.5 text-xs font-medium">
                   ⚠ マニュアル記載外 — 想定外の不具合の可能性があります
                 </div>
               </div>
             )}
             {msg.manualCoverage === "partially_covered" && (
-              <div className="max-w-[80%]">
+              <div className="max-w-[90%]">
                 <div className="inline-block bg-gray-100 text-gray-600 border border-gray-300 rounded-lg px-3 py-1.5 text-xs font-medium">
                   マニュアルに完全一致する情報はありません
                 </div>
               </div>
             )}
             {msg.rag_sources && msg.rag_sources.length > 0 && (
-              <div className="max-w-[80%]">
+              <div className="max-w-[90%]">
                 <details className="text-xs text-gray-400">
                   <summary className="cursor-pointer hover:text-gray-600">
                     参照元 ({msg.rag_sources.length}件)
