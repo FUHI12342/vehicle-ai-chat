@@ -41,3 +41,5 @@ class SessionState(BaseModel):
     candidates_shown: bool = False
     spec_check_shown: bool = False
     spec_rag_sources: list[dict] = []
+    spec_hint: bool = False
+    answered_dimensions: list[str] = []

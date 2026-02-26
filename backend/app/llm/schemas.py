@@ -51,7 +51,7 @@ DIAGNOSTIC_SCHEMA = {
         "properties": {
             "action": {
                 "type": "string",
-                "enum": ["ask_question", "clarify_term", "provide_answer", "escalate"],
+                "enum": ["ask_question", "clarify_term", "provide_answer", "escalate", "spec_answer"],
             },
             "message": {
                 "type": "string",

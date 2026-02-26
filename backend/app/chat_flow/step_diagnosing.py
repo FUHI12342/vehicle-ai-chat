@@ -9,45 +9,67 @@ from app.llm.prompts import SYSTEM_PROMPT, DIAGNOSTIC_PROMPT
 from app.llm.schemas import DIAGNOSTIC_SCHEMA
 from app.services.rag_service import rag_service
 from app.services.urgency_assessor import keyword_urgency_check
+from app.data.diagnostic_config_loader import (
+    get_category_dimensions,
+    get_default_dimensions,
+    get_dimension_keywords,
+    get_fallback_questions,
+    get_candidate_hints,
+)
 
 logger = logging.getLogger(__name__)
 
+# ---------------------------------------------------------------------------
+# カテゴリ別の診断観点マッピング（YAML から読み込み）
+# ---------------------------------------------------------------------------
+CATEGORY_DIMENSIONS = get_category_dimensions()
+_DEFAULT_DIMENSIONS = get_default_dimensions()
 
-FALLBACK_QUESTIONS = [
-    "症状が出るのは走行中ですか？それとも停車しているときですか？",
-    "症状が出る頻度はどのくらいですか？（毎回・たまに・一度だけなど）",
-    "エンジンをかけたとき、メーターパネルに見慣れない表示は出ていますか？",
-    "最近、車の点検や修理をされましたか？",
-    "症状が出るとき、何か特別な操作をしていますか？（例：エアコンをつけた、坂道を走ったなど）",
-]
+def _get_dimension_list(session: SessionState) -> str:
+    """カテゴリに応じた観点を「／」区切りで返す。"""
+    category = session.symptom_category
+    dimension_list = CATEGORY_DIMENSIONS.get(category or "", _DEFAULT_DIMENSIONS)
+    return "／".join(dimension_list)
+
+
+# 改善D: 観点ベース重複質問ガード — キーワードマッピング（YAML から読み込み）
+_DIMENSION_KEYWORDS = get_dimension_keywords()
+
+
+def _classify_answered_dimension(user_input: str, session: SessionState) -> list[str]:
+    """Classify which dimensions the user's answer covers using keyword matching.
+
+    The last assistant question's keywords get double weight.
+    """
+    matched: list[str] = []
+    # Get last assistant question for context weighting
+    last_q = ""
+    for entry in reversed(session.conversation_history):
+        if entry["role"] == "assistant":
+            last_q = entry["content"]
+            break
+
+    for dim, keywords in _DIMENSION_KEYWORDS.items():
+        if dim in session.answered_dimensions:
+            continue
+        score = 0
+        for kw in keywords:
+            if kw in user_input:
+                score += 1
+            if last_q and kw in last_q:
+                score += 2  # Double weight for question context
+        if score >= 2:
+            matched.append(dim)
+    return matched
+
+
+FALLBACK_QUESTIONS = get_fallback_questions()
 
 # Task 2: 待ちメッセージ検出パターン
 _WAITING_PATTERN = re.compile(r"まとめ|整理|お待ち|確認.{0,5}させ|少々", re.UNICODE)
 
-# Tip 1: 候補ラベル補助辞書（LLMが短すぎる単語を返したときに説明付きに変換）
-_CANDIDATE_HINTS: dict[str, str] = {
-    "ブレーキパッド": "ブレーキパッド摩耗（キーキー/金属音）",
-    "ローター": "ブレーキローター（擦れ/振動）",
-    "ブレーキローター": "ブレーキローター（擦れ/振動）",
-    "タイヤ": "タイヤ異常（パンク/偏摩耗）",
-    "バッテリー": "バッテリー劣化（始動不良）",
-    "オルタネーター": "オルタネーター（発電機）故障",
-    "ベルト": "ベルト類損傷（ギーギー音）",
-    "エンジン": "エンジン内部異常（振動/異音）",
-    "サスペンション": "サスペンション（ゴトゴト音）",
-    "ショック": "ショックアブソーバー劣化",
-    "プラグ": "スパークプラグ不良（点火）",
-    "燃料": "燃料系統（出力低下）",
-    "冷却水": "冷却水不足（過熱）",
-    "クーラント": "クーラント漏れ（過熱）",
-    "オイル": "エンジンオイル（漏れ/不足）",
-    "マフラー": "マフラー異常（排気音変化）",
-    "CVT": "CVT（変速機）不具合",
-    "AT": "AT（オートマ）不具合",
-    "クラッチ": "クラッチ摩耗（滑り）",
-    "ハブ": "ハブベアリング（走行異音）",
-    "パワステ": "パワーステアリング不具合",
-}
+# Tip 1: 候補ラベル補助辞書（YAML から読み込み）
+_CANDIDATE_HINTS = get_candidate_hints()
 
 
 def _enrich_candidate_label(label: str) -> str:
@@ -191,6 +213,12 @@ async def handle_diagnosing(session: SessionState, request: ChatRequest) -> Chat
     session.conversation_history.append({"role": "user", "content": user_input})
     session.diagnostic_turn += 1
 
+    # 改善D: Classify dimensions covered by this user input
+    new_dims = _classify_answered_dimension(user_input, session)
+    for d in new_dims:
+        if d not in session.answered_dimensions:
+            session.answered_dimensions.append(d)
+
     # 2. Keyword-based urgency check (fast path for critical)
     all_symptoms = " ".join(session.collected_symptoms)
     keyword_result = keyword_urgency_check(all_symptoms)
@@ -228,13 +256,27 @@ async def handle_diagnosing(session: SessionState, request: ChatRequest) -> Chat
 
     # 4. Build prompt
     conversation_text = _build_conversation_text(session)
+    dimension_list = _get_dimension_list(session)
     diagnostic_prompt = DIAGNOSTIC_PROMPT.format(
         make=session.vehicle_make or "不明",
         model=session.vehicle_model or "不明",
         year=session.vehicle_year or "不明",
         conversation_history=conversation_text,
         rag_context=rag_context,
+        dimension_list=dimension_list,
     )
+
+    # 改善D: Inject answered dimensions into prompt
+    if session.answered_dimensions:
+        dims_text = " / ".join(session.answered_dimensions)
+        diagnostic_prompt += f"\n\n【回答済みの観点】{dims_text}\n上記の観点については再質問しないでください。"
+
+    # 改善C: Spec hint injection
+    if session.spec_hint:
+        diagnostic_prompt += (
+            "\n\n【参考】この症状はマニュアルに仕様として記載されている可能性があります。"
+            "マニュアル関連情報を確認し、仕様に該当する場合は action: \"spec_answer\" を優先してください。"
+        )
 
     # 5. Force provide_answer if max turns reached
     if session.diagnostic_turn >= session.max_diagnostic_turns:
@@ -334,6 +376,31 @@ async def handle_diagnosing(session: SessionState, request: ChatRequest) -> Chat
         session.current_step = ChatStep.RESERVATION
         from app.chat_flow.step_reservation import handle_reservation
         return await handle_reservation(session, request)
+
+    # 改善C: spec_answer — redirect to SPEC_CHECK flow
+    if action == "spec_answer":
+        session.spec_check_shown = True
+        session.current_step = ChatStep.SPEC_CHECK
+        session.conversation_history.append({"role": "assistant", "content": message})
+
+        spec_message = f"マニュアルを確認したところ、これは仕様（正常な動作）の可能性があります。\n\n{message}"
+        spec_message += "\n\nこの説明で疑問は解決しましたか？"
+
+        spec_choices = [
+            {"value": "resolved", "label": "解決しました"},
+            {"value": "not_resolved", "label": "解決していません"},
+            {"value": "already_tried", "label": "それは試しました / 知っています"},
+        ]
+        return ChatResponse(
+            session_id=session.session_id,
+            current_step=ChatStep.SPEC_CHECK.value,
+            prompt=PromptInfo(
+                type="single_choice",
+                message=spec_message,
+                choices=spec_choices,
+            ),
+            rag_sources=rag_sources,
+        )
 
     if action == "provide_answer":
         session.rag_answer = message
