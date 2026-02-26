@@ -9,27 +9,11 @@ from app.llm.prompts import SYSTEM_PROMPT, DIAGNOSTIC_PROMPT, CONVERSATION_SUMMA
 from app.llm.schemas import DIAGNOSTIC_SCHEMA
 from app.services.rag_service import rag_service
 from app.services.urgency_assessor import keyword_urgency_check
-from app.data.diagnostic_config_loader import get_candidate_hints
 
 logger = logging.getLogger(__name__)
 
 # Task 2: 待ちメッセージ検出パターン
 _WAITING_PATTERN = re.compile(r"まとめ|整理|お待ち|確認.{0,5}させ|少々", re.UNICODE)
-
-# Tip 1: 候補ラベル補助辞書（YAML から読み込み）
-_CANDIDATE_HINTS = get_candidate_hints()
-
-
-def _enrich_candidate_label(label: str) -> str:
-    """短すぎる候補ラベルを補助辞書で説明付きに変換する。"""
-    s = label.strip()
-    # 既に括弧付きか十分な長さなら変換不要
-    if "（" in s or "(" in s or len(s) >= 12:
-        return s
-    for key, hint in _CANDIDATE_HINTS.items():
-        if key in s:
-            return hint
-    return s
 
 
 # A) ask_question / clarify_term の末尾に必ず追加するデフォルト選択肢
@@ -42,8 +26,12 @@ _DEFAULT_TAIL: list[dict] = [
 def _append_default_choices(choices: list[str] | None) -> list[dict]:
     """LLM が返した choices に「わからない」「自由入力」を末尾追加する（重複除外）。"""
     result: list[dict] = []
+    seen: set[str] = set()
     if choices:
-        result = [{"value": c, "label": _enrich_candidate_label(c)} for c in choices]
+        for c in choices:
+            if c not in seen:
+                seen.add(c)
+                result.append({"value": c, "label": c})
     existing_values = {d["value"] for d in result}
     for tail in _DEFAULT_TAIL:
         if tail["value"] not in existing_values:

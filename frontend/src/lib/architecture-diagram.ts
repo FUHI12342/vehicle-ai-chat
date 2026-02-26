@@ -105,7 +105,6 @@ graph TB
 
   %% ─── Data Layer ───
   subgraph Data["Data Layer"]
-    DiagConfig["diagnostic_config.yaml"]
     VehiclesJSON["vehicles.json"]
     PDFs["PDF マニュアル"]
     ChromaData["chroma_data/"]
