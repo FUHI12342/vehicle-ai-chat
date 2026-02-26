@@ -46,7 +46,7 @@ DIAGNOSTIC_SCHEMA = {
     "strict": True,
     "schema": {
         "type": "object",
-        "required": ["action", "message", "urgency_flag", "reasoning", "term_to_clarify", "choices", "can_drive"],
+        "required": ["action", "message", "urgency_flag", "reasoning", "term_to_clarify", "choices", "can_drive", "confidence_to_answer", "rewritten_query", "question_topic"],
         "additionalProperties": False,
         "properties": {
             "action": {
@@ -77,6 +77,18 @@ DIAGNOSTIC_SCHEMA = {
             "can_drive": {
                 "type": ["boolean", "null"],
                 "description": "走行可能か。判定できない段階は null。迷ったら必ず false（安全側）",
+            },
+            "confidence_to_answer": {
+                "type": "number",
+                "description": "回答できる確信度 0.0〜1.0",
+            },
+            "rewritten_query": {
+                "type": "string",
+                "description": "次のRAG検索用に改善したクエリ（50文字以内）",
+            },
+            "question_topic": {
+                "type": "string",
+                "description": "この質問が扱うトピック（例: 操作感、発生時期、色、温度など）。質問しない場合は空文字",
             },
         },
     },

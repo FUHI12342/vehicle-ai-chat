@@ -30,6 +30,11 @@ export const ja = {
     notConfigured: "未設定",
     active: "使用中",
   },
+  architecture: {
+    title: "システム構成図",
+    close: "閉じる",
+    buttonLabel: "構成図",
+  },
   steps: {
     vehicle_id: "車種選択",
     photo_confirm: "写真確認",

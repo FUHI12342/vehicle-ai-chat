@@ -5,65 +5,13 @@ import re
 from app.models.session import SessionState, ChatStep
 from app.models.chat import ChatRequest, ChatResponse, PromptInfo, RAGSource
 from app.llm.registry import provider_registry
-from app.llm.prompts import SYSTEM_PROMPT, DIAGNOSTIC_PROMPT
+from app.llm.prompts import SYSTEM_PROMPT, DIAGNOSTIC_PROMPT, CONVERSATION_SUMMARY_PROMPT
 from app.llm.schemas import DIAGNOSTIC_SCHEMA
 from app.services.rag_service import rag_service
 from app.services.urgency_assessor import keyword_urgency_check
-from app.data.diagnostic_config_loader import (
-    get_category_dimensions,
-    get_default_dimensions,
-    get_dimension_keywords,
-    get_fallback_questions,
-    get_candidate_hints,
-)
+from app.data.diagnostic_config_loader import get_candidate_hints
 
 logger = logging.getLogger(__name__)
-
-# ---------------------------------------------------------------------------
-# カテゴリ別の診断観点マッピング（YAML から読み込み）
-# ---------------------------------------------------------------------------
-CATEGORY_DIMENSIONS = get_category_dimensions()
-_DEFAULT_DIMENSIONS = get_default_dimensions()
-
-def _get_dimension_list(session: SessionState) -> str:
-    """カテゴリに応じた観点を「／」区切りで返す。"""
-    category = session.symptom_category
-    dimension_list = CATEGORY_DIMENSIONS.get(category or "", _DEFAULT_DIMENSIONS)
-    return "／".join(dimension_list)
-
-
-# 改善D: 観点ベース重複質問ガード — キーワードマッピング（YAML から読み込み）
-_DIMENSION_KEYWORDS = get_dimension_keywords()
-
-
-def _classify_answered_dimension(user_input: str, session: SessionState) -> list[str]:
-    """Classify which dimensions the user's answer covers using keyword matching.
-
-    The last assistant question's keywords get double weight.
-    """
-    matched: list[str] = []
-    # Get last assistant question for context weighting
-    last_q = ""
-    for entry in reversed(session.conversation_history):
-        if entry["role"] == "assistant":
-            last_q = entry["content"]
-            break
-
-    for dim, keywords in _DIMENSION_KEYWORDS.items():
-        if dim in session.answered_dimensions:
-            continue
-        score = 0
-        for kw in keywords:
-            if kw in user_input:
-                score += 1
-            if last_q and kw in last_q:
-                score += 2  # Double weight for question context
-        if score >= 2:
-            matched.append(dim)
-    return matched
-
-
-FALLBACK_QUESTIONS = get_fallback_questions()
 
 # Task 2: 待ちメッセージ検出パターン
 _WAITING_PATTERN = re.compile(r"まとめ|整理|お待ち|確認.{0,5}させ|少々", re.UNICODE)
@@ -110,15 +58,6 @@ def _is_waiting_message(msg: str) -> bool:
     return bool(_WAITING_PATTERN.search(msg))
 
 
-def _build_conversation_text(session: SessionState) -> str:
-    """Build conversation history as text for the prompt."""
-    lines = []
-    for entry in session.conversation_history:
-        role = "ユーザー" if entry["role"] == "user" else "アシスタント"
-        lines.append(f"{role}: {entry['content']}")
-    return "\n".join(lines) if lines else "(初回入力)"
-
-
 def _normalize_question(text: str) -> str:
     """Normalize a question for duplicate comparison."""
     text = re.sub(r"[？?。、！!.,\s　]+", "", text)
@@ -142,12 +81,115 @@ def _is_duplicate_question(message: str, last_questions: list[str]) -> bool:
     return False
 
 
-def _pick_fallback_question(session: SessionState) -> str | None:
-    """Pick a fallback question that hasn't been asked yet."""
-    for q in FALLBACK_QUESTIONS:
-        if not _is_duplicate_question(q, session.last_questions):
-            return q
-    return None
+# ---------------------------------------------------------------------------
+# トピック関連性ガード
+# ---------------------------------------------------------------------------
+# 症状に含まれない限りブロックすべきトピックとそのキーワード
+_GUARDED_TOPICS: dict[str, list[str]] = {
+    "音": ["音", "サウンド", "鳴", "キー", "ゴリ", "カタ", "ガタ", "ギー", "異音"],
+    "振動": ["振動", "ブルブル", "ガクガク", "揺れ"],
+    "臭い": ["臭", "匂", "におい", "スメル"],
+    "煙": ["煙", "白煙", "黒煙"],
+}
+
+
+def _is_irrelevant_topic(topic: str, symptom_text: str, conversation_history: list[dict]) -> bool:
+    """question_topic がユーザーの症状・会話に無関係かどうか判定する。
+
+    ガードリストにあるトピックについて、症状テキストと会話履歴に
+    関連キーワードが一切含まれていない場合に True を返す。
+    ガードリストにないトピックは常に False（許可）。
+    """
+    # 全テキストを結合して検索対象にする
+    all_text = symptom_text
+    for entry in conversation_history:
+        if entry["role"] == "user":
+            all_text += " " + entry["content"]
+
+    for guarded_name, keywords in _GUARDED_TOPICS.items():
+        # topic がこのガードカテゴリに該当するか
+        if any(kw in topic for kw in keywords) or guarded_name in topic:
+            # 症状テキスト+会話にキーワードが1つでもあれば関連あり
+            if any(kw in all_text for kw in keywords):
+                return False  # 関連あり → ブロックしない
+            return True  # 関連なし → ブロック
+    return False  # ガード対象外 → 許可
+
+
+# ---------------------------------------------------------------------------
+# RAG駆動型ヘルパー関数
+# ---------------------------------------------------------------------------
+
+def _build_recent_turns(session: SessionState, n: int = 4) -> str:
+    """直近N件のやり取りのみテキスト化する。"""
+    history = session.conversation_history
+    recent = history[-n:] if len(history) > n else history
+    lines = []
+    for entry in recent:
+        role = "ユーザー" if entry["role"] == "user" else "アシスタント"
+        lines.append(f"{role}: {entry['content']}")
+    return "\n".join(lines) if lines else "(初回入力)"
+
+
+def _build_additional_instructions(session: SessionState, user_input: str, candidates_just_triggered: bool) -> str:
+    """条件付き指示を一括構築して返す。"""
+    parts: list[str] = []
+
+    # 改善C: Spec hint injection
+    if session.spec_hint:
+        parts.append(
+            "\n\n【参考】この症状はマニュアルに仕様として記載されている可能性があります。"
+            "マニュアル関連情報を確認し、仕様に該当する場合は action: \"spec_answer\" を優先してください。"
+        )
+
+    # Force provide_answer if max turns reached
+    if session.diagnostic_turn >= session.max_diagnostic_turns:
+        parts.append(
+            "\n\n【重要】問診回数の上限に達しました。これまでの情報をもとに action: \"provide_answer\" で回答を提供してください。"
+        )
+
+    # 解決策提示トリガー
+    if candidates_just_triggered or (session.candidates_shown and session.solutions_tried == 0):
+        parts.append(
+            "\n\n【重要】これまでの情報から、最も可能性の高い原因を1つ特定し、"
+            "ユーザーが自分で試せる具体的な対処手順を action: \"provide_answer\" で提示してください。"
+            "手順は番号付きで、素人でもできる内容にしてください。"
+        )
+    elif session.solutions_tried > 0:
+        parts.append(
+            f"\n\n【重要】前回提示した解決策ではユーザーの問題が解決しませんでした（{session.solutions_tried}回目）。"
+            "次に可能性の高い別の原因と対処法を action: \"provide_answer\" で提示してください。"
+            "前回と異なる原因・対処法を提示してください。"
+        )
+
+    return "".join(parts)
+
+
+async def _maybe_summarize(session: SessionState, provider) -> None:
+    """diagnostic_turn が3の倍数かつ >= 3 のとき、会話を要約して conversation_summary を更新。"""
+    if session.diagnostic_turn < 3 or session.diagnostic_turn % 3 != 0:
+        return
+
+    # 要約対象: conversation_history 全体
+    lines = []
+    for entry in session.conversation_history:
+        role = "ユーザー" if entry["role"] == "user" else "アシスタント"
+        lines.append(f"{role}: {entry['content']}")
+    conversation_text = "\n".join(lines)
+
+    summary_prompt = CONVERSATION_SUMMARY_PROMPT.format(conversation_text=conversation_text)
+
+    try:
+        response = await provider.chat(
+            messages=[
+                {"role": "user", "content": summary_prompt},
+            ],
+            temperature=0.1,
+        )
+        session.conversation_summary = response.content.strip()
+        logger.info(f"Conversation summary updated (turn {session.diagnostic_turn})")
+    except Exception as e:
+        logger.warning(f"Conversation summary failed: {e}")
 
 
 async def _llm_call(provider, diagnostic_prompt: str) -> dict:
@@ -179,16 +221,21 @@ async def handle_diagnosing(session: SessionState, request: ChatRequest) -> Chat
                 ),
             )
         elif request.action_value == "no":
-            session.current_step = ChatStep.URGENCY_CHECK
-            from app.chat_flow.step_urgency import handle_urgency_check
-            return await handle_urgency_check(session, request)
+            session.solutions_tried += 1
+            # 3回解決策を試しても解決しない場合 → 専門家へ
+            if session.solutions_tried >= 3:
+                session.current_step = ChatStep.URGENCY_CHECK
+                from app.chat_flow.step_urgency import handle_urgency_check
+                return await handle_urgency_check(session, request)
+            # まだ別の解決策を試す → DIAGNOSING に留まり次の策を提示
+            request.message = "解決しませんでした。他の原因を教えてください。"
+            return await handle_diagnosing(session, request)
         elif request.action_value == "book":
             # 「点検を予約する」を直接選択
             session.current_step = ChatStep.RESERVATION
             from app.chat_flow.step_reservation import handle_reservation
             return await handle_reservation(session, request)
         else:
-            # 想定外の値はログだけ残して無視（diagnosis_candidates は sendMessage 経由なので通常ここに来ない）
             logger.warning(f"Unexpected resolved value: {request.action_value!r}")
             return ChatResponse(
                 session_id=session.session_id,
@@ -207,17 +254,11 @@ async def handle_diagnosing(session: SessionState, request: ChatRequest) -> Chat
         )
 
     # ---------------------------------------------------------------
-    # 1. Save user input FIRST
+    # 1. Save user input + diagnostic_turn++
     # ---------------------------------------------------------------
     session.collected_symptoms.append(user_input)
     session.conversation_history.append({"role": "user", "content": user_input})
     session.diagnostic_turn += 1
-
-    # 改善D: Classify dimensions covered by this user input
-    new_dims = _classify_answered_dimension(user_input, session)
-    for d in new_dims:
-        if d not in session.answered_dimensions:
-            session.answered_dimensions.append(d)
 
     # 2. Keyword-based urgency check (fast path for critical)
     all_symptoms = " ".join(session.collected_symptoms)
@@ -229,12 +270,13 @@ async def handle_diagnosing(session: SessionState, request: ChatRequest) -> Chat
         from app.chat_flow.step_reservation import handle_reservation
         return await handle_reservation(session, request)
 
-    # 3. RAG search
+    # 3. RAG query: use rewritten_query if available, otherwise all_symptoms
+    rag_query = session.rewritten_query if session.rewritten_query else all_symptoms
     rag_context = "関連するマニュアル情報はありません。"
     rag_sources: list[RAGSource] = []
     try:
         results = await rag_service.query(
-            symptom=all_symptoms,
+            symptom=rag_query,
             vehicle_id=session.vehicle_id,
             make=session.vehicle_make or "",
             model=session.vehicle_model or "",
@@ -254,55 +296,7 @@ async def handle_diagnosing(session: SessionState, request: ChatRequest) -> Chat
     except Exception as e:
         logger.warning(f"RAG query failed: {e}")
 
-    # 4. Build prompt
-    conversation_text = _build_conversation_text(session)
-    dimension_list = _get_dimension_list(session)
-    diagnostic_prompt = DIAGNOSTIC_PROMPT.format(
-        make=session.vehicle_make or "不明",
-        model=session.vehicle_model or "不明",
-        year=session.vehicle_year or "不明",
-        conversation_history=conversation_text,
-        rag_context=rag_context,
-        dimension_list=dimension_list,
-    )
-
-    # 改善D: Inject answered dimensions into prompt
-    if session.answered_dimensions:
-        dims_text = " / ".join(session.answered_dimensions)
-        diagnostic_prompt += f"\n\n【回答済みの観点】{dims_text}\n上記の観点については再質問しないでください。"
-
-    # 改善C: Spec hint injection
-    if session.spec_hint:
-        diagnostic_prompt += (
-            "\n\n【参考】この症状はマニュアルに仕様として記載されている可能性があります。"
-            "マニュアル関連情報を確認し、仕様に該当する場合は action: \"spec_answer\" を優先してください。"
-        )
-
-    # 5. Force provide_answer if max turns reached
-    if session.diagnostic_turn >= session.max_diagnostic_turns:
-        diagnostic_prompt += "\n\n【重要】問診回数の上限に達しました。これまでの情報をもとに action: \"provide_answer\" で回答を提供してください。"
-
-    # ---------------------------------------------------------------
-    # Task 3: turn>=4 で一回だけ候補提示 / 候補選択後は provide_answer へ
-    # ---------------------------------------------------------------
-    candidates_just_triggered = False
-    if session.diagnostic_turn >= 4 and not session.candidates_shown:
-        session.candidates_shown = True
-        candidates_just_triggered = True
-        diagnostic_prompt += (
-            "\n\n【重要】これまでの問診から考えられる原因を4つに絞り込んでください。"
-            "action: \"ask_question\", "
-            "message は「原因として最も近いものはどれですか？」（30文字以内・1文）, "
-            "choices に考えられる原因を4個（各10文字以内）＋「その他」の計5個を必ず設定してください。"
-        )
-    elif session.candidates_shown and not candidates_just_triggered:
-        # 候補選択後 → すぐに回答を出す
-        diagnostic_prompt += (
-            f"\n\n【重要】ユーザーが原因候補「{user_input}」を選択しました。"
-            "この候補に基づいてすぐに action: \"provide_answer\" で具体的な回答を提供してください。"
-        )
-
-    # 6. Call LLM
+    # 4. Maybe summarize conversation (every 3 turns)
     provider = provider_registry.get_active()
     if not provider or not provider.is_configured():
         return ChatResponse(
@@ -314,11 +308,36 @@ async def handle_diagnosing(session: SessionState, request: ChatRequest) -> Chat
             ),
         )
 
+    await _maybe_summarize(session, provider)
+
+    # 5. Candidate trigger: confidence >= 0.7 OR turn >= 4 (fallback)
+    candidates_just_triggered = False
+    if not session.candidates_shown:
+        if session.last_confidence >= 0.7 or session.diagnostic_turn >= 4:
+            session.candidates_shown = True
+            candidates_just_triggered = True
+
+    # 6. Build prompt
+    recent_turns = _build_recent_turns(session)
+    additional_instructions = _build_additional_instructions(session, user_input, candidates_just_triggered)
+
+    diagnostic_prompt = DIAGNOSTIC_PROMPT.format(
+        make=session.vehicle_make or "不明",
+        model=session.vehicle_model or "不明",
+        year=session.vehicle_year or "不明",
+        original_symptom=session.symptom_text or all_symptoms,
+        conversation_summary=session.conversation_summary or "(なし)",
+        recent_turns=recent_turns,
+        rag_context=rag_context,
+        additional_instructions=additional_instructions,
+    )
+
+    # 7. Call LLM
     try:
         result = await _llm_call(provider, diagnostic_prompt)
     except (json.JSONDecodeError, Exception) as e:
         logger.error(f"LLM diagnostic call failed: {e}")
-        fallback_msg = _pick_fallback_question(session)
+        fallback_msg = "他に気になる症状や状況があれば教えてください。"
         session.last_questions.append(fallback_msg)
         session.conversation_history.append({"role": "assistant", "content": fallback_msg})
         return ChatResponse(
@@ -332,12 +351,47 @@ async def handle_diagnosing(session: SessionState, request: ChatRequest) -> Chat
     urgency_flag = result.get("urgency_flag", "none")
     reasoning = result.get("reasoning", "")
     choices = result.get("choices")
-    can_drive_llm: bool | None = result.get("can_drive")  # True / False / None
+    can_drive_llm: bool | None = result.get("can_drive")
 
-    logger.info(f"Diagnostic action={action}, urgency={urgency_flag}, reasoning={reasoning}")
+    # 8. Save rewritten_query and confidence
+    session.rewritten_query = result.get("rewritten_query", "")
+    session.last_confidence = result.get("confidence_to_answer", 0.0)
+    question_topic = result.get("question_topic", "")
+
+    logger.info(
+        f"Diagnostic action={action}, urgency={urgency_flag}, "
+        f"confidence={session.last_confidence:.2f}, topic={question_topic!r}, reasoning={reasoning}"
+    )
+
+    # 8b. Topic relevance guard: reject questions on topics absent from symptom text
+    if action == "ask_question" and question_topic:
+        symptom_text = (session.symptom_text or "") + " " + " ".join(session.collected_symptoms)
+        if _is_irrelevant_topic(question_topic, symptom_text, session.conversation_history):
+            logger.warning(
+                f"Irrelevant topic blocked: topic={question_topic!r}, symptom={session.symptom_text!r}"
+            )
+            # Force a re-call with explicit instruction
+            regen_prompt = (
+                diagnostic_prompt
+                + f"\n\n【重要】「{question_topic}」はユーザーの症状と無関係です。"
+                "ユーザーが報告した症状の文面に含まれるトピックだけに基づいて質問してください。"
+                "症状の原因を絞り込むために、操作の状況・条件・再現性など、症状に直結する質問をしてください。"
+            )
+            try:
+                result = await _llm_call(provider, regen_prompt)
+                action = result.get("action", "ask_question")
+                message = result.get("message", message)
+                urgency_flag = result.get("urgency_flag", urgency_flag)
+                choices = result.get("choices")
+                can_drive_llm = result.get("can_drive", can_drive_llm)
+                session.rewritten_query = result.get("rewritten_query", session.rewritten_query)
+                session.last_confidence = result.get("confidence_to_answer", session.last_confidence)
+                question_topic = result.get("question_topic", "")
+            except Exception as e:
+                logger.warning(f"Topic guard re-call failed: {e}")
 
     # ---------------------------------------------------------------
-    # Task 2: 待ちメッセージ検出 → リトライして provide_answer を取得
+    # 9. 待ちメッセージ検出 → リトライして provide_answer を取得
     # ---------------------------------------------------------------
     if action == "ask_question" and _is_waiting_message(message):
         logger.warning(f"Waiting message detected, retrying: {message!r}")
@@ -353,14 +407,15 @@ async def handle_diagnosing(session: SessionState, request: ChatRequest) -> Chat
             urgency_flag = result.get("urgency_flag", urgency_flag)
             choices = result.get("choices")
             can_drive_llm = result.get("can_drive", can_drive_llm)
+            session.rewritten_query = result.get("rewritten_query", session.rewritten_query)
+            session.last_confidence = result.get("confidence_to_answer", session.last_confidence)
         except Exception as e:
             logger.warning(f"Retry LLM call failed: {e}")
             action = "provide_answer"
 
-    # 7. Check urgency_flag from LLM
+    # 10. Check urgency_flag from LLM
     if urgency_flag in ("high", "critical"):
         session.urgency_level = urgency_flag
-        # LLM の can_drive 優先。None なら urgency_flag で推定（critical → False）
         session.can_drive = can_drive_llm if can_drive_llm is not None else (urgency_flag != "critical")
         if urgency_flag == "critical":
             session.current_step = ChatStep.RESERVATION
@@ -368,7 +423,7 @@ async def handle_diagnosing(session: SessionState, request: ChatRequest) -> Chat
             from app.chat_flow.step_reservation import handle_reservation
             return await handle_reservation(session, request)
 
-    # 8. Dispatch based on action
+    # 11. Dispatch based on action
     if action == "escalate":
         session.urgency_level = urgency_flag if urgency_flag in ("high", "critical") else "high"
         session.can_drive = session.urgency_level != "critical"
@@ -408,7 +463,6 @@ async def handle_diagnosing(session: SessionState, request: ChatRequest) -> Chat
 
         # C) high/critical → 強い警告 + 予約導線（reservation_choice）
         if urgency_flag in ("high", "critical"):
-            # True のときだけ自走可。False も None（不明）も → 自走禁止扱い
             effective_can_drive = can_drive_llm if can_drive_llm is True else False
             session.urgency_level = urgency_flag
             session.can_drive = effective_can_drive
@@ -467,7 +521,6 @@ async def handle_diagnosing(session: SessionState, request: ChatRequest) -> Chat
     if action == "clarify_term":
         session.conversation_history.append({"role": "assistant", "content": message})
         session.last_questions.append(message)
-        # A) 「わからない」「自由入力」を末尾に必ず追加
         prompt_choices = _append_default_choices(choices)
         return ChatResponse(
             session_id=session.session_id,
@@ -480,28 +533,11 @@ async def handle_diagnosing(session: SessionState, request: ChatRequest) -> Chat
         )
 
     # ---------------------------------------------------------------
-    # Task 3: 候補提示 — candidates_just_triggered かつ choices が揃っていれば
-    #          diagnosis_candidates として返す（Tip 1: ラベル補強）
-    # ---------------------------------------------------------------
-    if candidates_just_triggered and choices and len(choices) >= 4:
-        prompt_choices = [{"value": c, "label": _enrich_candidate_label(c)} for c in choices]
-        session.conversation_history.append({"role": "assistant", "content": message})
-        return ChatResponse(
-            session_id=session.session_id,
-            current_step=ChatStep.DIAGNOSING.value,
-            prompt=PromptInfo(
-                type="diagnosis_candidates",
-                message=message,
-                choices=prompt_choices,
-            ),
-        )
-
-    # ---------------------------------------------------------------
-    # 9. ask_question — duplicate guard
+    # 12. ask_question — duplicate guard (lightweight)
     # ---------------------------------------------------------------
     if _is_duplicate_question(message, session.last_questions):
         logger.warning(f"Duplicate question detected, replacing: {message!r}")
-        message = _pick_fallback_question(session)
+        message = "他に気になる症状や状況があれば教えてください。"
 
     # A) 「わからない」「自由入力」を末尾に必ず追加
     choices_for_prompt = _append_default_choices(choices)

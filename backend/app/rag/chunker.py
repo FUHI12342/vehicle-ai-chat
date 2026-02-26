@@ -34,6 +34,11 @@ WARNING_KEYWORDS = [
     "火災",
     "感電",
     "爆発",
+    "禁止",
+    "厳禁",
+    "絶対に",
+    "死亡",
+    "重傷",
 ]
 
 TROUBLESHOOTING_KEYWORDS = [
@@ -48,6 +53,13 @@ TROUBLESHOOTING_KEYWORDS = [
     "振動",
     "警告灯",
     "エラー",
+    "不具合",
+    "作動しない",
+    "効かない",
+    "漏れ",
+    "オーバーヒート",
+    "診断",
+    "修理",
 ]
 
 PROCEDURE_KEYWORDS = [
@@ -57,6 +69,11 @@ PROCEDURE_KEYWORDS = [
     "交換",
     "取り付け",
     "取り外し",
+    "調整",
+    "補充",
+    "充填",
+    "確認方法",
+    "の仕方",
 ]
 
 SPEC_KEYWORDS = [
@@ -65,6 +82,12 @@ SPEC_KEYWORDS = [
     "スペック",
     "容量",
     "規格",
+    "定格",
+    "寸法",
+    "重量",
+    "推奨",
+    "適合",
+    "型式",
 ]
 
 _RX_EXCLUDE_WARNING_LAMP = re.compile(r"(警告\s*灯|表示\s*灯)")
@@ -81,26 +104,38 @@ def _strip_lamp_titles_for_warning(text: str) -> str:
 
 def _detect_content_type(text: str) -> str:
     t = text or ""
-    lower = t.lower()
 
+    # Warning は最優先（安全担保）— 1つでもマッチすれば即 warning
     safe_text = _strip_lamp_titles_for_warning(t)
     safe_lower = safe_text.lower()
-
     for kw in WARNING_KEYWORDS:
         if kw.lower() in safe_lower:
             return "warning"
 
+    # 残り3タイプはスコアリング方式: キーワードマッチ数で判定
+    scores: dict[str, int] = {
+        "troubleshooting": 0,
+        "procedure": 0,
+        "specification": 0,
+    }
     for kw in TROUBLESHOOTING_KEYWORDS:
         if kw in t:
-            return "troubleshooting"
-
+            scores["troubleshooting"] += 1
     for kw in PROCEDURE_KEYWORDS:
         if kw in t:
-            return "procedure"
-
+            scores["procedure"] += 1
     for kw in SPEC_KEYWORDS:
         if kw in t:
-            return "specification"
+            scores["specification"] += 1
+
+    max_score = max(scores.values())
+    if max_score == 0:
+        return "general"
+
+    # 最大スコアのタイプを採用（同点時は具体的なタイプ優先: specification > procedure > troubleshooting）
+    for content_type in ("specification", "procedure", "troubleshooting"):
+        if scores[content_type] == max_score:
+            return content_type
 
     return "general"
 

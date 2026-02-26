@@ -42,4 +42,7 @@ class SessionState(BaseModel):
     spec_check_shown: bool = False
     spec_rag_sources: list[dict] = []
     spec_hint: bool = False
-    answered_dimensions: list[str] = []
+    conversation_summary: str = ""
+    rewritten_query: str = ""
+    last_confidence: float = 0.0
+    solutions_tried: int = 0
