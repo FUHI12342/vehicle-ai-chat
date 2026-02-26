@@ -72,7 +72,6 @@ DIAGNOSTIC_SCHEMA = {
             "choices": {
                 "type": ["array", "null"],
                 "items": {"type": "string"},
-                "uniqueItems": True,
                 "description": "ユーザーに提示する選択肢（任意）。重複禁止。質問の回答として適切な選択肢のみ。",
             },
             "can_drive": {
