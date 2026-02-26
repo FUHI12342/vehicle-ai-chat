@@ -108,6 +108,7 @@ export function ChatContainer() {
     startSession,
     sendMessage,
     sendAction,
+    rewindToTurn,
     resetChat,
   } = useChat();
 
@@ -217,7 +218,7 @@ export function ChatContainer() {
       </div>
 
       {/* Messages */}
-      <MessageList messages={messages} />
+      <MessageList messages={messages} currentStep={currentStep} onRewind={rewindToTurn} />
 
       {/* Loading indicator */}
       {isLoading && <TypingIndicator />}

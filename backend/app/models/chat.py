@@ -6,6 +6,7 @@ class ChatRequest(BaseModel):
     message: str | None = None
     action: str | None = None
     action_value: str | None = None
+    rewind_to_turn: int | None = None
 
 
 class RAGSource(BaseModel):
@@ -19,6 +20,8 @@ class UrgencyInfo(BaseModel):
     level: str = "low"
     requires_visit: bool = False
     reasons: list[str] = []
+    can_drive: bool | None = None
+    visit_urgency: str | None = None
 
 
 class PromptInfo(BaseModel):
@@ -37,3 +40,6 @@ class ChatResponse(BaseModel):
     prompt: PromptInfo
     urgency: UrgencyInfo | None = None
     rag_sources: list[RAGSource] = []
+    manual_coverage: str | None = None
+    diagnostic_turn: int | None = None
+    rewound_to_turn: int | None = None

@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useRef } from "react";
 import { sendChat } from "@/lib/api";
-import type { ChatMessage, ChatResponse, UrgencyInfo } from "@/lib/types";
+import type { ChatMessage, ChatResponse } from "@/lib/types";
 
 export function useChat() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -25,6 +25,8 @@ export function useChat() {
       prompt: response.prompt,
       urgency: response.urgency,
       rag_sources: response.rag_sources,
+      manualCoverage: response.manual_coverage,
+      diagnosticTurn: response.diagnostic_turn,
       timestamp: new Date(),
     };
     setMessages((prev) => [...prev, msg]);
@@ -54,6 +56,7 @@ export function useChat() {
         id: genId(),
         role: "user",
         content: message,
+        diagnosticTurn: currentStep === "diagnosing" ? latestResponse?.diagnostic_turn : undefined,
         timestamp: new Date(),
       };
       setMessages((prev) => [...prev, userMsg]);
@@ -73,7 +76,7 @@ export function useChat() {
         setIsLoading(false);
       }
     },
-    [sessionId, addAssistantMessage]
+    [sessionId, currentStep, latestResponse, addAssistantMessage]
   );
 
   const sendAction = useCallback(
@@ -83,6 +86,7 @@ export function useChat() {
           id: genId(),
           role: "user",
           content: displayText,
+          diagnosticTurn: currentStep === "diagnosing" ? latestResponse?.diagnostic_turn : undefined,
           timestamp: new Date(),
         };
         setMessages((prev) => [...prev, userMsg]);
@@ -103,7 +107,43 @@ export function useChat() {
         setIsLoading(false);
       }
     },
-    [sessionId, addAssistantMessage]
+    [sessionId, currentStep, latestResponse, addAssistantMessage]
+  );
+
+  const rewindToTurn = useCallback(
+    async (turn: number) => {
+      setIsLoading(true);
+      try {
+        const response = await sendChat({
+          session_id: sessionId,
+          message: null,
+          action: null,
+          action_value: null,
+          rewind_to_turn: turn,
+        });
+        setSessionId(response.session_id);
+        setCurrentStep(response.current_step);
+        setLatestResponse(response);
+
+        // Trim messages to the turn being rewound to:
+        // Find the user message with that diagnosticTurn and remove it and everything after
+        if (response.rewound_to_turn != null) {
+          setMessages((prev) => {
+            // Find the index of the user message that triggered the target turn
+            const idx = prev.findIndex(
+              (m) => m.role === "user" && m.diagnosticTurn != null && m.diagnosticTurn >= response.rewound_to_turn!
+            );
+            if (idx > 0) {
+              return prev.slice(0, idx);
+            }
+            return prev;
+          });
+        }
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [sessionId]
   );
 
   const resetChat = useCallback(() => {
@@ -123,6 +163,7 @@ export function useChat() {
     startSession,
     sendMessage,
     sendAction,
+    rewindToTurn,
     resetChat,
   };
 }

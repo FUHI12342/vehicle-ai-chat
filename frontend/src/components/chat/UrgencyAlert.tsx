@@ -1,5 +1,6 @@
 import type { UrgencyInfo } from "@/lib/types";
 import { URGENCY_COLORS } from "@/lib/constants";
+import { ja } from "@/i18n/ja";
 
 interface UrgencyAlertProps {
   urgency: UrgencyInfo;
@@ -7,6 +8,9 @@ interface UrgencyAlertProps {
 
 export function UrgencyAlert({ urgency }: UrgencyAlertProps) {
   const colors = URGENCY_COLORS[urgency.level];
+  const visitLabel = urgency.visit_urgency
+    ? ja.visitUrgency[urgency.visit_urgency]
+    : null;
 
   return (
     <div
@@ -26,6 +30,18 @@ export function UrgencyAlert({ urgency }: UrgencyAlertProps) {
           緊急度: {colors.label}
         </span>
       </div>
+
+      {urgency.can_drive === false && (
+        <p className="text-red-700 font-bold text-sm mb-2">
+          🚨 運転を中止してください
+        </p>
+      )}
+
+      {visitLabel && (
+        <p className={`text-sm font-medium ${colors.text} mb-2`}>
+          🏥 {visitLabel}
+        </p>
+      )}
 
       {urgency.reasons.length > 0 && (
         <ul className={`text-sm ${colors.text} space-y-1 mb-3`}>

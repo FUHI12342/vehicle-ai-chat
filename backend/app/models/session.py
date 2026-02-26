@@ -46,3 +46,6 @@ class SessionState(BaseModel):
     rewritten_query: str = ""
     last_confidence: float = 0.0
     solutions_tried: int = 0
+    manual_coverage: str | None = None
+    visit_urgency: str | None = None
+    state_snapshots: list[dict] = []

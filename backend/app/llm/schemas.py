@@ -46,7 +46,7 @@ DIAGNOSTIC_SCHEMA = {
     "strict": True,
     "schema": {
         "type": "object",
-        "required": ["action", "message", "urgency_flag", "reasoning", "term_to_clarify", "choices", "can_drive", "confidence_to_answer", "rewritten_query", "question_topic"],
+        "required": ["action", "message", "urgency_flag", "reasoning", "term_to_clarify", "choices", "can_drive", "confidence_to_answer", "rewritten_query", "question_topic", "manual_coverage", "visit_urgency"],
         "additionalProperties": False,
         "properties": {
             "action": {
@@ -90,6 +90,16 @@ DIAGNOSTIC_SCHEMA = {
                 "type": "string",
                 "description": "この質問が扱うトピック（例: 操作感、発生時期、色、温度など）。質問しない場合は空文字",
             },
+            "manual_coverage": {
+                "type": "string",
+                "enum": ["covered", "partially_covered", "not_covered"],
+                "description": "ユーザーの症状がマニュアルでカバーされているか。RAG情報が無関係/空なら not_covered。",
+            },
+            "visit_urgency": {
+                "type": ["string", "null"],
+                "enum": ["immediate", "today", "this_week", "when_convenient", None],
+                "description": "販売店来場の緊急度。can_driveとは独立。provide_answer/escalate時に設定。質問段階はnull。",
+            },
         },
     },
 }
@@ -100,7 +110,7 @@ URGENCY_SCHEMA = {
     "strict": True,
     "schema": {
         "type": "object",
-        "required": ["level", "can_drive", "reasons", "recommendation"],
+        "required": ["level", "can_drive", "reasons", "recommendation", "visit_urgency"],
         "additionalProperties": False,
         "properties": {
             "level": {
@@ -117,6 +127,11 @@ URGENCY_SCHEMA = {
             },
             "recommendation": {
                 "type": "string",
+            },
+            "visit_urgency": {
+                "type": "string",
+                "enum": ["immediate", "today", "this_week", "when_convenient"],
+                "description": "販売店来場の緊急度。immediate=今すぐ来場/ロードサービス、today=本日中、this_week=今週中、when_convenient=ご都合の良い時に",
             },
         },
     },

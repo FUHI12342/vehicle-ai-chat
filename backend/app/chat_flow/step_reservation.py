@@ -74,17 +74,30 @@ async def handle_reservation(session: SessionState, request: ChatRequest) -> Cha
         reasons=[],
     )
 
+    visit_urgency = session.visit_urgency or "today"
     if session.booking_type == "dispatch":
         message = (
-            "⚠️ 緊急度: 緊急\n\n"
+            "🚨 今すぐロードサービスまたは来場が必要です。\n\n"
             "走行が危険な状態と判断されます。\n"
             "出張整備の手配をおすすめします。\n\n"
             "出張手配の予約を行いますか？"
         )
+    elif visit_urgency == "immediate":
+        message = (
+            "🚨 今すぐ来場またはロードサービスが必要です。\n\n"
+            "早急にディーラーまたは整備工場にお越しください。\n\n"
+            "予約を行いますか？"
+        )
+    elif visit_urgency == "today":
+        message = (
+            "⚠️ 本日中の来場をおすすめします。\n\n"
+            "早めにディーラーまたは整備工場での点検をおすすめします。\n\n"
+            "来店予約を行いますか？"
+        )
     else:
         message = (
-            "⚠️ 緊急度: 高\n\n"
-            "早めにディーラーまたは整備工場での点検をおすすめします。\n\n"
+            "⚠️ 今週中の来場をおすすめします。\n\n"
+            "ディーラーまたは整備工場での点検をおすすめします。\n\n"
             "来店予約を行いますか？"
         )
 

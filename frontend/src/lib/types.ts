@@ -3,6 +3,7 @@ export interface ChatRequest {
   message: string | null;
   action: string | null;
   action_value: string | null;
+  rewind_to_turn?: number | null;
 }
 
 export interface RAGSource {
@@ -16,6 +17,8 @@ export interface UrgencyInfo {
   level: "low" | "medium" | "high" | "critical";
   requires_visit: boolean;
   reasons: string[];
+  can_drive?: boolean | null;
+  visit_urgency?: "immediate" | "today" | "this_week" | "when_convenient" | null;
 }
 
 export interface BookingField {
@@ -56,6 +59,9 @@ export interface ChatResponse {
   prompt: PromptInfo;
   urgency?: UrgencyInfo | null;
   rag_sources: RAGSource[];
+  manual_coverage?: "covered" | "partially_covered" | "not_covered" | null;
+  diagnostic_turn?: number | null;
+  rewound_to_turn?: number | null;
 }
 
 export interface Vehicle {
@@ -92,5 +98,7 @@ export interface ChatMessage {
   prompt?: PromptInfo;
   urgency?: UrgencyInfo | null;
   rag_sources?: RAGSource[];
+  manualCoverage?: "covered" | "partially_covered" | "not_covered" | null;
+  diagnosticTurn?: number | null;
   timestamp: Date;
 }

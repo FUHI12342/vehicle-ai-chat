@@ -25,6 +25,12 @@ export const ja = {
     requiresVisit: "ディーラーへの来店をお勧めします",
     bookAppointment: "予約する",
   },
+  visitUrgency: {
+    immediate: "今すぐ来場/ロードサービスが必要です",
+    today: "本日中の来場をおすすめします",
+    this_week: "今週中の来場をおすすめします",
+    when_convenient: "ご都合の良い時に来場をおすすめします",
+  },
   provider: {
     title: "LLMプロバイダー",
     notConfigured: "未設定",

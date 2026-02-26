@@ -77,6 +77,21 @@ DIAGNOSTIC_PROMPT = """あなたは車両トラブル診断AIです。
   NG: "劣化" → OK: "劣化（部品が古くなること）"
   各ラベルは素人が見てすぐ意味がわかるように。20文字以内を目安に
 - choices が不要な場合は null にしてください
+
+【manual_coverage の判定基準】
+- covered: マニュアル関連情報にユーザーの症状の原因/対処法が明確に記載
+- partially_covered: 関連する情報はあるが症状そのものの記載はない
+- not_covered: 該当する記載が一切ない。「関連するマニュアル情報はありません」の場合は必ず not_covered
+- not_covered の場合: urgency_flagを1段階引き上げ、provide_answer時に「マニュアルに記載のない症状のため、ディーラーでの点検を推奨します」を含める
+
+【visit_urgency の判定基準（can_driveとは独立）】
+- immediate: 今すぐ来場またはロードサービスが必要（走行不能、安全に直結する故障）
+- today: 本日中に来場を推奨（警告灯点灯、悪化の兆候あり）
+- this_week: 今週中に来場を推奨（軽微な異常、経過観察では不十分）
+- when_convenient: ご都合の良い時に（消耗品交換、軽微な不具合）
+- can_drive=true でも visit_urgency="today" はありうる（例: 警告灯点灯で走行は可能だが早めの点検推奨）
+- 質問段階（ask_question/clarify_term）では null を返してよい
+- 症状の組み合わせは個別より深刻に評価すること。悪化傾向がある場合は1段階上げること
 {additional_instructions}"""
 
 CONVERSATION_SUMMARY_PROMPT = """以下の車両トラブル診断の会話を200文字以内で要約してください。
@@ -107,7 +122,14 @@ URGENCY_ASSESSMENT_PROMPT = """以下の車両症状の緊急度を評価して�
 
 ## can_drive 判定
 - critical の場合: can_drive = false
-- それ以外: can_drive = true"""
+- それ以外: can_drive = true
+
+## visit_urgency 判定（can_driveとは独立した軸）
+- immediate: 今すぐ来場またはロードサービスが必要
+- today: 本日中に来場を推奨
+- this_week: 今週中に来場を推奨
+- when_convenient: ご都合の良い時に
+- 症状の組み合わせは個別より深刻に評価すること。悪化傾向がある場合は1段階上げること"""
 
 SPEC_CLASSIFICATION_PROMPT = """あなたは車両マニュアルの専門家です。
 ユーザーが報告した症状が「仕様通りの正常動作」か「不具合の可能性」かを判定してください。

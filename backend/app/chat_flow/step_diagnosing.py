@@ -208,6 +208,41 @@ async def _llm_call(provider, diagnostic_prompt: str) -> dict:
 async def handle_diagnosing(session: SessionState, request: ChatRequest) -> ChatResponse:
     user_input = (request.message or "").strip()
 
+    # F1: Rewind handler
+    if request.rewind_to_turn is not None:
+        target_turn = request.rewind_to_turn
+        snapshot_entry = None
+        snapshot_idx = -1
+        for idx, snap in enumerate(session.state_snapshots):
+            if snap["turn"] == target_turn:
+                snapshot_entry = snap
+                snapshot_idx = idx
+                break
+        if snapshot_entry is not None:
+            # Restore state (excluding state_snapshots itself)
+            saved = snapshot_entry["state"]
+            for key, value in saved.items():
+                if key != "state_snapshots":
+                    setattr(session, key, value)
+            # Remove this and all later snapshots
+            session.state_snapshots = session.state_snapshots[:snapshot_idx]
+            # Return last assistant message from conversation_history
+            last_msg = ""
+            for entry in reversed(session.conversation_history):
+                if entry["role"] == "assistant":
+                    last_msg = entry["content"]
+                    break
+            return ChatResponse(
+                session_id=session.session_id,
+                current_step=ChatStep.DIAGNOSING.value,
+                prompt=PromptInfo(type="text", message=last_msg or "やり直しました。症状について教えてください。"),
+                manual_coverage=session.manual_coverage,
+                diagnostic_turn=session.diagnostic_turn,
+                rewound_to_turn=target_turn,
+            )
+        else:
+            logger.warning(f"Rewind target turn {target_turn} not found in snapshots")
+
     # Handle "resolved" action from provide_answer step
     if request.action == "resolved":
         if request.action_value == "yes":
@@ -219,6 +254,8 @@ async def handle_diagnosing(session: SessionState, request: ChatRequest) -> Chat
                     type="text",
                     message="お役に立てて良かったです！他にご質問があれば、新しい問診を開始してください。\n安全運転をお願いいたします。",
                 ),
+                manual_coverage=session.manual_coverage,
+                diagnostic_turn=session.diagnostic_turn,
             )
         elif request.action_value == "no":
             session.solutions_tried += 1
@@ -241,6 +278,8 @@ async def handle_diagnosing(session: SessionState, request: ChatRequest) -> Chat
                 session_id=session.session_id,
                 current_step=ChatStep.DIAGNOSING.value,
                 prompt=PromptInfo(type="text", message="症状について教えてください。"),
+                manual_coverage=session.manual_coverage,
+                diagnostic_turn=session.diagnostic_turn,
             )
 
     if not user_input:
@@ -251,6 +290,8 @@ async def handle_diagnosing(session: SessionState, request: ChatRequest) -> Chat
                 type="text",
                 message="症状について教えてください。",
             ),
+            manual_coverage=session.manual_coverage,
+            diagnostic_turn=session.diagnostic_turn,
         )
 
     # ---------------------------------------------------------------
@@ -259,6 +300,12 @@ async def handle_diagnosing(session: SessionState, request: ChatRequest) -> Chat
     session.collected_symptoms.append(user_input)
     session.conversation_history.append({"role": "user", "content": user_input})
     session.diagnostic_turn += 1
+
+    # F1: Save snapshot after turn increment
+    snapshot = session.model_dump(exclude={"state_snapshots"})
+    session.state_snapshots.append({"turn": session.diagnostic_turn, "state": snapshot})
+    if len(session.state_snapshots) > session.max_diagnostic_turns:
+        session.state_snapshots = session.state_snapshots[-session.max_diagnostic_turns:]
 
     # 2. Keyword-based urgency check (fast path for critical)
     all_symptoms = " ".join(session.collected_symptoms)
@@ -306,6 +353,7 @@ async def handle_diagnosing(session: SessionState, request: ChatRequest) -> Chat
                 type="text",
                 message="LLMプロバイダーが設定されていません。設定を確認してください。",
             ),
+            diagnostic_turn=session.diagnostic_turn,
         )
 
     await _maybe_summarize(session, provider)
@@ -344,6 +392,8 @@ async def handle_diagnosing(session: SessionState, request: ChatRequest) -> Chat
             session_id=session.session_id,
             current_step=ChatStep.DIAGNOSING.value,
             prompt=PromptInfo(type="text", message=fallback_msg),
+            manual_coverage=session.manual_coverage,
+            diagnostic_turn=session.diagnostic_turn,
         )
 
     action = result.get("action", "ask_question")
@@ -353,10 +403,19 @@ async def handle_diagnosing(session: SessionState, request: ChatRequest) -> Chat
     choices = result.get("choices")
     can_drive_llm: bool | None = result.get("can_drive")
 
-    # 8. Save rewritten_query and confidence
+    # 8. Save rewritten_query, confidence, and manual_coverage
     session.rewritten_query = result.get("rewritten_query", "")
     session.last_confidence = result.get("confidence_to_answer", 0.0)
     question_topic = result.get("question_topic", "")
+
+    # F3: manual_coverage
+    manual_coverage = result.get("manual_coverage", "covered")
+    session.manual_coverage = manual_coverage
+
+    # F2: visit_urgency
+    visit_urgency_llm = result.get("visit_urgency")
+    if visit_urgency_llm:
+        session.visit_urgency = visit_urgency_llm
 
     logger.info(
         f"Diagnostic action={action}, urgency={urgency_flag}, "
@@ -413,6 +472,10 @@ async def handle_diagnosing(session: SessionState, request: ChatRequest) -> Chat
             logger.warning(f"Retry LLM call failed: {e}")
             action = "provide_answer"
 
+    # 9b. F3: not_covered urgency bump
+    if manual_coverage == "not_covered" and urgency_flag in ("none", "low"):
+        urgency_flag = "medium"
+
     # 10. Check urgency_flag from LLM
     if urgency_flag in ("high", "critical"):
         session.urgency_level = urgency_flag
@@ -455,9 +518,16 @@ async def handle_diagnosing(session: SessionState, request: ChatRequest) -> Chat
                 choices=spec_choices,
             ),
             rag_sources=rag_sources,
+            manual_coverage=session.manual_coverage,
         )
 
     if action == "provide_answer":
+        # F3: manual_coverage warnings
+        if manual_coverage == "not_covered":
+            message += "\n\n⚠️ マニュアルに記載のない症状のため、ディーラーでの点検を推奨します。"
+        elif manual_coverage == "partially_covered":
+            message += "\n\nℹ️ マニュアルに完全一致する情報はありません。上記は一般的な知識に基づく回答です。"
+
         session.rag_answer = message
         session.conversation_history.append({"role": "assistant", "content": message})
 
@@ -500,6 +570,8 @@ async def handle_diagnosing(session: SessionState, request: ChatRequest) -> Chat
                     booking_type=session.booking_type,
                 ),
                 rag_sources=rag_sources,
+                manual_coverage=session.manual_coverage,
+                diagnostic_turn=session.diagnostic_turn,
             )
 
         # low/medium/none → 解決確認 + 予約へのショートカット
@@ -516,6 +588,7 @@ async def handle_diagnosing(session: SessionState, request: ChatRequest) -> Chat
                 ],
             ),
             rag_sources=rag_sources,
+            manual_coverage=session.manual_coverage,
         )
 
     if action == "clarify_term":
@@ -530,6 +603,7 @@ async def handle_diagnosing(session: SessionState, request: ChatRequest) -> Chat
                 message=message,
                 choices=prompt_choices,
             ),
+            manual_coverage=session.manual_coverage,
         )
 
     # ---------------------------------------------------------------
@@ -552,4 +626,5 @@ async def handle_diagnosing(session: SessionState, request: ChatRequest) -> Chat
             message=message,
             choices=choices_for_prompt,
         ),
+        manual_coverage=session.manual_coverage,
     )

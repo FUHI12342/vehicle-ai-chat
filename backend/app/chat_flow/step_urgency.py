@@ -17,14 +17,18 @@ async def handle_urgency_check(session: SessionState, request: ChatRequest) -> C
     can_drive = assessment.get("can_drive", level != "critical")
     reasons = assessment["reasons"]
     recommendation = assessment.get("recommendation", "")
+    visit_urgency = assessment.get("visit_urgency", "this_week")
 
     session.urgency_level = level
     session.can_drive = can_drive
+    session.visit_urgency = visit_urgency
 
     urgency_info = UrgencyInfo(
         level=level,
         requires_visit=level in ("high", "critical"),
         reasons=reasons,
+        can_drive=can_drive,
+        visit_urgency=visit_urgency,
     )
 
     if level in ("high", "critical"):
