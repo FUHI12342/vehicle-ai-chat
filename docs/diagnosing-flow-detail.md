@@ -230,9 +230,14 @@ _append_default_choices(choices)
   2. value = label = LLMが返した文字列そのまま（変換なし）
   3. 末尾に「わからない」「✏️ 自由入力」を追加（重複除外）
   ↓
+_attach_icons(choices, question_topic)
+  1. question_topic に「警告灯」「ランプ」「表示灯」「インジケーター」が含まれるか判定
+  2. 含まれる場合、各選択肢のlabelにキーワード（エンジン、ABS等）が含まれれば icon パスを付与
+  3. 含まれない場合は何もしない（従来通り）
+  ↓
 [
-  {value: "選択肢A", label: "選択肢A"},
-  {value: "選択肢B", label: "選択肢B"},
+  {value: "選択肢A", label: "選択肢A", icon: "/icons/warning-lights/engine.svg"},  // 警告灯質問時のみ
+  {value: "選択肢B", label: "選択肢B", icon: "/icons/warning-lights/abs.svg"},
   {value: "選択肢C", label: "選択肢C"},
   {value: "dont_know", label: "わからない"},
   {value: "free_input", label: "✏️ 自由入力"},
@@ -392,7 +397,7 @@ ChatResponse:
 PromptInfo:
   type             — text / single_choice / reservation_choice / booking_form / booking_confirm
   message          — 表示メッセージ
-  choices          — 選択肢リスト [{value, label}]
+  choices          — 選択肢リスト [{value, label, icon?}]
   booking_type     — 予約種別
   booking_fields   — フォームフィールド定義
   booking_summary  — 予約確認用サマリー
@@ -465,6 +470,7 @@ query(symptom, vehicle_id, make, model, year)
 | 重複質問検出 | `step_diagnosing.py: _is_duplicate_question` | 同じ質問の繰り返しを防止 |
 | 待ちメッセージ検出 | `step_diagnosing.py: _is_waiting_message` | 「まとめます」等の非実質メッセージを排除 |
 | 選択肢重複排除 | `step_diagnosing.py: _append_default_choices` | LLM返却選択肢の重複除去 |
+| 警告灯アイコン付与 | `step_diagnosing.py: _attach_icons` | 警告灯系質問トピック時に選択肢にアイコンパスを付与 |
 | 仕様ルーティング安全ゲート | `step3_free_text.py: _should_route_to_spec_check` | 危険症状を仕様パスに流さない |
 | 自走来店拒否 | `step_reservation.py` | can_drive=false時にvisitを拒否 |
 | manual_coverage urgency引き上げ | `step_diagnosing.py` | not_covered時にurgencyをmediumに引き上げ |
@@ -610,6 +616,8 @@ json.loads(response.content)
 1. action/urgency_flag/manual_coverage → セッション状態に保存
   ↓
 2. choices → _append_default_choices() で重複排除 + デフォルト追加
+  ↓
+2b. choices → _attach_icons() で警告灯アイコン付与（question_topicが警告灯系の場合）
   ↓
 3. question_topic → _is_irrelevant_topic() で関連性チェック
    NG → プロンプト修正して再LLM呼び出し

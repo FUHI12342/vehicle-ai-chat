@@ -1,0 +1,1478 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Vehicle AI Chat — システム改善報告</title>
+<style>
+  /* ── Reset & Base ── */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { font-size: 16px; scroll-behavior: smooth; }
+  body {
+    font-family: "Hiragino Kaku Gothic ProN", "Noto Sans JP", "Segoe UI", sans-serif;
+    background: #0f172a; color: #e2e8f0;
+    line-height: 1.7;
+  }
+
+  /* ── Slide Container ── */
+  .slide {
+    min-height: 100vh; padding: 3rem 4rem;
+    display: flex; flex-direction: column; justify-content: center;
+    position: relative; overflow: hidden;
+  }
+  .slide::before {
+    content: ''; position: absolute; inset: 0; opacity: 0.04;
+    background: radial-gradient(circle at 30% 40%, #3b82f6 0%, transparent 60%),
+                radial-gradient(circle at 80% 70%, #8b5cf6 0%, transparent 50%);
+    pointer-events: none;
+  }
+
+  /* ── Slide Numbers ── */
+  .slide-num {
+    position: absolute; bottom: 1.5rem; right: 2rem;
+    font-size: 0.8rem; color: #475569; font-weight: 600;
+  }
+
+  /* ── Typography ── */
+  h1 { font-size: 2.6rem; font-weight: 800; letter-spacing: -0.02em; }
+  h2 { font-size: 2rem; font-weight: 700; margin-bottom: 1.5rem; letter-spacing: -0.01em; }
+  h3 { font-size: 1.3rem; font-weight: 700; margin-bottom: 0.8rem; }
+  .subtitle { font-size: 1.2rem; color: #94a3b8; margin-top: 0.5rem; }
+  .accent { color: #60a5fa; }
+  .accent-green { color: #34d399; }
+  .accent-amber { color: #fbbf24; }
+  .accent-red { color: #f87171; }
+  .accent-purple { color: #a78bfa; }
+  .small { font-size: 0.85rem; color: #94a3b8; }
+  .label {
+    display: inline-block; font-size: 0.7rem; font-weight: 700;
+    padding: 0.15rem 0.5rem; border-radius: 4px; text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+  .label-blue { background: #1e3a5f; color: #60a5fa; }
+  .label-green { background: #064e3b; color: #34d399; }
+  .label-red { background: #7f1d1d; color: #fca5a5; }
+  .label-amber { background: #78350f; color: #fbbf24; }
+  .label-purple { background: #4c1d95; color: #c4b5fd; }
+
+  /* ── Layout ── */
+  .cols { display: grid; gap: 2rem; }
+  .cols-2 { grid-template-columns: 1fr 1fr; }
+  .cols-3 { grid-template-columns: 1fr 1fr 1fr; }
+  .cols-4 { grid-template-columns: 1fr 1fr 1fr 1fr; }
+  .cols-1-2 { grid-template-columns: 1fr 2fr; }
+  .cols-2-1 { grid-template-columns: 2fr 1fr; }
+
+  /* ── Cards ── */
+  .card {
+    background: rgba(30, 41, 59, 0.7); border: 1px solid #334155;
+    border-radius: 12px; padding: 1.5rem;
+    backdrop-filter: blur(8px);
+  }
+  .card-danger { border-color: #ef4444; background: rgba(127, 29, 29, 0.2); }
+  .card-success { border-color: #10b981; background: rgba(6, 78, 59, 0.2); }
+  .card-warning { border-color: #f59e0b; background: rgba(120, 53, 15, 0.2); }
+  .card-blue { border-color: #3b82f6; background: rgba(30, 58, 95, 0.25); }
+  .card-purple { border-color: #8b5cf6; background: rgba(76, 29, 149, 0.2); }
+
+  /* ── Before / After ── */
+  .before-after { display: grid; grid-template-columns: 1fr auto 1fr; gap: 1.5rem; align-items: start; }
+  .arrow-col { display: flex; align-items: center; padding-top: 3rem; }
+  .arrow-col svg { width: 48px; height: 48px; color: #60a5fa; }
+
+  /* ── Flow / Pipeline ── */
+  .flow {
+    display: flex; align-items: center; gap: 0; flex-wrap: wrap;
+    justify-content: center;
+  }
+  .flow-node {
+    background: rgba(30, 58, 95, 0.5); border: 2px solid #3b82f6;
+    border-radius: 10px; padding: 0.6rem 1rem;
+    font-size: 0.85rem; font-weight: 600; text-align: center;
+    min-width: 100px; position: relative;
+  }
+  .flow-node.active { border-color: #f59e0b; background: rgba(120, 53, 15, 0.3); color: #fbbf24; }
+  .flow-node.danger { border-color: #ef4444; background: rgba(127, 29, 29, 0.3); color: #fca5a5; }
+  .flow-node.success { border-color: #10b981; background: rgba(6, 78, 59, 0.3); color: #34d399; }
+  .flow-node.purple { border-color: #8b5cf6; background: rgba(76, 29, 149, 0.3); color: #c4b5fd; }
+  .flow-arrow {
+    width: 32px; height: 2px; background: #475569; position: relative;
+    flex-shrink: 0;
+  }
+  .flow-arrow::after {
+    content: ''; position: absolute; right: -1px; top: -4px;
+    border: 5px solid transparent; border-left-color: #475569;
+  }
+  .flow-arrow-down {
+    width: 2px; height: 28px; background: #475569; position: relative;
+    margin: 0 auto;
+  }
+  .flow-arrow-down::after {
+    content: ''; position: absolute; bottom: -1px; left: -4px;
+    border: 5px solid transparent; border-top-color: #475569;
+  }
+
+  /* ── Table ── */
+  table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+  th { background: rgba(30, 58, 95, 0.5); color: #93c5fd; font-weight: 700;
+       padding: 0.6rem 0.8rem; text-align: left; border-bottom: 2px solid #334155; }
+  td { padding: 0.55rem 0.8rem; border-bottom: 1px solid #1e293b; }
+  tr:hover td { background: rgba(51, 65, 85, 0.3); }
+
+  /* ── Code ── */
+  code {
+    font-family: "SF Mono", "Fira Code", monospace;
+    background: rgba(15, 23, 42, 0.8); border: 1px solid #334155;
+    padding: 0.1rem 0.4rem; border-radius: 4px; font-size: 0.82rem;
+    color: #93c5fd;
+  }
+  pre {
+    background: rgba(15, 23, 42, 0.9); border: 1px solid #334155;
+    border-radius: 8px; padding: 1rem 1.2rem; overflow-x: auto;
+    font-size: 0.78rem; line-height: 1.6;
+  }
+  pre code { background: none; border: none; padding: 0; }
+
+  /* ── Diagram ── */
+  .diagram-box {
+    background: rgba(15, 23, 42, 0.6); border: 1px solid #334155;
+    border-radius: 12px; padding: 1.5rem; text-align: center;
+  }
+
+  /* ── List ── */
+  ul, ol { padding-left: 1.5rem; }
+  li { margin-bottom: 0.4rem; }
+  li::marker { color: #60a5fa; }
+
+  /* ── Divider ── */
+  .divider {
+    height: 1px; background: linear-gradient(90deg, transparent, #334155 30%, #334155 70%, transparent);
+    margin: 1.5rem 0;
+  }
+
+  /* ── Badge ── */
+  .badge {
+    display: inline-flex; align-items: center; gap: 0.3rem;
+    padding: 0.25rem 0.7rem; border-radius: 20px; font-size: 0.75rem; font-weight: 600;
+  }
+  .badge-red { background: #7f1d1d; color: #fca5a5; }
+  .badge-amber { background: #78350f; color: #fbbf24; }
+  .badge-green { background: #064e3b; color: #34d399; }
+  .badge-blue { background: #1e3a5f; color: #60a5fa; }
+  .badge-gray { background: #1e293b; color: #94a3b8; }
+
+  /* ── Strikethrough ── */
+  .strike { text-decoration: line-through; color: #64748b; }
+
+  /* ── Title slide ── */
+  .title-slide { text-align: center; }
+  .title-slide h1 { font-size: 3rem; margin-bottom: 0.5rem; }
+  .title-date { font-size: 1rem; color: #64748b; margin-top: 2rem; }
+
+  /* ── Print / Screen ── */
+  @media print {
+    .slide { page-break-after: always; min-height: auto; padding: 2rem; }
+    body { background: #fff; color: #1e293b; }
+    .card { background: #f8fafc; border-color: #e2e8f0; }
+  }
+
+  /* ── Spacer ── */
+  .mt-1 { margin-top: 0.5rem; } .mt-2 { margin-top: 1rem; } .mt-3 { margin-top: 1.5rem; }
+  .mb-1 { margin-bottom: 0.5rem; } .mb-2 { margin-bottom: 1rem; }
+  .gap-1 { gap: 0.5rem; } .gap-2 { gap: 1rem; }
+  .text-center { text-align: center; }
+
+  /* ── Highlight box ── */
+  .highlight-box {
+    border-left: 4px solid #3b82f6; background: rgba(30, 58, 95, 0.2);
+    padding: 1rem 1.2rem; border-radius: 0 8px 8px 0; margin: 1rem 0;
+  }
+  .highlight-box.amber { border-left-color: #f59e0b; background: rgba(120, 53, 15, 0.15); }
+  .highlight-box.red { border-left-color: #ef4444; background: rgba(127, 29, 29, 0.15); }
+  .highlight-box.green { border-left-color: #10b981; background: rgba(6, 78, 59, 0.15); }
+
+  /* ── Comparison ── */
+  .comparison-header { font-size: 1.1rem; font-weight: 700; margin-bottom: 0.8rem; display: flex; align-items: center; gap: 0.5rem; }
+</style>
+</head>
+<body>
+
+<!-- ============================================ -->
+<!-- SLIDE 1 — Title -->
+<!-- ============================================ -->
+<div class="slide title-slide">
+  <div>
+    <span class="label label-blue" style="font-size: 0.9rem; padding: 0.3rem 0.8rem;">Vehicle AI Chat System</span>
+    <h1 class="mt-2">システム改善報告</h1>
+    <p class="subtitle">ハードコード辞書方式 → AI駆動型アーキテクチャへの進化</p>
+    <div class="divider" style="max-width: 400px; margin: 2rem auto;"></div>
+    <p class="small">車両トラブル診断AIチャットシステム</p>
+    <p class="title-date">2026年2月</p>
+  </div>
+  <span class="slide-num">1</span>
+</div>
+
+<!-- ============================================ -->
+<!-- SLIDE 2 — Agenda -->
+<!-- ============================================ -->
+<div class="slide">
+  <h2><span class="accent">目次</span></h2>
+  <div class="cols cols-2 mt-2">
+    <div>
+      <div class="card mb-2">
+        <h3>Part 1: 改善の概要</h3>
+        <ul>
+          <li>以前の問題点 — ハードコード辞書方式</li>
+          <li>改善後の設計 — AI完結型アーキテクチャ</li>
+          <li>Before / After 比較</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>Part 2: 診断フロー</h3>
+        <ul>
+          <li>全体のステートマシン</li>
+          <li>問診ループの詳細</li>
+          <li>Structured Outputs</li>
+        </ul>
+      </div>
+    </div>
+    <div>
+      <div class="card mb-2">
+        <h3>Part 3: 安全機能</h3>
+        <ul>
+          <li>危険度判定（2段階評価）</li>
+          <li>マニュアル記載外検出</li>
+          <li>チャンキング（RAG前処理）</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>Part 4: UX機能</h3>
+        <ul>
+          <li>やり直し（Rewind）機能</li>
+          <li>画像選択カード（警告灯アイコン）</li>
+          <li>まとめと今後</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+  <span class="slide-num">2</span>
+</div>
+
+<!-- ============================================ -->
+<!-- SLIDE 3 — The Problem: Hardcoded System -->
+<!-- ============================================ -->
+<div class="slide">
+  <span class="label label-red mb-1">Part 1</span>
+  <h2>以前の問題点 — <span class="accent-red">ハードコード辞書方式</span></h2>
+
+  <div class="cols cols-2 mt-2">
+    <div>
+      <div class="card card-danger">
+        <h3>問題1: 用語変換辞書（バックエンド）</h3>
+        <pre><code># diagnostic_config.yaml（削除済み）
+candidate_hints:
+  エンジン: "エンジン内部異常（振動/異音）"
+  ブレーキ: "ブレーキ系統異常"
+  ハンドル: "ステアリング異常"
+  ...</code></pre>
+        <p class="small mt-1">
+          「エンジン<b>はかかっていますか？</b>」の選択肢に<br>
+          「エンジン」が含まれるだけで → 「エンジン内部異常」に書き換え
+        </p>
+        <div class="highlight-box red mt-2">
+          <b>実害:</b> ユーザーが「はい/いいえ」で答えたい質問に「エンジン内部異常（振動/異音）」という不適切な選択肢が出現
+        </div>
+      </div>
+    </div>
+    <div>
+      <div class="card card-danger">
+        <h3>問題2: ラベル変換辞書（フロントエンド）</h3>
+        <pre><code>// ChatContainer.tsx（削除済み）
+const LABEL_MAP: Record&lt;string, string&gt; = {
+  "エンジン": "エンジン内部異常（振動/異音）",
+  "ブレーキ": "ブレーキ系統異常",
+  // ... 30エントリ
+};
+const HINT_MAP = { ... }; // 5エントリ</code></pre>
+        <p class="small mt-1">
+          バックエンドと<b>同じ辞書がフロントにも重複</b>して存在。<br>
+          LLMが返した適切な選択肢をさらに書き換えていた。
+        </p>
+        <div class="highlight-box red mt-2">
+          <b>実害:</b> 二重変換により、LLMの出力品質がどれだけ良くても最終表示が不適切に
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card card-danger mt-2">
+    <h3>問題3: 選択肢の重複</h3>
+    <p>重複排除のロジックが無く、LLMが似た選択肢を複数返すとそのまま全て表示。辞書変換後にさらに重複が増幅。</p>
+  </div>
+  <span class="slide-num">3</span>
+</div>
+
+<!-- ============================================ -->
+<!-- SLIDE 4 — Hardcoded: Visual Example -->
+<!-- ============================================ -->
+<div class="slide">
+  <h2>ハードコード方式の<span class="accent-red">具体的な問題例</span></h2>
+
+  <div class="diagram-box mt-2">
+    <div class="flow" style="gap: 0.5rem;">
+      <div class="flow-node" style="min-width: 220px;">
+        <div class="small" style="color: #94a3b8;">LLMの出力</div>
+        <div style="margin-top: 0.3rem;">質問: エンジンはかかっていますか？</div>
+        <div style="margin-top: 0.3rem; font-size: 0.8rem;">choices: ["かかっている", "かかっていない"]</div>
+      </div>
+      <div class="flow-arrow"></div>
+      <div class="flow-node danger" style="min-width: 220px;">
+        <div class="small" style="color: #fca5a5;">バックエンド辞書 _enrich_candidate_label()</div>
+        <div style="margin-top: 0.3rem; font-size: 0.8rem;">
+          "かかっていない"に<br>"エンジン"が含まれる →<br>
+          <b>"エンジン内部異常（振動/異音）"</b> に強制変換
+        </div>
+      </div>
+      <div class="flow-arrow"></div>
+      <div class="flow-node danger" style="min-width: 220px;">
+        <div class="small" style="color: #fca5a5;">フロントエンド LABEL_MAP</div>
+        <div style="margin-top: 0.3rem; font-size: 0.8rem;">
+          さらに同じ辞書で二重変換
+        </div>
+      </div>
+      <div class="flow-arrow"></div>
+      <div class="flow-node danger" style="min-width: 220px;">
+        <div class="small" style="color: #fca5a5;">ユーザーに表示</div>
+        <div style="margin-top: 0.3rem;">
+          <span class="badge badge-red">不適切</span><br>
+          ❶ エンジン内部異常（振動/異音）<br>
+          ❷ エンジン内部異常（振動/異音）<br>
+          ❸ わからない
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="highlight-box red mt-3">
+    <b>根本原因:</b> 部分文字列マッチ（substring matching）で「エンジン」を含む文字列を全て変換していた。<br>
+    「エンジンが<u>かかっていない</u>」→「エンジン」にマッチ →「エンジン内部異常」に置換 — 文脈を完全に無視。
+  </div>
+
+  <span class="slide-num">4</span>
+</div>
+
+<!-- ============================================ -->
+<!-- SLIDE 5 — Before / After -->
+<!-- ============================================ -->
+<div class="slide">
+  <h2>Before / After — <span class="accent">アーキテクチャの変化</span></h2>
+
+  <div class="before-after mt-2">
+    <!-- Before -->
+    <div class="card card-danger">
+      <div class="comparison-header">
+        <span class="badge badge-red">BEFORE</span> ハードコード辞書方式
+      </div>
+      <div class="divider"></div>
+      <div style="font-size: 0.85rem;">
+        <p><b>選択肢の生成:</b></p>
+        <div class="flow" style="flex-direction: column; gap: 0; margin: 0.8rem 0;">
+          <div class="flow-node danger" style="width: 100%;">LLMが選択肢を生成</div>
+          <div class="flow-arrow-down"></div>
+          <div class="flow-node danger" style="width: 100%;">バックエンド: 辞書で強制変換</div>
+          <div class="flow-arrow-down"></div>
+          <div class="flow-node danger" style="width: 100%;">フロントエンド: 辞書で二重変換</div>
+          <div class="flow-arrow-down"></div>
+          <div class="flow-node danger" style="width: 100%;">重複チェックなし → 表示</div>
+        </div>
+        <p class="mt-1"><b>品質制御:</b></p>
+        <ul>
+          <li class="strike">LLMの出力品質を信頼しない</li>
+          <li class="strike">辞書で後付け変換</li>
+          <li class="strike">文脈を考慮しない</li>
+          <li class="strike">重複排除なし</li>
+        </ul>
+        <p class="mt-1"><b>削除したファイル:</b></p>
+        <ul>
+          <li><code class="strike">diagnostic_config.yaml</code></li>
+          <li><code class="strike">diagnostic_config_loader.py</code></li>
+          <li><code class="strike">_enrich_candidate_label()</code></li>
+          <li><code class="strike">LABEL_MAP / HINT_MAP</code></li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- Arrow -->
+    <div class="arrow-col">
+      <svg viewBox="0 0 48 48" fill="none"><path d="M8 24h28m0 0l-8-8m8 8l-8 8" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </div>
+
+    <!-- After -->
+    <div class="card card-success">
+      <div class="comparison-header">
+        <span class="badge badge-green">AFTER</span> AI完結型アーキテクチャ
+      </div>
+      <div class="divider"></div>
+      <div style="font-size: 0.85rem;">
+        <p><b>選択肢の生成:</b></p>
+        <div class="flow" style="flex-direction: column; gap: 0; margin: 0.8rem 0;">
+          <div class="flow-node success" style="width: 100%;">Schemaで型・enum制約</div>
+          <div class="flow-arrow-down"></div>
+          <div class="flow-node success" style="width: 100%;">Promptで意味的制約</div>
+          <div class="flow-arrow-down"></div>
+          <div class="flow-node success" style="width: 100%;">LLMが文脈に合った選択肢を生成</div>
+          <div class="flow-arrow-down"></div>
+          <div class="flow-node success" style="width: 100%;">アプリコードで重複排除 → 表示</div>
+        </div>
+        <p class="mt-1"><b>3層品質制御:</b></p>
+        <ul>
+          <li><span class="accent-green">Schema</span> — 型・enum制約で構造保証</li>
+          <li><span class="accent-green">Prompt</span> — 具体例付きで意味的制約</li>
+          <li><span class="accent-green">App code</span> — 重複排除ガード</li>
+        </ul>
+        <p class="mt-1"><b>設計原則:</b></p>
+        <ul>
+          <li>ハードコード辞書 <b>ゼロ</b></li>
+          <li>LLMが文脈を理解して生成</li>
+          <li>マニュアルの用語はRAGで取得</li>
+          <li>辞書メンテナンス不要</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <span class="slide-num">5</span>
+</div>
+
+<!-- ============================================ -->
+<!-- SLIDE 6 — Three-Layer Quality -->
+<!-- ============================================ -->
+<div class="slide">
+  <h2>3層品質制御 — <span class="accent">Schema × Prompt × App Code</span></h2>
+
+  <div class="cols cols-3 mt-2">
+    <div class="card card-blue">
+      <div class="text-center mb-1">
+        <span class="badge badge-blue">Layer 1</span>
+      </div>
+      <h3 class="text-center">Schema（型制約）</h3>
+      <div class="divider"></div>
+      <p class="small">OpenAI Structured Outputs の JSON Schema で、LLMの出力フォーマットを強制。</p>
+      <pre class="mt-1"><code>"action": {
+  "type": "string",
+  "enum": ["ask_question",
+    "clarify_term",
+    "provide_answer",
+    "escalate",
+    "spec_answer"]
+}
+"choices": {
+  "type": ["array", "null"],
+  "items": {"type": "string"}
+}</code></pre>
+      <div class="highlight-box mt-1">
+        <b>保証:</b> actionは5種類の値以外を返せない。choicesは文字列配列かnull。型違反は<b>構造的に不可能</b>。
+      </div>
+    </div>
+
+    <div class="card card-purple">
+      <div class="text-center mb-1">
+        <span class="badge badge-blue">Layer 2</span>
+      </div>
+      <h3 class="text-center">Prompt（意味的制約）</h3>
+      <div class="divider"></div>
+      <p class="small">プロンプトで「なぜそうすべきか」をLLMに指示。具体例付き。</p>
+      <pre class="mt-1"><code>choices は質問の回答として
+直接適切なもののみ。
+
+例:
+質問「エンジンはかかっていますか？」
+→ choices:
+  ["かかっている",
+   "かかっていない",
+   "たまにかかる"]
+
+NG:
+choices に「エンジン内部異常」
+など質問の答えでないものを
+入れる</code></pre>
+      <div class="highlight-box mt-1">
+        <b>保証:</b> LLMが文脈を理解して適切な選択肢を自律生成。辞書不要。
+      </div>
+    </div>
+
+    <div class="card" style="border-color: #10b981;">
+      <div class="text-center mb-1">
+        <span class="badge badge-green">Layer 3</span>
+      </div>
+      <h3 class="text-center">App Code（ガード）</h3>
+      <div class="divider"></div>
+      <p class="small">万が一の重複やエッジケースをアプリケーション側で最終防御。</p>
+      <pre class="mt-1"><code>def _append_default_choices(
+    choices: list[str] | None
+) -> list[dict]:
+  result = []
+  seen: set[str] = set()
+  if choices:
+    for c in choices:
+      if c not in seen:
+        seen.add(c)
+        result.append(
+          {"value": c, "label": c}
+        )
+  # "わからない"等を末尾追加
+  for tail in _DEFAULT_TAIL:
+    if tail["value"] not in ...:
+      result.append(tail)
+  return result</code></pre>
+      <div class="highlight-box green mt-1">
+        <b>保証:</b> 重複排除 + デフォルト選択肢の自動追加
+      </div>
+    </div>
+  </div>
+
+  <span class="slide-num">6</span>
+</div>
+
+<!-- ============================================ -->
+<!-- SLIDE 7 — State Machine Overview -->
+<!-- ============================================ -->
+<div class="slide">
+  <span class="label label-blue mb-1">Part 2</span>
+  <h2>診断フロー — <span class="accent">ステートマシン全体像</span></h2>
+
+  <div class="diagram-box mt-2">
+    <div class="flow" style="gap: 0.3rem; flex-wrap: wrap;">
+      <div class="flow-node" style="min-width: 90px;">
+        <div class="small" style="color: #94a3b8;">STEP 1</div>
+        車両選択
+      </div>
+      <div class="flow-arrow"></div>
+      <div class="flow-node" style="min-width: 90px;">
+        <div class="small" style="color: #94a3b8;">STEP 2</div>
+        写真確認
+      </div>
+      <div class="flow-arrow"></div>
+      <div class="flow-node" style="min-width: 90px;">
+        <div class="small" style="color: #94a3b8;">STEP 3</div>
+        症状入力
+      </div>
+      <div class="flow-arrow"></div>
+      <div class="flow-node purple" style="min-width: 90px;">
+        <div class="small" style="color: #c4b5fd;">STEP 4</div>
+        仕様確認
+      </div>
+      <div class="flow-arrow"></div>
+      <div class="flow-node active" style="min-width: 120px;">
+        <div class="small" style="color: #fbbf24;">STEP 5 ★</div>
+        <b>問診ループ</b>
+      </div>
+      <div class="flow-arrow"></div>
+      <div class="flow-node danger" style="min-width: 90px;">
+        <div class="small" style="color: #fca5a5;">STEP 6</div>
+        緊急度判定
+      </div>
+      <div class="flow-arrow"></div>
+      <div class="flow-node" style="min-width: 90px;">
+        <div class="small" style="color: #94a3b8;">STEP 7</div>
+        予約案内
+      </div>
+      <div class="flow-arrow"></div>
+      <div class="flow-node success" style="min-width: 90px;">
+        <div class="small" style="color: #34d399;">STEP 8</div>
+        完了
+      </div>
+    </div>
+  </div>
+
+  <div class="cols cols-3 mt-3">
+    <div class="card">
+      <h3><span class="accent">通常フロー</span></h3>
+      <p class="small">車両選択 → 症状入力 → 問診ループ（1〜8ターン） → 原因特定 → 解決確認 → 完了</p>
+    </div>
+    <div class="card card-warning">
+      <h3><span class="accent-amber">緊急フロー</span></h3>
+      <p class="small">問診中にキーワード/LLMが CRITICAL と判定 → 問診を中断 → 即座に緊急度判定 → 予約/ロードサービス案内</p>
+    </div>
+    <div class="card card-purple">
+      <h3><span class="accent-purple">仕様確認フロー</span></h3>
+      <p class="small">症状がマニュアル上の「正常動作」の可能性あり → 仕様確認ステップ → 仕様通りなら説明して完了、違えば問診へ</p>
+    </div>
+  </div>
+
+  <span class="slide-num">7</span>
+</div>
+
+<!-- ============================================ -->
+<!-- SLIDE 8 — Diagnosing Loop Detail -->
+<!-- ============================================ -->
+<div class="slide">
+  <h2>問診ループ（DIAGNOSING）— <span class="accent">1ターンの処理フロー</span></h2>
+
+  <div class="cols cols-1-2 mt-2">
+    <div>
+      <div class="card" style="font-size: 0.82rem;">
+        <h3>14ステップの処理</h3>
+        <ol style="padding-left: 1.2rem;">
+          <li>Rewindハンドラ</li>
+          <li>解決済みアクション処理</li>
+          <li>ユーザー入力保存</li>
+          <li><span class="accent-amber">スナップショット保存</span></li>
+          <li><span class="accent-red">キーワード緊急度チェック</span></li>
+          <li><span class="accent-purple">RAG検索</span></li>
+          <li>会話要約（3ターンごと）</li>
+          <li>回答候補トリガー判定</li>
+          <li><span class="accent">LLM呼び出し（Structured Outputs）</span></li>
+          <li>トピック関連性ガード</li>
+          <li>待機メッセージ検出</li>
+          <li><span class="accent-amber">manual_coverage緊急度引上げ</span></li>
+          <li>アクション分岐</li>
+          <li>レスポンス生成</li>
+        </ol>
+      </div>
+    </div>
+    <div>
+      <div class="diagram-box" style="text-align: left; font-size: 0.82rem;">
+        <div class="flow" style="flex-direction: column; gap: 0; align-items: stretch;">
+          <div class="flow-node" style="width: 100%; text-align: left;">
+            <span class="badge badge-blue">入力</span> ユーザーの回答を会話履歴に追加 → ターン番号++
+          </div>
+          <div class="flow-arrow-down"></div>
+          <div class="flow-node danger" style="width: 100%; text-align: left;">
+            <span class="badge badge-red">安全</span> キーワード緊急度チェック — 「ブレーキが効かない」等 → 即 CRITICAL判定
+          </div>
+          <div class="flow-arrow-down"></div>
+          <div class="flow-node purple" style="width: 100%; text-align: left;">
+            <span class="badge badge-blue">RAG</span> ChromaDBから関連マニュアル情報を検索（最大5件）
+          </div>
+          <div class="flow-arrow-down"></div>
+          <div class="flow-node active" style="width: 100%; text-align: left;">
+            <span class="badge badge-amber">LLM</span> Structured Outputs で12フィールドの構造化応答を取得
+          </div>
+          <div class="flow-arrow-down"></div>
+          <div class="flow-node" style="width: 100%; text-align: left;">
+            <span class="badge badge-gray">ガード</span> トピック逸脱検出 / 待機メッセージ検出 / manual_coverage引上げ
+          </div>
+          <div class="flow-arrow-down"></div>
+          <div class="flow-node success" style="width: 100%; text-align: left;">
+            <span class="badge badge-green">分岐</span>
+            ask_question → 質問継続 / provide_answer → 原因提示 / escalate → 緊急予約
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <span class="slide-num">8</span>
+</div>
+
+<!-- ============================================ -->
+<!-- SLIDE 9 — Structured Outputs -->
+<!-- ============================================ -->
+<div class="slide">
+  <h2>Structured Outputs — <span class="accent">型安全なLLM応答</span></h2>
+
+  <div class="cols cols-2 mt-2">
+    <div>
+      <div class="card card-blue">
+        <h3>DIAGNOSTIC_SCHEMA（問診用 12フィールド）</h3>
+        <table>
+          <tr><th>フィールド</th><th>型</th><th>役割</th></tr>
+          <tr><td><code>action</code></td><td>enum(5)</td><td>次のアクション</td></tr>
+          <tr><td><code>message</code></td><td>string</td><td>ユーザー表示文</td></tr>
+          <tr><td><code>urgency_flag</code></td><td>enum(5)</td><td>危険度</td></tr>
+          <tr><td><code>choices</code></td><td>array|null</td><td>選択肢</td></tr>
+          <tr><td><code>can_drive</code></td><td>bool|null</td><td>走行可否</td></tr>
+          <tr><td><code>confidence_to_answer</code></td><td>0.0〜1.0</td><td>回答確信度</td></tr>
+          <tr><td><code>manual_coverage</code></td><td>enum(3)</td><td>マニュアル記載</td></tr>
+          <tr><td><code>visit_urgency</code></td><td>enum(4)|null</td><td>来場緊急度</td></tr>
+          <tr><td><code>rewritten_query</code></td><td>string</td><td>RAG改善クエリ</td></tr>
+          <tr><td><code>question_topic</code></td><td>string</td><td>質問トピック</td></tr>
+          <tr><td><code>reasoning</code></td><td>string</td><td>内部推論ログ</td></tr>
+          <tr><td><code>term_to_clarify</code></td><td>string|null</td><td>用語確認対象</td></tr>
+        </table>
+      </div>
+    </div>
+    <div>
+      <div class="card">
+        <h3>処理パイプライン</h3>
+        <div class="flow" style="flex-direction: column; gap: 0; align-items: stretch;">
+          <div class="flow-node" style="width: 100%; text-align: left;">
+            <code>schemas.py</code> — JSON Schemaを定義（<code>strict: true</code>）
+          </div>
+          <div class="flow-arrow-down"></div>
+          <div class="flow-node" style="width: 100%; text-align: left;">
+            <code>prompts.py</code> — 判断基準・具体例・NG例を指示
+          </div>
+          <div class="flow-arrow-down"></div>
+          <div class="flow-node" style="width: 100%; text-align: left;">
+            <code>openai_provider.py</code> — <code>response_format</code> にSchemaをセット
+          </div>
+          <div class="flow-arrow-down"></div>
+          <div class="flow-node active" style="width: 100%; text-align: left;">
+            OpenAI API が Schema に準拠した JSON を返却
+          </div>
+          <div class="flow-arrow-down"></div>
+          <div class="flow-node success" style="width: 100%; text-align: left;">
+            <code>step_diagnosing.py</code> — <code>json.loads()</code> で即パース、型安全にアクセス
+          </div>
+        </div>
+      </div>
+      <div class="highlight-box mt-2">
+        <b>利点:</b> LLMの出力が<b>常に</b>指定したJSON構造に従う。パースエラーや型不一致が構造的に発生しない。
+      </div>
+    </div>
+  </div>
+
+  <span class="slide-num">9</span>
+</div>
+
+<!-- ============================================ -->
+<!-- SLIDE 10 — Urgency Assessment -->
+<!-- ============================================ -->
+<div class="slide">
+  <span class="label label-red mb-1">Part 3</span>
+  <h2>危険度判定 — <span class="accent-red">2段階評価システム</span></h2>
+
+  <div class="before-after mt-2">
+    <!-- Stage 1 -->
+    <div class="card card-danger">
+      <div class="text-center mb-1">
+        <span class="badge badge-red">Stage 1</span>
+      </div>
+      <h3 class="text-center">キーワード判定（即時）</h3>
+      <div class="divider"></div>
+      <p class="small mb-1">正規表現による高速パターンマッチ。0.1秒以内に結果を返す。</p>
+      <table>
+        <tr><th>レベル</th><th>キーワード例</th></tr>
+        <tr>
+          <td><span class="badge badge-red">CRITICAL</span></td>
+          <td>ブレーキ効かない / 煙 / 火 / オイル漏れ / ステアリング / 冷却水 / オーバーヒート</td>
+        </tr>
+        <tr>
+          <td><span class="badge badge-amber">HIGH</span></td>
+          <td>警告灯 / 異音 / 振動 / 異臭 / タイヤ / 安全装置</td>
+        </tr>
+        <tr>
+          <td><span class="badge badge-blue">MEDIUM</span></td>
+          <td>燃費悪化 / エアコン / バッテリー / ワイパー</td>
+        </tr>
+      </table>
+      <div class="highlight-box red mt-1">
+        CRITICAL検出時 → <b>LLMを待たず即座に緊急対応</b>
+      </div>
+    </div>
+
+    <!-- Arrow -->
+    <div class="arrow-col">
+      <svg viewBox="0 0 48 48" fill="none"><path d="M24 8v28m0 0l-8-8m8 8l8-8" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </div>
+
+    <!-- Stage 2 -->
+    <div class="card card-blue">
+      <div class="text-center mb-1">
+        <span class="badge badge-blue">Stage 2</span>
+      </div>
+      <h3 class="text-center">LLM判定（詳細）</h3>
+      <div class="divider"></div>
+      <p class="small mb-1">URGENCY_SCHEMA によるStructured Outputs。RAGで取得した警告情報も参照。</p>
+      <table>
+        <tr><th>出力フィールド</th><th>内容</th></tr>
+        <tr><td><code>level</code></td><td>low / medium / high / critical</td></tr>
+        <tr><td><code>can_drive</code></td><td>走行可能か（true / false）</td></tr>
+        <tr><td><code>visit_urgency</code></td><td>来場緊急度（4段階）</td></tr>
+        <tr><td><code>reasons</code></td><td>判断理由（配列）</td></tr>
+        <tr><td><code>recommendation</code></td><td>推奨アクション</td></tr>
+      </table>
+      <div class="highlight-box mt-1">
+        キーワードとLLMの結果を統合 → <b>高い方を採用</b>
+      </div>
+    </div>
+  </div>
+
+  <span class="slide-num">10</span>
+</div>
+
+<!-- ============================================ -->
+<!-- SLIDE 11 — visit_urgency -->
+<!-- ============================================ -->
+<div class="slide">
+  <h2><code>visit_urgency</code> — <span class="accent-red">来場緊急度の4段階</span></h2>
+
+  <div class="cols cols-4 mt-2">
+    <div class="card card-danger" style="text-align: center;">
+      <div style="font-size: 2rem; margin-bottom: 0.5rem;">🚨</div>
+      <span class="badge badge-red">immediate</span>
+      <h3 class="mt-1" style="font-size: 1.1rem;">今すぐ来場</h3>
+      <div class="divider"></div>
+      <p class="small">ロードサービスまたは即来場</p>
+      <p class="small mt-1"><b>例:</b> ブレーキ故障、煙、火花</p>
+      <div class="highlight-box red mt-1" style="font-size: 0.75rem;">
+        <b>can_drive = false</b><br>
+        運転中止を赤太字で表示
+      </div>
+    </div>
+    <div class="card card-warning" style="text-align: center;">
+      <div style="font-size: 2rem; margin-bottom: 0.5rem;">⚠️</div>
+      <span class="badge badge-amber">today</span>
+      <h3 class="mt-1" style="font-size: 1.1rem;">本日中に来場</h3>
+      <div class="divider"></div>
+      <p class="small">当日中に販売店へ</p>
+      <p class="small mt-1"><b>例:</b> 警告灯点灯、異常振動</p>
+      <div class="highlight-box amber mt-1" style="font-size: 0.75rem;">
+        <b>can_drive = true（注意）</b><br>
+        来店予約フォーム表示
+      </div>
+    </div>
+    <div class="card card-blue" style="text-align: center;">
+      <div style="font-size: 2rem; margin-bottom: 0.5rem;">📋</div>
+      <span class="badge badge-blue">this_week</span>
+      <h3 class="mt-1" style="font-size: 1.1rem;">今週中に来場</h3>
+      <div class="divider"></div>
+      <p class="small">今週中に販売店で点検</p>
+      <p class="small mt-1"><b>例:</b> 燃費悪化、軽微な異音</p>
+      <div class="highlight-box mt-1" style="font-size: 0.75rem;">
+        <b>can_drive = true</b><br>
+        来店予約フォーム表示
+      </div>
+    </div>
+    <div class="card" style="text-align: center;">
+      <div style="font-size: 2rem; margin-bottom: 0.5rem;">💡</div>
+      <span class="badge badge-gray">when_convenient</span>
+      <h3 class="mt-1" style="font-size: 1.1rem;">ご都合の良い時に</h3>
+      <div class="divider"></div>
+      <p class="small">急ぎではない</p>
+      <p class="small mt-1"><b>例:</b> ワイパー劣化、小さな傷</p>
+      <div class="highlight-box green mt-1" style="font-size: 0.75rem;">
+        <b>can_drive = true</b><br>
+        アドバイスのみ表示
+      </div>
+    </div>
+  </div>
+
+  <div class="highlight-box mt-3">
+    <b>設計ポイント:</b> <code>can_drive</code>（運転中止すべきか）と <code>visit_urgency</code>（来場タイミング）は<b>独立した軸</b>。
+    例: 警告灯が点灯 → 運転は可能（can_drive=true）だが本日中に来場すべき（visit_urgency="today"）。
+  </div>
+
+  <span class="slide-num">11</span>
+</div>
+
+<!-- ============================================ -->
+<!-- SLIDE 12 — Manual Coverage Detection -->
+<!-- ============================================ -->
+<div class="slide">
+  <h2>マニュアル記載外検出 — <span class="accent-amber">想定外の不具合を見逃さない</span></h2>
+
+  <div class="cols cols-2 mt-2">
+    <div>
+      <div class="diagram-box" style="text-align: left;">
+        <h3 class="text-center mb-1">判定フロー</h3>
+        <div class="flow" style="flex-direction: column; gap: 0; align-items: stretch;">
+          <div class="flow-node purple" style="width: 100%; text-align: left;">
+            <span class="badge badge-blue">RAG</span> ChromaDBからマニュアル関連情報を検索
+          </div>
+          <div class="flow-arrow-down"></div>
+          <div class="flow-node active" style="width: 100%; text-align: left;">
+            <span class="badge badge-amber">LLM</span> 症状 × RAG結果を照合 → manual_coverage を判定
+          </div>
+          <div class="flow-arrow-down"></div>
+          <div class="flow-node" style="width: 100%; text-align: left;">
+            <span class="badge badge-gray">毎ターン</span> 問診の各ターンで更新され続ける
+          </div>
+          <div class="flow-arrow-down"></div>
+          <div class="flow-node danger" style="width: 100%; text-align: left;">
+            <span class="badge badge-red">not_covered時</span> urgency を1段階引上げ + 警告バッジ表示
+          </div>
+        </div>
+      </div>
+    </div>
+    <div>
+      <div class="card card-success mb-2">
+        <h3><span class="accent-green">covered</span> — マニュアルに記載あり</h3>
+        <p class="small">症状の原因・対処法がマニュアルに明確に記載されている。</p>
+        <p class="small mt-1">→ バッジなし。通常の問診を継続。</p>
+      </div>
+      <div class="card mb-2" style="border-color: #94a3b8;">
+        <h3><span style="color: #94a3b8;">partially_covered</span> — 部分的に記載</h3>
+        <p class="small">関連する情報はあるが、症状そのものの記載はない。</p>
+        <p class="small mt-1">→ <span class="badge badge-gray">グレーバッジ</span> 「マニュアルに完全一致する情報はありません」</p>
+      </div>
+      <div class="card card-warning">
+        <h3><span class="accent-amber">not_covered</span> — 記載なし</h3>
+        <p class="small">該当する記載が一切ない。RAG情報が無関係/空の場合も。</p>
+        <div class="highlight-box amber mt-1" style="font-size: 0.85rem;">
+          <b>自動対応:</b><br>
+          ❶ urgency を1段階引上げ（none/low → medium）<br>
+          ❷ <span class="badge badge-amber">黄色バッジ</span> 「マニュアル記載外 — 想定外の不具合の可能性があります」<br>
+          ❸ provide_answer時: 「ディーラーでの点検を推奨します」を追加
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <span class="slide-num">12</span>
+</div>
+
+<!-- ============================================ -->
+<!-- SLIDE 13 — Chunking -->
+<!-- ============================================ -->
+<div class="slide">
+  <h2>チャンキング — <span class="accent-purple">PDF → 検索可能なデータへ</span></h2>
+
+  <div class="cols cols-2 mt-2">
+    <div>
+      <div class="card">
+        <h3>RAGパイプライン全体像</h3>
+        <div class="flow" style="flex-direction: column; gap: 0; align-items: stretch; margin: 0.8rem 0;">
+          <div class="flow-node" style="width: 100%; text-align: left;">
+            <span class="badge badge-blue">1. PDF読込</span> PyPDF2でページごとにテキスト抽出
+          </div>
+          <div class="flow-arrow-down"></div>
+          <div class="flow-node active" style="width: 100%; text-align: left;">
+            <span class="badge badge-amber">2. チャンキング ★</span> AutomotiveChunker — 自動車マニュアル特化の分割
+          </div>
+          <div class="flow-arrow-down"></div>
+          <div class="flow-node purple" style="width: 100%; text-align: left;">
+            <span class="badge badge-blue">3. エンベディング</span> OpenAI Embeddings → ベクトル化
+          </div>
+          <div class="flow-arrow-down"></div>
+          <div class="flow-node success" style="width: 100%; text-align: left;">
+            <span class="badge badge-green">4. 格納</span> ChromaDB → 類似度検索用ベクトルDB
+          </div>
+        </div>
+      </div>
+
+      <div class="card mt-2">
+        <h3>チャンクパラメータ</h3>
+        <table>
+          <tr><th>パラメータ</th><th>値</th><th>説明</th></tr>
+          <tr><td><code>target_size</code></td><td>600文字</td><td>目標チャンクサイズ</td></tr>
+          <tr><td><code>overlap</code></td><td>100文字</td><td>チャンク間の重複</td></tr>
+          <tr><td><code>max_size</code></td><td>1000文字</td><td>最大チャンクサイズ</td></tr>
+        </table>
+      </div>
+    </div>
+    <div>
+      <div class="card card-purple">
+        <h3>自動車マニュアル特化の工夫</h3>
+        <div class="divider"></div>
+
+        <h3 style="font-size: 1rem;"><span class="accent-red">1. 安全情報の分離</span></h3>
+        <p class="small">「警告」「危険」「火災」等のキーワードを含むパラグラフは<b>独立チャンク</b>として切り出し。他の情報と混ざらず確実にヒット。</p>
+
+        <div class="divider"></div>
+
+        <h3 style="font-size: 1rem;"><span class="accent-purple">2. コンテンツ分類（5種類）</span></h3>
+        <div style="display: flex; gap: 0.4rem; flex-wrap: wrap; margin: 0.5rem 0;">
+          <span class="badge badge-red">warning</span>
+          <span class="badge badge-amber">troubleshooting</span>
+          <span class="badge badge-blue">procedure</span>
+          <span class="badge badge-blue">specification</span>
+          <span class="badge badge-gray">general</span>
+        </div>
+        <p class="small">キーワードスコアリングで各チャンクを自動分類。検索時に種類別の重み付けが可能。</p>
+
+        <div class="divider"></div>
+
+        <h3 style="font-size: 1rem;"><span class="accent-amber">3. ノイズ除去</span></h3>
+        <p class="small">目次ページ、クイックガイド、ビジュアル目次を自動検出して<b>除外</b>。<br>
+        ページ参照の密度、短い行の割合、平均行長等のヒューリスティクスで判定。</p>
+
+        <div class="divider"></div>
+
+        <h3 style="font-size: 1rem;"><span class="accent-green">4. セクション追跡</span></h3>
+        <p class="small">「第○章」「【見出し】」等のパターンを検出し、各チャンクにセクション情報を付与。</p>
+      </div>
+    </div>
+  </div>
+
+  <span class="slide-num">13</span>
+</div>
+
+<!-- ============================================ -->
+<!-- SLIDE 14 — Chunking: Content Type Detection -->
+<!-- ============================================ -->
+<div class="slide">
+  <h2>チャンキング — <span class="accent-purple">コンテンツ分類の仕組み</span></h2>
+
+  <div class="cols cols-2 mt-2">
+    <div>
+      <div class="card card-danger">
+        <h3>最優先: 安全キーワード（warning）</h3>
+        <p class="small mb-1">1つでもマッチすれば即 <code>warning</code> タイプ</p>
+        <div style="display: flex; flex-wrap: wrap; gap: 0.3rem;">
+          <span class="badge badge-red">警告</span>
+          <span class="badge badge-red">注意</span>
+          <span class="badge badge-red">危険</span>
+          <span class="badge badge-red">やけど</span>
+          <span class="badge badge-red">火災</span>
+          <span class="badge badge-red">感電</span>
+          <span class="badge badge-red">爆発</span>
+          <span class="badge badge-red">禁止</span>
+          <span class="badge badge-red">死亡</span>
+          <span class="badge badge-red">重傷</span>
+        </div>
+        <div class="highlight-box red mt-1" style="font-size: 0.8rem;">
+          <b>注意:</b> 「警告<b>灯</b>」は除外。「警告灯が点灯」はwarningではなくtroubleshootingに分類。
+        </div>
+      </div>
+
+      <div class="card mt-2">
+        <h3>スコアリング判定（残り3タイプ）</h3>
+        <p class="small mb-1">各キーワードリストのマッチ数を数え、最多スコアのタイプを採用</p>
+        <table>
+          <tr><th>タイプ</th><th>キーワード例</th></tr>
+          <tr>
+            <td><span class="badge badge-amber">troubleshooting</span></td>
+            <td>故障, トラブル, 症状, 原因, 対処, 点検, 異音, 異臭, 警告灯, 不具合...</td>
+          </tr>
+          <tr>
+            <td><span class="badge badge-blue">procedure</span></td>
+            <td>手順, 方法, 操作, 交換, 取り付け, 調整, 補充, 確認方法...</td>
+          </tr>
+          <tr>
+            <td><span class="badge badge-blue">specification</span></td>
+            <td>仕様, 諸元, 容量, 規格, 寸法, 重量, 推奨, 型式...</td>
+          </tr>
+        </table>
+      </div>
+    </div>
+
+    <div>
+      <div class="diagram-box">
+        <h3 class="mb-1">分類アルゴリズム</h3>
+        <div class="flow" style="flex-direction: column; gap: 0; align-items: stretch;">
+          <div class="flow-node" style="width: 100%; text-align: left;">
+            入力: チャンクテキスト
+          </div>
+          <div class="flow-arrow-down"></div>
+          <div class="flow-node danger" style="width: 100%; text-align: left;">
+            「警告灯」を除外したテキストで安全キーワード検索<br>
+            → マッチあり → <b>即 "warning"</b>
+          </div>
+          <div class="flow-arrow-down"></div>
+          <div class="flow-node" style="width: 100%; text-align: left;">
+            troubleshooting: <span class="accent-amber">スコア計算</span><br>
+            procedure: <span class="accent">スコア計算</span><br>
+            specification: <span class="accent-purple">スコア計算</span>
+          </div>
+          <div class="flow-arrow-down"></div>
+          <div class="flow-node" style="width: 100%; text-align: left;">
+            全スコア 0 → <b>"general"</b>
+          </div>
+          <div class="flow-arrow-down"></div>
+          <div class="flow-node success" style="width: 100%; text-align: left;">
+            最高スコアのタイプを採用<br>
+            <span class="small">同点時の優先順位: specification > procedure > troubleshooting</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="highlight-box green mt-2">
+        <b>なぜこの設計？</b><br>
+        自動車マニュアルは「安全警告」が最重要。チャンキング段階で安全情報を分離することで、RAG検索時に<b>危険な操作の注意事項を見落とさない</b>。
+      </div>
+    </div>
+  </div>
+
+  <span class="slide-num">14</span>
+</div>
+
+<!-- ============================================ -->
+<!-- SLIDE 15 — Rewind Feature -->
+<!-- ============================================ -->
+<div class="slide">
+  <span class="label label-amber mb-1">Part 4</span>
+  <h2>やり直し（Rewind）機能 — <span class="accent-amber">過去の回答を変更可能</span></h2>
+
+  <div class="cols cols-2 mt-2">
+    <div>
+      <div class="card card-warning">
+        <h3>なぜ必要か？</h3>
+        <p class="small">一問一答形式の問診では、ユーザーが途中の回答を間違えると、診断結果が不正確になる。従来は最初からやり直すしかなかった。</p>
+        <div class="highlight-box amber mt-1">
+          <b>解決:</b> 各ターンのセッション状態を保存し、任意のターンまで巻き戻して別の回答を試せるようにする。
+        </div>
+      </div>
+
+      <div class="card mt-2">
+        <h3>スナップショット方式</h3>
+        <div class="flow" style="flex-direction: column; gap: 0; align-items: stretch; margin-top: 0.5rem;">
+          <div class="flow-node" style="width: 100%; text-align: left; font-size: 0.82rem;">
+            <b>Turn 1:</b> エンジンかかる？→「かかっている」<br>
+            <span class="small">→ snapshot[0] 保存</span>
+          </div>
+          <div class="flow-arrow-down"></div>
+          <div class="flow-node" style="width: 100%; text-align: left; font-size: 0.82rem;">
+            <b>Turn 2:</b> 異音はありますか？→「ある」<br>
+            <span class="small">→ snapshot[1] 保存</span>
+          </div>
+          <div class="flow-arrow-down"></div>
+          <div class="flow-node active" style="width: 100%; text-align: left; font-size: 0.82rem;">
+            <b>Turn 3:</b> どんな音ですか？→「カタカタ音」<br>
+            <span class="small">→ snapshot[2] 保存</span>
+          </div>
+          <div class="flow-arrow-down"></div>
+          <div class="flow-node danger" style="width: 100%; text-align: left; font-size: 0.82rem;">
+            ユーザー:「Turn 2 をやり直したい」<br>
+            <span class="small">→ snapshot[1] を復元、snapshot[2]以降を削除</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div>
+      <div class="card card-blue">
+        <h3>技術的な仕組み</h3>
+
+        <h3 style="font-size: 0.95rem;" class="mt-1">バックエンド</h3>
+        <pre><code># SessionState に追加
+state_snapshots: list[dict] = []
+
+# 各ターン開始時
+snapshot = session.model_dump(
+    exclude={"state_snapshots"}
+)
+session.state_snapshots.append({
+    "turn": session.diagnostic_turn,
+    "state": snapshot
+})
+
+# Rewind時
+target = next(
+    s for s in session.state_snapshots
+    if s["turn"] == rewind_to_turn
+)
+# → target["state"] で状態を復元
+# → 以降の snapshot を削除</code></pre>
+
+        <h3 style="font-size: 0.95rem;" class="mt-2">フロントエンド</h3>
+        <pre><code>// 各ユーザーメッセージに「やり直す」ボタン
+// （diagnosing中、最新以外のメッセージ）
+
+rewindToTurn(turn) {
+  // 1. API に rewind_to_turn を送信
+  // 2. 該当ターン以降のメッセージを削除
+  // 3. 復元された状態で問診を再開
+}</code></pre>
+      </div>
+
+      <div class="card mt-2">
+        <h3>制約</h3>
+        <ul class="small">
+          <li>DIAGNOSINGステップのみ有効</li>
+          <li>最大<b>8スナップショット</b>（約40KB）</li>
+          <li>インメモリ保存（セッション内で完結）</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <span class="slide-num">15</span>
+</div>
+
+<!-- ============================================ -->
+<!-- SLIDE 16 — Rewind: User Flow -->
+<!-- ============================================ -->
+<div class="slide">
+  <h2>やり直し機能 — <span class="accent-amber">ユーザーの操作フロー</span></h2>
+
+  <div class="diagram-box mt-2">
+    <div style="display: grid; grid-template-columns: 1fr auto 1fr auto 1fr; gap: 1rem; align-items: start;">
+      <!-- State 1: Normal Chat -->
+      <div class="card" style="background: rgba(30, 41, 59, 0.9);">
+        <div class="text-center mb-1"><span class="badge badge-blue">Step 1</span></div>
+        <h3 class="text-center" style="font-size: 0.95rem;">通常の問診</h3>
+        <div style="margin-top: 0.5rem; font-size: 0.78rem;">
+          <div style="background: #1e3a5f; padding: 0.4rem 0.6rem; border-radius: 8px; margin: 0.3rem 0;">
+            AI: エンジンはかかりますか？
+          </div>
+          <div style="background: #065f46; padding: 0.4rem 0.6rem; border-radius: 8px; margin: 0.3rem 0; text-align: right;">
+            ユーザー: かかっている
+            <div style="color: #fbbf24; font-size: 0.7rem;">← やり直す</div>
+          </div>
+          <div style="background: #1e3a5f; padding: 0.4rem 0.6rem; border-radius: 8px; margin: 0.3rem 0;">
+            AI: 異音はありますか？
+          </div>
+          <div style="background: #065f46; padding: 0.4rem 0.6rem; border-radius: 8px; margin: 0.3rem 0; text-align: right;">
+            ユーザー: ある
+            <div style="color: #fbbf24; font-size: 0.7rem;">← やり直す</div>
+          </div>
+          <div style="background: #1e3a5f; padding: 0.4rem 0.6rem; border-radius: 8px; margin: 0.3rem 0;">
+            AI: どんな音ですか？
+          </div>
+        </div>
+      </div>
+
+      <!-- Arrow -->
+      <div style="display: flex; align-items: center; padding-top: 5rem;">
+        <svg width="32" height="32" viewBox="0 0 48 48" fill="none"><path d="M8 24h28m0 0l-8-8m8 8l-8 8" stroke="#f59e0b" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </div>
+
+      <!-- State 2: Click Rewind -->
+      <div class="card card-warning" style="background: rgba(120, 53, 15, 0.3);">
+        <div class="text-center mb-1"><span class="badge badge-amber">Step 2</span></div>
+        <h3 class="text-center" style="font-size: 0.95rem;">「やり直す」を押す</h3>
+        <div style="margin-top: 0.5rem; font-size: 0.78rem;">
+          <div style="background: #1e3a5f; padding: 0.4rem 0.6rem; border-radius: 8px; margin: 0.3rem 0;">
+            AI: エンジンはかかりますか？
+          </div>
+          <div style="background: #065f46; padding: 0.4rem 0.6rem; border-radius: 8px; margin: 0.3rem 0; text-align: right; border: 2px solid #f59e0b;">
+            ユーザー: かかっている
+            <div style="color: #fbbf24; font-size: 0.7rem; font-weight: 700;">★ ここをやり直す</div>
+          </div>
+          <div style="opacity: 0.3;">
+            <div style="background: #1e3a5f; padding: 0.4rem 0.6rem; border-radius: 8px; margin: 0.3rem 0;">
+              AI: 異音はありますか？
+            </div>
+            <div style="background: #065f46; padding: 0.4rem 0.6rem; border-radius: 8px; margin: 0.3rem 0; text-align: right;">
+              ユーザー: ある
+            </div>
+            <div style="background: #1e3a5f; padding: 0.4rem 0.6rem; border-radius: 8px; margin: 0.3rem 0;">
+              AI: どんな音ですか？
+            </div>
+          </div>
+          <div style="text-align: center; color: #f87171; font-size: 0.7rem; margin-top: 0.3rem;">↑ これ以降は削除される</div>
+        </div>
+      </div>
+
+      <!-- Arrow -->
+      <div style="display: flex; align-items: center; padding-top: 5rem;">
+        <svg width="32" height="32" viewBox="0 0 48 48" fill="none"><path d="M8 24h28m0 0l-8-8m8 8l-8 8" stroke="#10b981" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </div>
+
+      <!-- State 3: Rewound -->
+      <div class="card card-success" style="background: rgba(6, 78, 59, 0.3);">
+        <div class="text-center mb-1"><span class="badge badge-green">Step 3</span></div>
+        <h3 class="text-center" style="font-size: 0.95rem;">巻き戻し後</h3>
+        <div style="margin-top: 0.5rem; font-size: 0.78rem;">
+          <div style="background: #1e3a5f; padding: 0.4rem 0.6rem; border-radius: 8px; margin: 0.3rem 0;">
+            AI: エンジンはかかりますか？
+          </div>
+          <div style="margin: 0.8rem 0; text-align: center; padding: 0.5rem; border: 2px dashed #10b981; border-radius: 8px; color: #34d399; font-size: 0.75rem;">
+            別の回答を入力できる<br>
+            例: 「かかっていない」
+          </div>
+          <div style="text-align: center; color: #34d399; font-size: 0.7rem;">
+            セッション状態もこの時点に復元<br>
+            → 新しい回答から問診を再開
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <span class="slide-num">16</span>
+</div>
+
+<!-- ============================================ -->
+<!-- SLIDE 17 — Warning Light Icon Cards -->
+<!-- ============================================ -->
+<div class="slide">
+  <h2>画像選択カード — <span class="accent-amber">警告灯を視覚的に選択</span></h2>
+
+  <div class="cols cols-2 mt-2">
+    <div>
+      <div class="card card-warning">
+        <h3>課題</h3>
+        <p class="small">「どの警告灯が点灯していますか？」という質問に対し、テキストボタンだけでは警告灯の種類を識別しにくい。特に車に詳しくないユーザーにとって「ABS」「TPMS」等は分かりづらい。</p>
+        <div class="highlight-box amber mt-1">
+          <b>解決:</b> 警告灯アイコンをカード形式で3列表示し、ビジュアルで直感的に選択できるようにする。
+        </div>
+      </div>
+
+      <div class="card mt-2">
+        <h3>処理フロー</h3>
+        <div class="flow" style="flex-direction: column; gap: 0; align-items: stretch; margin-top: 0.5rem;">
+          <div class="flow-node active" style="width: 100%; text-align: left; font-size: 0.82rem;">
+            <span class="badge badge-amber">LLM</span> question_topic に「警告灯」等を含む質問を生成
+          </div>
+          <div class="flow-arrow-down"></div>
+          <div class="flow-node" style="width: 100%; text-align: left; font-size: 0.82rem;">
+            <span class="badge badge-blue">後処理</span> <code>_attach_icons()</code> が選択肢ラベルのキーワードからアイコンパスを付与
+          </div>
+          <div class="flow-arrow-down"></div>
+          <div class="flow-node success" style="width: 100%; text-align: left; font-size: 0.82rem;">
+            <span class="badge badge-green">表示</span> フロントエンドが <code>icon</code> 付き選択肢を検出 → カードグリッドに切替
+          </div>
+        </div>
+      </div>
+    </div>
+    <div>
+      <div class="card card-blue">
+        <h3>対応する警告灯（10種類）</h3>
+        <table>
+          <tr><th>アイコン</th><th>キーワード</th></tr>
+          <tr><td>engine.svg</td><td>エンジン</td></tr>
+          <tr><td>abs.svg</td><td>ABS</td></tr>
+          <tr><td>oil.svg</td><td>油圧 / オイル</td></tr>
+          <tr><td>coolant.svg</td><td>水温</td></tr>
+          <tr><td>battery.svg</td><td>バッテリー / 充電</td></tr>
+          <tr><td>airbag.svg</td><td>エアバッグ</td></tr>
+          <tr><td>brake.svg</td><td>ブレーキ</td></tr>
+          <tr><td>power-steering.svg</td><td>パワステ</td></tr>
+          <tr><td>tpms.svg</td><td>タイヤ / 空気圧</td></tr>
+          <tr><td>seatbelt.svg</td><td>シートベルト</td></tr>
+        </table>
+      </div>
+
+      <div class="highlight-box mt-2">
+        <b>設計ポイント:</b><br>
+        ❶ LLMスキーマ変更なし — バックエンド後処理でアイコンを付与<br>
+        ❷ 「わからない」「自由入力」はテキストボタンとして下部に配置<br>
+        ❸ 警告灯以外の質問は従来通りテキストボタン表示
+      </div>
+    </div>
+  </div>
+
+  <span class="slide-num">17</span>
+</div>
+
+<!-- ============================================ -->
+<!-- SLIDE 18 — Safety Architecture Summary -->
+<!-- ============================================ -->
+<div class="slide">
+  <h2>安全アーキテクチャ — <span class="accent-red">多層防御の全体像</span></h2>
+
+  <div class="diagram-box mt-2">
+    <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 0.8rem;">
+      <div class="flow-node danger" style="min-width: auto;">
+        <div class="small" style="color: #fca5a5;">Layer 1</div>
+        <b>キーワード<br>緊急度</b>
+        <div style="font-size: 0.7rem; margin-top: 0.3rem; color: #94a3b8;">
+          regex即時判定<br>
+          8 CRITICAL ルール
+        </div>
+      </div>
+      <div class="flow-node active" style="min-width: auto;">
+        <div class="small" style="color: #fbbf24;">Layer 2</div>
+        <b>LLM<br>緊急度評価</b>
+        <div style="font-size: 0.7rem; margin-top: 0.3rem; color: #94a3b8;">
+          URGENCY_SCHEMA<br>
+          5フィールド判定
+        </div>
+      </div>
+      <div class="flow-node purple" style="min-width: auto;">
+        <div class="small" style="color: #c4b5fd;">Layer 3</div>
+        <b>マニュアル<br>記載外検出</b>
+        <div style="font-size: 0.7rem; margin-top: 0.3rem; color: #94a3b8;">
+          manual_coverage<br>
+          urgency引上げ
+        </div>
+      </div>
+      <div class="flow-node" style="min-width: auto;">
+        <div class="small" style="color: #94a3b8;">Layer 4</div>
+        <b>トピック<br>逸脱検出</b>
+        <div style="font-size: 0.7rem; margin-top: 0.3rem; color: #94a3b8;">
+          question_topic<br>
+          同一質問防止
+        </div>
+      </div>
+      <div class="flow-node success" style="min-width: auto;">
+        <div class="small" style="color: #34d399;">Layer 5</div>
+        <b>重複排除<br>+ ガード</b>
+        <div style="font-size: 0.7rem; margin-top: 0.3rem; color: #94a3b8;">
+          選択肢dedup<br>
+          待機メッセージ検出
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="cols cols-3 mt-3">
+    <div class="card card-danger">
+      <h3 style="font-size: 0.95rem;">即時遮断</h3>
+      <p class="small">「ブレーキが効かない」→ キーワードマッチ → LLMを待たず<b>即座に CRITICAL</b>。問診を中断して緊急対応フローへ遷移。</p>
+    </div>
+    <div class="card card-warning">
+      <h3 style="font-size: 0.95rem;">段階的引上げ</h3>
+      <p class="small">manual_coverage = not_covered → urgencyを自動引上げ。想定外の不具合は<b>安全側に倒す</b>設計。</p>
+    </div>
+    <div class="card card-blue">
+      <h3 style="font-size: 0.95rem;">品質保証</h3>
+      <p class="small">Schema × Prompt × App Codeの3層で、LLM出力の<b>構造的正しさ</b>と<b>意味的適切さ</b>の両方を担保。</p>
+    </div>
+  </div>
+
+  <span class="slide-num">18</span>
+</div>
+
+<!-- ============================================ -->
+<!-- SLIDE 19 — Summary -->
+<!-- ============================================ -->
+<div class="slide">
+  <h2>まとめ — <span class="accent">改善の成果</span></h2>
+
+  <div class="cols cols-2 mt-2">
+    <div>
+      <div class="card card-danger mb-2">
+        <div class="comparison-header">
+          <span class="badge badge-red">BEFORE</span>
+        </div>
+        <ul>
+          <li class="strike">ハードコード辞書による用語強制変換</li>
+          <li class="strike">バックエンド + フロントエンドで二重辞書</li>
+          <li class="strike">substring matchで文脈無視の変換</li>
+          <li class="strike">選択肢の重複チェックなし</li>
+          <li class="strike">辞書のメンテナンスコスト</li>
+          <li class="strike">新車種追加時に辞書更新が必要</li>
+        </ul>
+      </div>
+    </div>
+    <div>
+      <div class="card card-success mb-2">
+        <div class="comparison-header">
+          <span class="badge badge-green">AFTER</span>
+        </div>
+        <ul>
+          <li><span class="accent-green">ハードコード辞書ゼロ</span> — 全てAI + RAGで動的生成</li>
+          <li><span class="accent-green">3層品質制御</span> — Schema × Prompt × App Code</li>
+          <li><span class="accent-green">2段階危険度判定</span> — キーワード即時 + LLM詳細</li>
+          <li><span class="accent-green">マニュアル記載外検出</span> — 想定外の不具合を自動検出</li>
+          <li><span class="accent-green">自動車特化チャンキング</span> — 安全情報の優先分離</li>
+          <li><span class="accent-green">やり直し機能</span> — 回答ミスからの復帰</li>
+          <li><span class="accent-green">画像選択カード</span> — 警告灯をアイコンで直感的に選択</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <div class="card card-blue mt-2">
+    <h3>設計思想</h3>
+    <div class="cols cols-3" style="gap: 1rem; margin-top: 0.8rem;">
+      <div class="text-center">
+        <div style="font-size: 1.5rem;">🤖</div>
+        <p><b>AI駆動</b></p>
+        <p class="small">辞書ではなくLLMが文脈を理解して適切な応答を生成。RAGで車両マニュアルの情報を動的に参照。</p>
+      </div>
+      <div class="text-center">
+        <div style="font-size: 1.5rem;">🛡️</div>
+        <p><b>安全最優先</b></p>
+        <p class="small">多層防御で危険を見逃さない。迷ったら安全側に倒す設計。マニュアル記載外は自動でurgency引上げ。</p>
+      </div>
+      <div class="text-center">
+        <div style="font-size: 1.5rem;">🔧</div>
+        <p><b>メンテナンスフリー</b></p>
+        <p class="small">車種追加はPDFアップロードのみ。辞書メンテナンス不要。Structured Outputsで型安全を保証。</p>
+      </div>
+    </div>
+  </div>
+
+  <span class="slide-num">19</span>
+</div>
+
+<!-- ============================================ -->
+<!-- SLIDE 20 — End -->
+<!-- ============================================ -->
+<div class="slide title-slide">
+  <div>
+    <h1 style="font-size: 2.5rem;">Thank You</h1>
+    <p class="subtitle mt-2">Vehicle AI Chat — システム改善報告</p>
+    <div class="divider" style="max-width: 300px; margin: 2rem auto;"></div>
+    <p class="small">質疑応答</p>
+  </div>
+  <span class="slide-num">20</span>
+</div>
+
+</body>
+</html>

@@ -144,6 +144,24 @@ vehicle_id → photo_confirm → free_text → spec_check → diagnosing
 | `frontend/src/components/chat/MessageList.tsx` | currentStep / onRewind Props、条件付きボタン表示 |
 | `frontend/src/components/chat/ChatContainer.tsx` | rewindToTurn / currentStep を MessageList に渡す |
 
+### 2026-02-27: 画像選択カード — 警告灯アイコン (Phase 1)
+
+**目的**: 問診で警告灯の質問が出た際、テキストボタンではなくアイコン付きカードを3列グリッドで表示し、ユーザーが視覚的に選択できるようにする。
+
+**仕組み**:
+- バックエンドの `_attach_icons()` が `question_topic` に警告灯系キーワードを検出 → 選択肢に `icon` パスを付与
+- フロントエンドの `ChoiceButtons` が `icon` 付き選択肢を検出 → 3列アイコンカードグリッドに切替
+- LLMスキーマ変更なし。後処理のみ
+- 10種類の警告灯SVGアイコン（40x40px、アンバー/赤の単色シルエット）
+
+**変更ファイル**:
+| ファイル | 変更内容 |
+|---------|---------|
+| `backend/app/chat_flow/step_diagnosing.py` | `WARNING_LIGHT_ICONS` 辞書、`VISUAL_TOPICS` セット、`_attach_icons()` 関数追加、ask_question ハンドラで呼び出し |
+| `frontend/src/lib/types.ts` | `PromptInfo.choices` に `icon?: string` 追加 |
+| `frontend/src/components/chat/ChoiceButtons.tsx` | アイコンカードモード追加（3列グリッド + テキストボタン分離） |
+| `frontend/public/icons/warning-lights/*.svg` | 新規: 10個のSVGアイコン（engine, abs, oil, coolant, battery, airbag, brake, power-steering, tpms, seatbelt） |
+
 ---
 
 ## システム構成図

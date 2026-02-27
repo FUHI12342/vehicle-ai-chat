@@ -20,7 +20,7 @@ http://localhost:3000 の「構成図」ボタンから閲覧可能。
 |--------------|------|
 | ChatContainer | チャット画面全体の制御（入力欄、選択肢、予約フォームの出し分け） |
 | ChatInput | テキスト入力欄 |
-| ChoiceButtons | 選択肢ボタン群の表示 |
+| ChoiceButtons | 選択肢ボタン群の表示（警告灯アイコンカード対応） |
 | MessageBubble | 吹き出し1つ分の表示（ユーザー: 青、AI: グレー） |
 | MessageList | 吹き出しの一覧表示（スクロール、やり直しボタン、バッジ表示） |
 | VehicleSearch | 車両検索・選択UI |
@@ -377,6 +377,7 @@ AIの回答は型は保証されるが、意味的な妥当性はプロンプト
 | 後処理 | 場所 | 内容 |
 |--------|------|------|
 | 選択肢重複排除 | `_append_default_choices()` | 同じ選択肢が2つ出ないようにする |
+| 警告灯アイコン付与 | `_attach_icons()` | 警告灯系の質問トピックの場合、選択肢にアイコンパスを付与 |
 | トピック関連性チェック | `_is_irrelevant_topic()` | 症状と無関係な質問をブロック→再LLM呼び出し |
 | 待ちメッセージ排除 | `_is_waiting_message()` | 「まとめます」等の無意味な回答を排除→再LLM呼び出し |
 | 重複質問排除 | `_is_duplicate_question()` | 同じ質問の繰り返しを防止 |
@@ -635,7 +636,99 @@ rewindToTurn(turn) が呼ばれると:
 
 ---
 
-## 10. 技術スタック一覧
+## 10. 画像選択カード（警告灯アイコン）フロー詳細
+
+### 10-1. 目的
+
+問診で「ダッシュボードの警告灯は何が点灯していますか？」のような質問が出た際、テキストボタンだけでは警告灯の種類を識別しにくい。警告灯アイコンを画像カード形式で提示し、ユーザーが視覚的に直感的に選択できるようにする。
+
+### 10-2. 処理フロー
+
+```
+LLMが ask_question で質問を生成
+  ↓
+question_topic に「警告灯」「ランプ」「表示灯」「インジケーター」が含まれるか？
+  ├→ 含まれない → 従来通りテキストボタン表示
+  └→ 含まれる → _attach_icons() で選択肢にアイコンパス付与
+       ↓
+     各選択肢のlabelにキーワード（エンジン、ABS、バッテリー等）が含まれるか？
+       ├→ 含まれる → choice["icon"] = "/icons/warning-lights/engine.svg" 等
+       └→ 含まれない → icon なし（テキストボタンとして末尾配置）
+       ↓
+     フロントエンドで icon 付き選択肢を検出
+       → 3列グリッドのアイコンカード表示に切替
+       → 「わからない」「自由入力」はテキストボタンとして下部に配置
+```
+
+### 10-3. バックエンド処理（step_diagnosing.py）
+
+**アイコンマッピング辞書**（`WARNING_LIGHT_ICONS`）:
+
+| キーワード | アイコンパス | 対象の警告灯 |
+|-----------|------------|------------|
+| エンジン | `/icons/warning-lights/engine.svg` | エンジン/チェックエンジン |
+| ABS | `/icons/warning-lights/abs.svg` | ABS |
+| 油圧 / オイル | `/icons/warning-lights/oil.svg` | 油圧/オイル |
+| 水温 | `/icons/warning-lights/coolant.svg` | 水温 |
+| バッテリー / 充電 | `/icons/warning-lights/battery.svg` | バッテリー/充電 |
+| エアバッグ | `/icons/warning-lights/airbag.svg` | エアバッグ/SRS |
+| ブレーキ | `/icons/warning-lights/brake.svg` | ブレーキ |
+| パワステ | `/icons/warning-lights/power-steering.svg` | パワーステアリング |
+| タイヤ / 空気圧 | `/icons/warning-lights/tpms.svg` | タイヤ空気圧 |
+| シートベルト | `/icons/warning-lights/seatbelt.svg` | シートベルト |
+
+**トピック判定キーワード**（`VISUAL_TOPICS`）: `{"警告灯", "ランプ", "表示灯", "インジケーター"}`
+
+**呼び出し箇所**: `_append_default_choices()` の直後に `_attach_icons()` を呼び出し:
+```python
+choices_for_prompt = _append_default_choices(choices)
+choices_for_prompt = _attach_icons(choices_for_prompt, question_topic)
+```
+
+### 10-4. フロントエンド表示（ChoiceButtons.tsx）
+
+アイコン付き選択肢が1つでもある場合、コンポーネントは2つのセクションに分かれる:
+
+1. **アイコンカードグリッド**（3列）:
+   - 各カードにSVGアイコン（40x40px）+ ラベル
+   - ホバー時にアンバー色のハイライト
+   - タップで通常の選択と同じ動作
+
+2. **テキストボタン**（グリッドの下）:
+   - `icon` を持たない選択肢（「わからない」「✏️ 自由入力」等）
+   - 従来通りのButton表示
+
+アイコン付き選択肢がない場合は、従来通りのテキストボタン/グリッド表示にフォールバックする。
+
+### 10-5. SVGアイコンセット
+
+`frontend/public/icons/warning-lights/` に10個のSVGアイコンを配置:
+
+| ファイル | 表す警告灯 | 配色 |
+|---------|----------|------|
+| `engine.svg` | エンジン/チェックエンジン | アンバー |
+| `abs.svg` | ABS | アンバー |
+| `oil.svg` | 油圧/オイル | アンバー/赤 |
+| `coolant.svg` | 水温 | 赤 |
+| `battery.svg` | バッテリー/充電 | 赤 |
+| `airbag.svg` | エアバッグ/SRS | 赤 |
+| `brake.svg` | ブレーキ | 赤 |
+| `power-steering.svg` | パワーステアリング | アンバー |
+| `tpms.svg` | タイヤ空気圧 | アンバー |
+| `seatbelt.svg` | シートベルト | 赤 |
+
+### 10-6. 型定義の変更
+
+`frontend/src/lib/types.ts` の `PromptInfo.choices` に `icon` フィールドを追加:
+```typescript
+choices?: { value: string; label: string; icon?: string }[];
+```
+
+LLMスキーマ（`schemas.py`）の変更は不要。バックエンドの後処理でアイコンパスを付与するため、LLMはアイコンの存在を意識しない。
+
+---
+
+## 11. 技術スタック一覧
 
 | レイヤー | 技術 | バージョン |
 |---------|------|-----------|
