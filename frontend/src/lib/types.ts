@@ -46,7 +46,7 @@ export interface PromptInfo {
     | "booking_form"
     | "booking_confirm";
   message: string;
-  choices?: { value: string; label: string }[];
+  choices?: { value: string; label: string; icon?: string }[];
   vehicle_photo_url?: string | null;
   booking_type?: "dispatch" | "visit" | null;
   booking_fields?: BookingField[] | null;

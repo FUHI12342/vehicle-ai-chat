@@ -23,6 +23,38 @@ _DEFAULT_TAIL: list[dict] = [
 ]
 
 
+WARNING_LIGHT_ICONS: dict[str, str] = {
+    "エンジン": "/icons/warning-lights/engine.svg",
+    "ABS": "/icons/warning-lights/abs.svg",
+    "油圧": "/icons/warning-lights/oil.svg",
+    "オイル": "/icons/warning-lights/oil.svg",
+    "水温": "/icons/warning-lights/coolant.svg",
+    "バッテリー": "/icons/warning-lights/battery.svg",
+    "充電": "/icons/warning-lights/battery.svg",
+    "エアバッグ": "/icons/warning-lights/airbag.svg",
+    "ブレーキ": "/icons/warning-lights/brake.svg",
+    "パワステ": "/icons/warning-lights/power-steering.svg",
+    "タイヤ": "/icons/warning-lights/tpms.svg",
+    "空気圧": "/icons/warning-lights/tpms.svg",
+    "シートベルト": "/icons/warning-lights/seatbelt.svg",
+}
+
+VISUAL_TOPICS = {"警告灯", "ランプ", "表示灯", "インジケーター"}
+
+
+def _attach_icons(choices: list[dict], question_topic: str | None) -> list[dict]:
+    """警告灯系の質問トピックの場合、選択肢にアイコンパスを付与する。"""
+    if not question_topic or not any(kw in question_topic for kw in VISUAL_TOPICS):
+        return choices
+    for choice in choices:
+        label = choice.get("label", "")
+        for keyword, icon_path in WARNING_LIGHT_ICONS.items():
+            if keyword in label:
+                choice["icon"] = icon_path
+                break
+    return choices
+
+
 def _append_default_choices(choices: list[str] | None) -> list[dict]:
     """LLM が返した choices に「わからない」「自由入力」を末尾追加する（重複除外）。"""
     result: list[dict] = []
@@ -603,6 +635,7 @@ async def handle_diagnosing(session: SessionState, request: ChatRequest) -> Chat
 
     # A) 「わからない」「自由入力」を末尾に必ず追加
     choices_for_prompt = _append_default_choices(choices)
+    choices_for_prompt = _attach_icons(choices_for_prompt, question_topic)
 
     session.last_questions.append(message)
     session.conversation_history.append({"role": "assistant", "content": message})
