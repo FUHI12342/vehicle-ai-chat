@@ -9,9 +9,20 @@ interface Props {
   onClose: () => void;
 }
 
+const ZOOM_MIN = 0.3;
+const ZOOM_MAX = 3.0;
+const ZOOM_STEP = 0.15;
+
 export function ArchitectureDiagramModal({ isOpen, onClose }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
   const [error, setError] = useState<string | null>(null);
+  const [zoom, setZoom] = useState(1);
+
+  // Reset zoom when modal opens
+  useEffect(() => {
+    if (isOpen) setZoom(1);
+  }, [isOpen]);
 
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
@@ -27,6 +38,24 @@ export function ArchitectureDiagramModal({ isOpen, onClose }: Props) {
     return () => document.removeEventListener("keydown", handleKeyDown);
   }, [isOpen, handleKeyDown]);
 
+  // Mouse wheel zoom
+  const handleWheel = useCallback((e: WheelEvent) => {
+    if (e.ctrlKey || e.metaKey) {
+      e.preventDefault();
+      setZoom((prev) => {
+        const delta = e.deltaY > 0 ? -ZOOM_STEP : ZOOM_STEP;
+        return Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, prev + delta));
+      });
+    }
+  }, []);
+
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!isOpen || !el) return;
+    el.addEventListener("wheel", handleWheel, { passive: false });
+    return () => el.removeEventListener("wheel", handleWheel);
+  }, [isOpen, handleWheel]);
+
   useEffect(() => {
     if (!isOpen || !containerRef.current) return;
 
@@ -39,7 +68,7 @@ export function ArchitectureDiagramModal({ isOpen, onClose }: Props) {
           startOnLoad: false,
           theme: "default",
           securityLevel: "loose",
-          flowchart: { useMaxWidth: true, htmlLabels: true, curve: "basis" },
+          flowchart: { useMaxWidth: false, htmlLabels: true, curve: "basis" },
         });
 
         const id = `arch-${Date.now()}`;
@@ -63,6 +92,11 @@ export function ArchitectureDiagramModal({ isOpen, onClose }: Props) {
 
   if (!isOpen) return null;
 
+  const zoomIn = () => setZoom((z) => Math.min(ZOOM_MAX, z + ZOOM_STEP));
+  const zoomOut = () => setZoom((z) => Math.max(ZOOM_MIN, z - ZOOM_STEP));
+  const zoomReset = () => setZoom(1);
+  const zoomPercent = Math.round(zoom * 100);
+
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
@@ -72,20 +106,49 @@ export function ArchitectureDiagramModal({ isOpen, onClose }: Props) {
     >
       <div className="relative bg-white rounded-2xl shadow-xl w-[95vw] h-[90vh] flex flex-col">
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
+        <div className="flex items-center justify-between px-6 py-3 border-b border-gray-200">
           <h2 className="text-lg font-bold text-gray-900">
             {ja.architecture.title}
           </h2>
-          <button
-            onClick={onClose}
-            className="text-sm text-gray-500 hover:text-gray-700 px-3 py-1 rounded-lg hover:bg-gray-100 transition-colors"
-          >
-            {ja.architecture.close}
-          </button>
+          <div className="flex items-center gap-2">
+            {/* Zoom controls */}
+            <div className="flex items-center gap-1 bg-gray-100 rounded-lg px-2 py-1">
+              <button
+                onClick={zoomOut}
+                disabled={zoom <= ZOOM_MIN}
+                className="w-7 h-7 flex items-center justify-center rounded text-gray-600 hover:bg-gray-200 disabled:opacity-30 disabled:hover:bg-transparent text-sm font-bold"
+                title="縮小"
+              >
+                −
+              </button>
+              <button
+                onClick={zoomReset}
+                className="px-2 h-7 text-xs text-gray-600 hover:bg-gray-200 rounded min-w-[3rem] text-center"
+                title="リセット"
+              >
+                {zoomPercent}%
+              </button>
+              <button
+                onClick={zoomIn}
+                disabled={zoom >= ZOOM_MAX}
+                className="w-7 h-7 flex items-center justify-center rounded text-gray-600 hover:bg-gray-200 disabled:opacity-30 disabled:hover:bg-transparent text-sm font-bold"
+                title="拡大"
+              >
+                +
+              </button>
+            </div>
+            <span className="text-xs text-gray-400 hidden sm:inline">Cmd+スクロールでも拡大縮小</span>
+            <button
+              onClick={onClose}
+              className="text-sm text-gray-500 hover:text-gray-700 px-3 py-1 rounded-lg hover:bg-gray-100 transition-colors ml-2"
+            >
+              {ja.architecture.close}
+            </button>
+          </div>
         </div>
 
         {/* Body */}
-        <div className="flex-1 overflow-auto p-6">
+        <div ref={scrollRef} className="flex-1 overflow-auto p-6 cursor-grab active:cursor-grabbing">
           {error ? (
             <div className="text-red-600 text-sm text-center py-8">
               {error}
@@ -93,7 +156,8 @@ export function ArchitectureDiagramModal({ isOpen, onClose }: Props) {
           ) : (
             <div
               ref={containerRef}
-              className="flex items-start justify-center min-h-full [&>svg]:max-w-full"
+              className="inline-block origin-top-left transition-transform duration-100"
+              style={{ transform: `scale(${zoom})` }}
             />
           )}
         </div>

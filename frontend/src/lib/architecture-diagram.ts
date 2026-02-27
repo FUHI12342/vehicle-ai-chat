@@ -111,7 +111,6 @@ graph TB
   end
 
   VehicleService --> VehiclesJSON
-  ChatFlow --> DiagConfig
   PDFLoader --> PDFs
   ChromaDB --> ChromaData
 

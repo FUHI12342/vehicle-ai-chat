@@ -181,7 +181,6 @@ function scanRAG(): {
 /** Data files (non-.py) → node ID + filename as label */
 const DATA_NODE_MAP: Record<string, string> = {
   "vehicles.json": "VehiclesJSON",
-  "diagnostic_config.yaml": "DiagConfig",
 };
 
 function scanDataFiles(): { id: string; label: string }[] {
@@ -250,7 +249,6 @@ const EDGES_AFTER_RAG = [
 
 const EDGES_AFTER_DATA = [
   "VehicleService --> VehiclesJSON",
-  "ChatFlow --> DiagConfig",
   "PDFLoader --> PDFs",
   "ChromaDB --> ChromaData",
 ];
