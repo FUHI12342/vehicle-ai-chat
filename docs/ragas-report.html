@@ -1,0 +1,1017 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RAGAS 評価フレームワーク導入報告</title>
+<style>
+  /* ── Reset & Base ── */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { font-size: 16px; scroll-behavior: smooth; }
+  body {
+    font-family: "Hiragino Kaku Gothic ProN", "Noto Sans JP", "Segoe UI", sans-serif;
+    background: #0f172a; color: #e2e8f0;
+    line-height: 1.7;
+  }
+
+  /* ── Slide Container ── */
+  .slide {
+    min-height: 100vh; padding: 3rem 4rem;
+    display: flex; flex-direction: column; justify-content: center;
+    position: relative; overflow: hidden;
+  }
+  .slide::before {
+    content: ''; position: absolute; inset: 0; opacity: 0.04;
+    background: radial-gradient(circle at 30% 40%, #3b82f6 0%, transparent 60%),
+                radial-gradient(circle at 80% 70%, #8b5cf6 0%, transparent 50%);
+    pointer-events: none;
+  }
+  .slide-num {
+    position: absolute; bottom: 1.5rem; right: 2rem;
+    font-size: 0.8rem; color: #475569; font-weight: 600;
+  }
+
+  /* ── Typography ── */
+  h1 { font-size: 2.6rem; font-weight: 800; letter-spacing: -0.02em; }
+  h2 { font-size: 2rem; font-weight: 700; margin-bottom: 1.5rem; letter-spacing: -0.01em; }
+  h3 { font-size: 1.3rem; font-weight: 700; margin-bottom: 0.8rem; }
+  .subtitle { font-size: 1.2rem; color: #94a3b8; margin-top: 0.5rem; }
+  .accent { color: #60a5fa; }
+  .accent-green { color: #34d399; }
+  .accent-amber { color: #fbbf24; }
+  .accent-red { color: #f87171; }
+  .accent-purple { color: #a78bfa; }
+  .small { font-size: 0.85rem; color: #94a3b8; }
+  .label {
+    display: inline-block; font-size: 0.7rem; font-weight: 700;
+    padding: 0.15rem 0.5rem; border-radius: 4px; text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+  .label-blue { background: #1e3a5f; color: #60a5fa; }
+  .label-green { background: #064e3b; color: #34d399; }
+  .label-red { background: #7f1d1d; color: #fca5a5; }
+  .label-amber { background: #78350f; color: #fbbf24; }
+  .label-purple { background: #4c1d95; color: #c4b5fd; }
+
+  /* ── Layout ── */
+  .cols { display: grid; gap: 2rem; }
+  .cols-2 { grid-template-columns: 1fr 1fr; }
+  .cols-3 { grid-template-columns: 1fr 1fr 1fr; }
+  .cols-4 { grid-template-columns: 1fr 1fr 1fr 1fr; }
+  .cols-1-2 { grid-template-columns: 1fr 2fr; }
+  .cols-2-1 { grid-template-columns: 2fr 1fr; }
+  .cols-3-2 { grid-template-columns: 3fr 2fr; }
+
+  /* ── Cards ── */
+  .card {
+    background: rgba(30, 41, 59, 0.7); border: 1px solid #334155;
+    border-radius: 12px; padding: 1.5rem;
+    backdrop-filter: blur(8px);
+  }
+  .card-danger { border-color: #ef4444; background: rgba(127, 29, 29, 0.2); }
+  .card-success { border-color: #10b981; background: rgba(6, 78, 59, 0.2); }
+  .card-warning { border-color: #f59e0b; background: rgba(120, 53, 15, 0.2); }
+  .card-blue { border-color: #3b82f6; background: rgba(30, 58, 95, 0.25); }
+  .card-purple { border-color: #8b5cf6; background: rgba(76, 29, 149, 0.2); }
+
+  /* ── Flow / Pipeline ── */
+  .flow {
+    display: flex; align-items: center; gap: 0; flex-wrap: wrap;
+    justify-content: center;
+  }
+  .flow-node {
+    background: rgba(30, 58, 95, 0.5); border: 2px solid #3b82f6;
+    border-radius: 10px; padding: 0.6rem 1rem;
+    font-size: 0.85rem; font-weight: 600; text-align: center;
+    min-width: 100px; position: relative;
+  }
+  .flow-node.active { border-color: #f59e0b; background: rgba(120, 53, 15, 0.3); color: #fbbf24; }
+  .flow-node.danger { border-color: #ef4444; background: rgba(127, 29, 29, 0.3); color: #fca5a5; }
+  .flow-node.success { border-color: #10b981; background: rgba(6, 78, 59, 0.3); color: #34d399; }
+  .flow-node.purple { border-color: #8b5cf6; background: rgba(76, 29, 149, 0.3); color: #c4b5fd; }
+  .flow-arrow {
+    width: 32px; height: 2px; background: #475569; position: relative;
+    flex-shrink: 0;
+  }
+  .flow-arrow::after {
+    content: ''; position: absolute; right: -1px; top: -4px;
+    border: 5px solid transparent; border-left-color: #475569;
+  }
+  .flow-arrow-down {
+    width: 2px; height: 28px; background: #475569; position: relative;
+    margin: 0 auto;
+  }
+  .flow-arrow-down::after {
+    content: ''; position: absolute; bottom: -1px; left: -4px;
+    border: 5px solid transparent; border-top-color: #475569;
+  }
+
+  /* ── Table ── */
+  table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+  th { background: rgba(30, 58, 95, 0.5); color: #93c5fd; font-weight: 700;
+       padding: 0.6rem 0.8rem; text-align: left; border-bottom: 2px solid #334155; }
+  td { padding: 0.55rem 0.8rem; border-bottom: 1px solid #1e293b; }
+  tr:hover td { background: rgba(51, 65, 85, 0.3); }
+
+  /* ── Code ── */
+  code {
+    font-family: "SF Mono", "Fira Code", monospace;
+    background: rgba(15, 23, 42, 0.8); border: 1px solid #334155;
+    padding: 0.1rem 0.4rem; border-radius: 4px; font-size: 0.82rem;
+    color: #93c5fd;
+  }
+  pre {
+    background: rgba(15, 23, 42, 0.9); border: 1px solid #334155;
+    border-radius: 8px; padding: 1rem 1.2rem; overflow-x: auto;
+    font-size: 0.78rem; line-height: 1.6;
+  }
+  pre code { background: none; border: none; padding: 0; }
+
+  /* ── Diagram ── */
+  .diagram-box {
+    background: rgba(15, 23, 42, 0.6); border: 1px solid #334155;
+    border-radius: 12px; padding: 1.5rem; text-align: center;
+  }
+
+  /* ── List ── */
+  ul, ol { padding-left: 1.5rem; }
+  li { margin-bottom: 0.4rem; }
+  li::marker { color: #60a5fa; }
+
+  /* ── Divider ── */
+  .divider {
+    height: 1px; background: linear-gradient(90deg, transparent, #334155 30%, #334155 70%, transparent);
+    margin: 1.5rem 0;
+  }
+
+  /* ── Badge ── */
+  .badge {
+    display: inline-flex; align-items: center; gap: 0.3rem;
+    padding: 0.25rem 0.7rem; border-radius: 20px; font-size: 0.75rem; font-weight: 600;
+  }
+  .badge-red { background: #7f1d1d; color: #fca5a5; }
+  .badge-amber { background: #78350f; color: #fbbf24; }
+  .badge-green { background: #064e3b; color: #34d399; }
+  .badge-blue { background: #1e3a5f; color: #60a5fa; }
+  .badge-gray { background: #1e293b; color: #94a3b8; }
+
+  /* ── Title slide ── */
+  .title-slide { text-align: center; }
+  .title-slide h1 { font-size: 3rem; margin-bottom: 0.5rem; }
+  .title-date { font-size: 1rem; color: #64748b; margin-top: 2rem; }
+
+  /* ── Metric bar ── */
+  .metric-bar-container {
+    background: #1e293b; border-radius: 6px; height: 22px; position: relative; overflow: hidden;
+  }
+  .metric-bar {
+    height: 100%; border-radius: 6px; display: flex; align-items: center; padding-left: 8px;
+    font-size: 0.72rem; font-weight: 700; color: #fff; min-width: 30px;
+    transition: width 0.5s ease;
+  }
+  .metric-bar.green { background: linear-gradient(90deg, #059669, #34d399); }
+  .metric-bar.amber { background: linear-gradient(90deg, #d97706, #fbbf24); }
+  .metric-bar.red { background: linear-gradient(90deg, #dc2626, #f87171); }
+  .metric-bar.blue { background: linear-gradient(90deg, #2563eb, #60a5fa); }
+
+  /* ── Urgency dot ── */
+  .urgency-dot {
+    display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 6px;
+  }
+  .urgency-dot.critical { background: #ef4444; }
+  .urgency-dot.high { background: #f59e0b; }
+  .urgency-dot.medium { background: #3b82f6; }
+  .urgency-dot.low { background: #10b981; }
+
+  /* ── Print / Screen ── */
+  @media print {
+    .slide { page-break-after: always; min-height: auto; padding: 2rem; }
+    body { background: #fff; color: #1e293b; }
+    .card { background: #f8fafc; border-color: #e2e8f0; }
+  }
+
+  /* ── Spacer ── */
+  .mt-1 { margin-top: 0.5rem; } .mt-2 { margin-top: 1rem; } .mt-3 { margin-top: 1.5rem; }
+  .mb-1 { margin-bottom: 0.5rem; } .mb-2 { margin-bottom: 1rem; }
+  .text-center { text-align: center; }
+
+  /* ── Highlight box ── */
+  .highlight-box {
+    border-left: 4px solid #3b82f6; background: rgba(30, 58, 95, 0.2);
+    padding: 1rem 1.2rem; border-radius: 0 8px 8px 0; margin: 1rem 0;
+  }
+  .highlight-box.amber { border-left-color: #f59e0b; background: rgba(120, 53, 15, 0.15); }
+  .highlight-box.red { border-left-color: #ef4444; background: rgba(127, 29, 29, 0.15); }
+  .highlight-box.green { border-left-color: #10b981; background: rgba(6, 78, 59, 0.15); }
+  .highlight-box.purple { border-left-color: #8b5cf6; background: rgba(76, 29, 149, 0.15); }
+</style>
+</head>
+<body>
+
+<!-- ============================================ -->
+<!-- SLIDE 1 — Title -->
+<!-- ============================================ -->
+<div class="slide title-slide">
+  <div>
+    <span class="label label-purple mb-1">Vehicle AI Chat</span>
+    <h1 style="font-size: 2.8rem; margin-top: 0.5rem;">
+      RAGAS 評価フレームワーク<br><span class="accent">導入報告</span>
+    </h1>
+    <p class="subtitle mt-2">RAGパイプライン品質の定量評価基盤</p>
+    <div class="divider" style="max-width: 300px; margin: 2rem auto;"></div>
+    <p class="title-date">2026-03-04</p>
+  </div>
+  <span class="slide-num">1</span>
+</div>
+
+<!-- ============================================ -->
+<!-- SLIDE 2 — Why RAGAS -->
+<!-- ============================================ -->
+<div class="slide">
+  <span class="label label-blue mb-1">Background</span>
+  <h2>なぜRAGAS が必要か？ — <span class="accent">品質の可視化</span></h2>
+
+  <div class="cols cols-2 mt-2">
+    <div>
+      <div class="card card-danger">
+        <h3>これまでの課題</h3>
+        <ul>
+          <li>RAG検索の品質を<b>定量的に測る手段がなかった</b></li>
+          <li>「回答がマニュアルに忠実か」は目視確認のみ</li>
+          <li>チャンキング戦略やプロンプト変更の<b>効果測定が困難</b></li>
+          <li>テストケースが属人化（開発者の頭の中）</li>
+        </ul>
+      </div>
+
+      <div class="card card-success mt-2">
+        <h3>RAGAS導入で解決</h3>
+        <ul>
+          <li><b>4つのメトリクス</b>でRAGパイプラインを自動評価</li>
+          <li>10種の標準テストケースで<b>再現可能な品質測定</b></li>
+          <li>変更前後のスコア比較で<b>改善/劣化を即座に検出</b></li>
+          <li>E2Eテストでチャットフロー全体の正確性も検証</li>
+        </ul>
+      </div>
+    </div>
+
+    <div>
+      <div class="card card-blue">
+        <h3>品質保証の全体像</h3>
+        <div class="diagram-box mt-1">
+          <div style="display: flex; flex-direction: column; gap: 0; align-items: center;">
+            <div class="flow-node" style="width: 80%;">
+              <b>手動テスト</b><br>
+              <span class="small">ブラウザで症状入力 → 目視確認</span>
+            </div>
+            <div class="flow-arrow-down"></div>
+            <div class="flow-node active" style="width: 80%;">
+              <b>RAGAS 自動評価</b> <span class="badge badge-amber">NEW</span><br>
+              <span class="small">4メトリクス × 10テストケース</span>
+            </div>
+            <div class="flow-arrow-down"></div>
+            <div class="flow-node active" style="width: 80%;">
+              <b>E2E チャットテスト</b> <span class="badge badge-amber">NEW</span><br>
+              <span class="small">APIフロー全体の正確性検証</span>
+            </div>
+            <div class="flow-arrow-down"></div>
+            <div class="flow-node success" style="width: 80%;">
+              <b>品質レポート出力</b><br>
+              <span class="small">JSON + コンソールテーブル</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <span class="slide-num">2</span>
+</div>
+
+<!-- ============================================ -->
+<!-- SLIDE 3 — What is RAGAS -->
+<!-- ============================================ -->
+<div class="slide">
+  <span class="label label-purple mb-1">RAGAS解説</span>
+  <h2>RAGAS とは？ — <span class="accent-purple">RAG品質評価のデファクト</span></h2>
+
+  <div class="cols cols-3-2 mt-2">
+    <div>
+      <div class="card card-purple">
+        <h3>RAGAS (Retrieval Augmented Generation Assessment)</h3>
+        <p>LLMを活用したRAGパイプラインの品質を、<b>自動的かつ定量的に</b>評価するオープンソースフレームワーク。</p>
+
+        <div class="highlight-box purple mt-2">
+          <b>核心アイデア:</b> 「LLMでLLMの出力を評価する」— 人間の評価を模倣する評価用LLMが、回答の忠実性・関連性・コンテキストの質を自動スコアリング。
+        </div>
+
+        <h3 class="mt-2">評価に必要な4つの入力</h3>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; margin-top: 0.5rem;">
+          <div style="background: rgba(139, 92, 246, 0.15); padding: 0.5rem 0.8rem; border-radius: 8px; font-size: 0.85rem;">
+            <b style="color: #c4b5fd;">user_input</b><br>
+            ユーザーの質問文
+          </div>
+          <div style="background: rgba(139, 92, 246, 0.15); padding: 0.5rem 0.8rem; border-radius: 8px; font-size: 0.85rem;">
+            <b style="color: #c4b5fd;">response</b><br>
+            LLMの回答文
+          </div>
+          <div style="background: rgba(139, 92, 246, 0.15); padding: 0.5rem 0.8rem; border-radius: 8px; font-size: 0.85rem;">
+            <b style="color: #c4b5fd;">retrieved_contexts</b><br>
+            RAG検索で取得した文書群
+          </div>
+          <div style="background: rgba(139, 92, 246, 0.15); padding: 0.5rem 0.8rem; border-radius: 8px; font-size: 0.85rem;">
+            <b style="color: #c4b5fd;">reference</b><br>
+            正解テキスト (ground_truth)
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <div class="card">
+        <h3>評価フロー</h3>
+        <div style="display: flex; flex-direction: column; gap: 0; align-items: center; margin-top: 0.5rem;">
+          <div class="flow-node purple" style="width: 100%;">
+            症状テキスト<br><span class="small">「ブレーキが効かない」</span>
+          </div>
+          <div style="display: flex; width: 100%; margin-top: 4px;">
+            <div style="flex: 1; display: flex; flex-direction: column; align-items: center;">
+              <div class="flow-arrow-down"></div>
+              <div class="flow-node" style="width: 90%; font-size: 0.78rem;">
+                RAG検索<br>
+                <span class="small">ChromaDB</span>
+              </div>
+              <div class="flow-arrow-down"></div>
+              <div class="flow-node" style="width: 90%; font-size: 0.78rem; color: #c4b5fd;">
+                contexts
+              </div>
+            </div>
+            <div style="flex: 1; display: flex; flex-direction: column; align-items: center;">
+              <div class="flow-arrow-down"></div>
+              <div class="flow-node" style="width: 90%; font-size: 0.78rem;">
+                LLM回答<br>
+                <span class="small">GPT-4o-mini</span>
+              </div>
+              <div class="flow-arrow-down"></div>
+              <div class="flow-node" style="width: 90%; font-size: 0.78rem; color: #c4b5fd;">
+                response
+              </div>
+            </div>
+          </div>
+          <div class="flow-arrow-down"></div>
+          <div class="flow-node active" style="width: 100%;">
+            RAGAS 評価 (4メトリクス)<br>
+            <span class="small">+ ground_truth と比較</span>
+          </div>
+          <div class="flow-arrow-down"></div>
+          <div class="flow-node success" style="width: 100%;">
+            スコア出力 (0.0 〜 1.0)
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <span class="slide-num">3</span>
+</div>
+
+<!-- ============================================ -->
+<!-- SLIDE 4 — 4 Metrics Deep Dive -->
+<!-- ============================================ -->
+<div class="slide">
+  <span class="label label-purple mb-1">RAGAS解説</span>
+  <h2>4つの評価メトリクス — <span class="accent-purple">何を測るのか</span></h2>
+
+  <div class="cols cols-2 mt-2">
+    <div class="card card-blue">
+      <h3><span style="color: #60a5fa;">1.</span> Faithfulness（忠実性）</h3>
+      <p class="mb-1">回答が検索コンテキストに<b>忠実か</b>を評価。ハルシネーション検出。</p>
+      <div class="diagram-box" style="padding: 1rem;">
+        <div style="font-size: 0.82rem; text-align: left;">
+          <div style="color: #60a5fa; margin-bottom: 0.3rem;"><b>評価プロセス:</b></div>
+          <div>1. 回答から主張（claims）を抽出</div>
+          <div>2. 各主張がcontextsで裏付けられるか判定</div>
+          <div>3. <code>スコア = 裏付けあり / 全主張数</code></div>
+        </div>
+      </div>
+      <div class="highlight-box mt-1" style="font-size: 0.82rem;">
+        <b>低スコアの意味:</b> LLMがマニュアルにない情報を「でっちあげ」ている
+      </div>
+    </div>
+
+    <div class="card card-success">
+      <h3><span style="color: #34d399;">2.</span> Answer Relevancy（回答関連性）</h3>
+      <p class="mb-1">回答がユーザーの<b>質問に対して的確か</b>を評価。</p>
+      <div class="diagram-box" style="padding: 1rem;">
+        <div style="font-size: 0.82rem; text-align: left;">
+          <div style="color: #34d399; margin-bottom: 0.3rem;"><b>評価プロセス:</b></div>
+          <div>1. 回答から「元の質問」を逆生成</div>
+          <div>2. 逆生成した質問と実際の質問の類似度を計算</div>
+          <div>3. <code>スコア = コサイン類似度の平均</code></div>
+        </div>
+      </div>
+      <div class="highlight-box green mt-1" style="font-size: 0.82rem;">
+        <b>低スコアの意味:</b> 質問と無関係な情報が回答に含まれている
+      </div>
+    </div>
+
+    <div class="card card-warning">
+      <h3><span style="color: #fbbf24;">3.</span> Context Precision（検索精度）</h3>
+      <p class="mb-1">検索結果の<b>上位に関連チャンクが来ているか</b>を評価。</p>
+      <div class="diagram-box" style="padding: 1rem;">
+        <div style="font-size: 0.82rem; text-align: left;">
+          <div style="color: #fbbf24; margin-bottom: 0.3rem;"><b>評価プロセス:</b></div>
+          <div>1. 各検索結果が質問に関連するかLLMが判定</div>
+          <div>2. 上位に関連チャンクが多いほど高スコア</div>
+          <div>3. <code>スコア = Precision@K の加重平均</code></div>
+        </div>
+      </div>
+      <div class="highlight-box amber mt-1" style="font-size: 0.82rem;">
+        <b>低スコアの意味:</b> ChromaDB の検索ランキングが不適切
+      </div>
+    </div>
+
+    <div class="card card-danger">
+      <h3><span style="color: #fca5a5;">4.</span> Context Recall（検索網羅性）</h3>
+      <p class="mb-1">正解テキストの情報が検索結果に<b>どれだけ含まれているか</b>を評価。</p>
+      <div class="diagram-box" style="padding: 1rem;">
+        <div style="font-size: 0.82rem; text-align: left;">
+          <div style="color: #fca5a5; margin-bottom: 0.3rem;"><b>評価プロセス:</b></div>
+          <div>1. ground_truth の文を分解</div>
+          <div>2. 各文が contexts に含まれるか判定</div>
+          <div>3. <code>スコア = カバーされた文 / 全文数</code></div>
+        </div>
+      </div>
+      <div class="highlight-box red mt-1" style="font-size: 0.82rem;">
+        <b>低スコアの意味:</b> 必要な情報がチャンクに含まれていない or 検索できていない
+      </div>
+    </div>
+  </div>
+
+  <span class="slide-num">4</span>
+</div>
+
+<!-- ============================================ -->
+<!-- SLIDE 5 — Metrics Quadrant -->
+<!-- ============================================ -->
+<div class="slide">
+  <span class="label label-purple mb-1">RAGAS解説</span>
+  <h2>メトリクスの関係 — <span class="accent">何を改善すべきか判断する</span></h2>
+
+  <div class="cols cols-2 mt-2">
+    <div>
+      <div class="diagram-box" style="padding: 2rem;">
+        <div style="position: relative; width: 100%; height: 320px;">
+          <!-- Axes -->
+          <div style="position: absolute; left: 50%; top: 0; bottom: 0; width: 2px; background: #334155;"></div>
+          <div style="position: absolute; top: 50%; left: 0; right: 0; height: 2px; background: #334155;"></div>
+          <!-- Labels -->
+          <div style="position: absolute; top: -4px; left: 50%; transform: translateX(-50%); font-size: 0.72rem; color: #60a5fa; font-weight: 600;">検索品質 HIGH</div>
+          <div style="position: absolute; bottom: -4px; left: 50%; transform: translateX(-50%); font-size: 0.72rem; color: #94a3b8;">検索品質 LOW</div>
+          <div style="position: absolute; right: 4px; top: 50%; transform: translateY(-50%); font-size: 0.72rem; color: #60a5fa; font-weight: 600;">生成品質 HIGH</div>
+          <div style="position: absolute; left: 4px; top: 50%; transform: translateY(-50%); font-size: 0.72rem; color: #94a3b8;">生成品質 LOW</div>
+
+          <!-- Quadrant 1: Top-Right (ideal) -->
+          <div style="position: absolute; top: 15%; right: 8%; width: 38%; text-align: center; padding: 0.8rem; background: rgba(6, 78, 59, 0.2); border: 1px solid #10b981; border-radius: 8px;">
+            <div style="font-size: 0.85rem; font-weight: 700; color: #34d399;">理想状態</div>
+            <div style="font-size: 0.72rem; color: #94a3b8; margin-top: 0.3rem;">全メトリクス高スコア<br>変更の必要なし</div>
+          </div>
+
+          <!-- Quadrant 2: Top-Left -->
+          <div style="position: absolute; top: 15%; left: 4%; width: 38%; text-align: center; padding: 0.8rem; background: rgba(120, 53, 15, 0.15); border: 1px solid #f59e0b; border-radius: 8px;">
+            <div style="font-size: 0.85rem; font-weight: 700; color: #fbbf24;">プロンプト改善</div>
+            <div style="font-size: 0.72rem; color: #94a3b8; margin-top: 0.3rem;">検索OK、回答が不適切<br>Faithfulness/Relevancy低</div>
+          </div>
+
+          <!-- Quadrant 3: Bottom-Right -->
+          <div style="position: absolute; bottom: 15%; right: 8%; width: 38%; text-align: center; padding: 0.8rem; background: rgba(30, 58, 95, 0.2); border: 1px solid #3b82f6; border-radius: 8px;">
+            <div style="font-size: 0.85rem; font-weight: 700; color: #60a5fa;">検索パイプライン改善</div>
+            <div style="font-size: 0.72rem; color: #94a3b8; margin-top: 0.3rem;">回答力OK、検索が弱い<br>Precision/Recall低</div>
+          </div>
+
+          <!-- Quadrant 4: Bottom-Left (worst) -->
+          <div style="position: absolute; bottom: 15%; left: 4%; width: 38%; text-align: center; padding: 0.8rem; background: rgba(127, 29, 29, 0.15); border: 1px solid #ef4444; border-radius: 8px;">
+            <div style="font-size: 0.85rem; font-weight: 700; color: #fca5a5;">全面見直し</div>
+            <div style="font-size: 0.72rem; color: #94a3b8; margin-top: 0.3rem;">検索も回答も不適切<br>全メトリクス低</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <div class="card">
+        <h3>改善アクション早見表</h3>
+        <table style="font-size: 0.82rem;">
+          <tr>
+            <th>低スコア箇所</th>
+            <th>改善アクション</th>
+          </tr>
+          <tr>
+            <td style="color: #60a5fa;"><b>Faithfulness</b></td>
+            <td>プロンプトの「コンテキストに基づいて回答」指示を強化</td>
+          </tr>
+          <tr>
+            <td style="color: #34d399;"><b>Relevancy</b></td>
+            <td>プロンプトのフォーカス指示・余計な情報の抑制</td>
+          </tr>
+          <tr>
+            <td style="color: #fbbf24;"><b>Precision</b></td>
+            <td>チャンキング戦略の見直し、embeddingモデル変更</td>
+          </tr>
+          <tr>
+            <td style="color: #fca5a5;"><b>Recall</b></td>
+            <td>チャンクサイズ調整、検索件数(n_results)増加</td>
+          </tr>
+        </table>
+      </div>
+
+      <div class="card mt-2">
+        <h3>目標スコア</h3>
+        <div style="margin-top: 0.5rem;">
+          <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.6rem;">
+            <span style="width: 110px; font-size: 0.82rem; color: #60a5fa;">Faithfulness</span>
+            <div class="metric-bar-container" style="flex: 1;">
+              <div class="metric-bar green" style="width: 80%;">≥ 0.80</div>
+            </div>
+          </div>
+          <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.6rem;">
+            <span style="width: 110px; font-size: 0.82rem; color: #34d399;">Relevancy</span>
+            <div class="metric-bar-container" style="flex: 1;">
+              <div class="metric-bar green" style="width: 70%;">≥ 0.70</div>
+            </div>
+          </div>
+          <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.6rem;">
+            <span style="width: 110px; font-size: 0.82rem; color: #fbbf24;">Precision</span>
+            <div class="metric-bar-container" style="flex: 1;">
+              <div class="metric-bar blue" style="width: 60%;">≥ 0.60</div>
+            </div>
+          </div>
+          <div style="display: flex; align-items: center; gap: 0.5rem;">
+            <span style="width: 110px; font-size: 0.82rem; color: #fca5a5;">Recall</span>
+            <div class="metric-bar-container" style="flex: 1;">
+              <div class="metric-bar blue" style="width: 60%;">≥ 0.60</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <span class="slide-num">5</span>
+</div>
+
+<!-- ============================================ -->
+<!-- SLIDE 6 — 10 Test Cases -->
+<!-- ============================================ -->
+<div class="slide">
+  <span class="label label-amber mb-1">Test Cases</span>
+  <h2>10種問診テストケース — <span class="accent-amber">品質評価の基準セット</span></h2>
+
+  <p class="small mb-2">車両: ホンダ アコード 2011年式 (vehicle_id: 30TA06210_web) — 緊急度4段階 × アクション3種をカバー</p>
+
+  <table>
+    <thead>
+      <tr>
+        <th style="width: 30px;">#</th>
+        <th style="width: 130px;">カテゴリ</th>
+        <th>症状テキスト</th>
+        <th style="width: 85px;">urgency</th>
+        <th style="width: 110px;">action</th>
+        <th style="width: 200px;">ground_truth要点</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>1</td>
+        <td>ブレーキ故障</td>
+        <td>ブレーキを踏んでも止まらない感じがする</td>
+        <td><span class="urgency-dot critical"></span>critical</td>
+        <td><span class="badge badge-red">escalate</span></td>
+        <td class="small">即停車・ロードサービス</td>
+      </tr>
+      <tr>
+        <td>2</td>
+        <td>エンジン警告灯</td>
+        <td>エンジンの警告灯が点灯している</td>
+        <td><span class="urgency-dot high"></span>high</td>
+        <td><span class="badge badge-amber">ask_question</span></td>
+        <td class="small">警告灯の種類確認→ディーラー推奨</td>
+      </tr>
+      <tr>
+        <td>3</td>
+        <td>走行中異音</td>
+        <td>走行中にガタガタと異音がする</td>
+        <td><span class="urgency-dot medium"></span>medium</td>
+        <td><span class="badge badge-amber">ask_question</span></td>
+        <td class="small">速度・場所の特定質問</td>
+      </tr>
+      <tr>
+        <td>4</td>
+        <td>エアコン不調</td>
+        <td>エアコンから冷たい風が出ない</td>
+        <td><span class="urgency-dot low"></span>low</td>
+        <td><span class="badge badge-amber">ask_question</span></td>
+        <td class="small">設定確認→冷媒不足の可能性</td>
+      </tr>
+      <tr>
+        <td>5</td>
+        <td>エンジン始動不良</td>
+        <td>エンジンがかからない</td>
+        <td><span class="urgency-dot high"></span>high</td>
+        <td><span class="badge badge-amber">ask_question</span></td>
+        <td class="small">バッテリー/スターター確認</td>
+      </tr>
+      <tr>
+        <td>6</td>
+        <td>オイル漏れ</td>
+        <td>駐車場の地面に油のシミがある</td>
+        <td><span class="urgency-dot high"></span>high</td>
+        <td><span class="badge badge-amber">ask_question</span></td>
+        <td class="small">漏れ位置・色の確認</td>
+      </tr>
+      <tr>
+        <td>7</td>
+        <td>タイヤ空気圧</td>
+        <td>タイヤの空気圧警告灯がついた</td>
+        <td><span class="urgency-dot medium"></span>medium</td>
+        <td><span class="badge badge-amber">ask_question</span></td>
+        <td class="small">TPMS確認・空気圧点検</td>
+      </tr>
+      <tr>
+        <td>8</td>
+        <td>ハンドル重い</td>
+        <td>ハンドルが急に重くなった</td>
+        <td><span class="urgency-dot medium"></span>medium</td>
+        <td><span class="badge badge-amber">ask_question</span></td>
+        <td class="small">パワステ系統確認</td>
+      </tr>
+      <tr>
+        <td>9</td>
+        <td>仕様確認系</td>
+        <td>停車中にエンジンが止まることがある</td>
+        <td><span class="urgency-dot low"></span>low</td>
+        <td><span class="badge badge-blue">spec_answer</span></td>
+        <td class="small">アイドリングストップ仕様説明</td>
+      </tr>
+      <tr>
+        <td>10</td>
+        <td>オーバーヒート</td>
+        <td>水温計が赤いところまで上がっている</td>
+        <td><span class="urgency-dot critical"></span>critical</td>
+        <td><span class="badge badge-red">escalate</span></td>
+        <td class="small">即停車・冷却系異常</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="cols cols-3 mt-2">
+    <div class="card" style="padding: 1rem;">
+      <div class="text-center"><span class="badge badge-red">critical × 2</span></div>
+      <p class="small text-center mt-1">即座にescalate → 予約画面遷移</p>
+    </div>
+    <div class="card" style="padding: 1rem;">
+      <div class="text-center"><span class="badge badge-amber">high/medium × 7</span></div>
+      <p class="small text-center mt-1">追加質問で症状を絞り込み</p>
+    </div>
+    <div class="card" style="padding: 1rem;">
+      <div class="text-center"><span class="badge badge-blue">spec_answer × 1</span></div>
+      <p class="small text-center mt-1">仕様確認で正常動作を説明</p>
+    </div>
+  </div>
+
+  <span class="slide-num">6</span>
+</div>
+
+<!-- ============================================ -->
+<!-- SLIDE 7 — Implementation Architecture -->
+<!-- ============================================ -->
+<div class="slide">
+  <span class="label label-green mb-1">Implementation</span>
+  <h2>実装アーキテクチャ — <span class="accent-green">ファイル構成と処理フロー</span></h2>
+
+  <div class="cols cols-2 mt-2">
+    <div>
+      <div class="card">
+        <h3>追加ファイル構成</h3>
+        <pre><code>backend/
+  tests/
+    __init__.py
+    ragas/
+      __init__.py
+      <span style="color: #fbbf24;">test_cases.py</span>       <span style="color: #64748b;"># 10テストケース定義</span>
+      <span style="color: #fbbf24;">run_ragas_eval.py</span>   <span style="color: #64748b;"># RAGAS 4メトリクス評価</span>
+      <span style="color: #fbbf24;">run_e2e_chat.py</span>     <span style="color: #64748b;"># E2E チャットフローテスト</span>
+  requirements.txt          <span style="color: #64748b;"># + ragas, datasets</span>
+docs/
+  <span style="color: #fbbf24;">ragas-test-guide.md</span>     <span style="color: #64748b;"># テスト手順ドキュメント</span></code></pre>
+      </div>
+
+      <div class="card mt-2">
+        <h3>依存関係</h3>
+        <table style="font-size: 0.82rem;">
+          <tr>
+            <th>パッケージ</th>
+            <th>用途</th>
+          </tr>
+          <tr>
+            <td><code>ragas</code></td>
+            <td>RAG評価フレームワーク本体</td>
+          </tr>
+          <tr>
+            <td><code>datasets</code></td>
+            <td>HuggingFace Datasets (RAGAS内部依存)</td>
+          </tr>
+        </table>
+      </div>
+    </div>
+
+    <div>
+      <div class="card card-blue">
+        <h3>RAGAS評価 処理フロー</h3>
+        <div style="display: flex; flex-direction: column; gap: 0; align-items: center; margin-top: 0.5rem;">
+          <div class="flow-node" style="width: 100%; font-size: 0.82rem;">
+            <b>Step 1:</b> test_cases.py から10件ロード
+          </div>
+          <div class="flow-arrow-down"></div>
+          <div class="flow-node" style="width: 100%; font-size: 0.82rem;">
+            <b>Step 2:</b> 各症状で <code>VectorStore.search()</code><br>
+            <span class="small">→ contexts (検索チャンク) 取得</span>
+          </div>
+          <div class="flow-arrow-down"></div>
+          <div class="flow-node" style="width: 100%; font-size: 0.82rem;">
+            <b>Step 3:</b> <code>RAGService.query()</code><br>
+            <span class="small">→ response (LLM回答) 取得</span>
+          </div>
+          <div class="flow-arrow-down"></div>
+          <div class="flow-node purple" style="width: 100%; font-size: 0.82rem;">
+            <b>Step 4:</b> RAGAS <code>SingleTurnSample</code> に変換<br>
+            <span class="small">user_input + response + contexts + ground_truth</span>
+          </div>
+          <div class="flow-arrow-down"></div>
+          <div class="flow-node active" style="width: 100%; font-size: 0.82rem;">
+            <b>Step 5:</b> 4メトリクスで <code>evaluate()</code><br>
+            <span class="small">Faithfulness / Relevancy / Precision / Recall</span>
+          </div>
+          <div class="flow-arrow-down"></div>
+          <div class="flow-node success" style="width: 100%; font-size: 0.82rem;">
+            <b>Step 6:</b> JSON出力 + コンソールテーブル表示
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <span class="slide-num">7</span>
+</div>
+
+<!-- ============================================ -->
+<!-- SLIDE 8 — E2E Test Architecture -->
+<!-- ============================================ -->
+<div class="slide">
+  <span class="label label-green mb-1">Implementation</span>
+  <h2>E2Eチャットテスト — <span class="accent-green">フロー全体の正確性検証</span></h2>
+
+  <div class="cols cols-2 mt-2">
+    <div>
+      <div class="card card-blue">
+        <h3>E2E テストの処理フロー</h3>
+        <div class="diagram-box" style="padding: 1.5rem;">
+          <div style="display: flex; flex-direction: column; gap: 0; align-items: center;">
+            <div class="flow-node" style="width: 90%;">
+              <b>POST /api/chat</b><br>
+              <span class="small">message: "30TA06210_web"</span>
+            </div>
+            <div class="flow-arrow-down"></div>
+            <div class="flow-node" style="width: 90%;">
+              <b>POST /api/chat</b><br>
+              <span class="small">message: "はい" (写真確認)</span>
+            </div>
+            <div class="flow-arrow-down"></div>
+            <div class="flow-node active" style="width: 90%;">
+              <b>POST /api/chat</b><br>
+              <span class="small">message: 症状テキスト</span>
+            </div>
+            <div class="flow-arrow-down"></div>
+            <div class="flow-node success" style="width: 90%;">
+              <b>レスポンス検証</b><br>
+              <span class="small">urgency / action / manual_coverage</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <div class="card">
+        <h3>検証項目</h3>
+        <table style="font-size: 0.85rem;">
+          <tr>
+            <th>項目</th>
+            <th>検証内容</th>
+          </tr>
+          <tr>
+            <td><b>urgency_flag</b></td>
+            <td>期待する緊急度レベルと一致するか<br><span class="small">(critical / high / medium / low)</span></td>
+          </tr>
+          <tr>
+            <td><b>action</b></td>
+            <td>期待するアクションと一致するか<br><span class="small">(escalate / ask_question / spec_answer)</span></td>
+          </tr>
+          <tr>
+            <td><b>manual_coverage</b></td>
+            <td>マニュアルカバー判定が返却されるか</td>
+          </tr>
+        </table>
+      </div>
+
+      <div class="card mt-2">
+        <h3>出力形式</h3>
+        <pre><code style="font-size: 0.75rem;"># コンソール出力例
+  # | カテゴリ         | 期待urg  | 実際urg  | 結果
+  1 | ブレーキ故障     | critical | critical | PASS
+  2 | エンジン警告灯   | high     | high     | PASS
+  ...
+■ サマリー:
+  urgency一致率: 8/10 (80%)
+  action一致率:  9/10 (90%)</code></pre>
+
+        <div class="highlight-box green mt-1" style="font-size: 0.82rem;">
+          結果は <code>backend/test_results/</code> にJSON保存。時系列でスコア推移を追跡可能。
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <span class="slide-num">8</span>
+</div>
+
+<!-- ============================================ -->
+<!-- SLIDE 9 — How to Run -->
+<!-- ============================================ -->
+<div class="slide">
+  <span class="label label-green mb-1">Usage</span>
+  <h2>実行手順 — <span class="accent-green">すぐに始められる</span></h2>
+
+  <div class="cols cols-2 mt-2">
+    <div>
+      <div class="card">
+        <h3>1. セットアップ</h3>
+        <pre><code>cd backend
+pip install ragas datasets</code></pre>
+        <p class="small mt-1"><code>.env</code> に <code>OPENAI_API_KEY</code> が設定されていること（RAGASの内部評価LLMが使用）</p>
+      </div>
+
+      <div class="card mt-2">
+        <h3>2. RAGAS評価の実行</h3>
+        <pre><code>cd backend
+python -m tests.ragas.run_ragas_eval</code></pre>
+        <p class="small mt-1">ChromaDB から直接検索 → LLM回答取得 → RAGAS評価。サーバー起動不要。</p>
+      </div>
+
+      <div class="card mt-2">
+        <h3>3. E2Eチャットテストの実行</h3>
+        <pre><code># ターミナル1: バックエンド起動
+cd backend
+uvicorn app.main:app --reload
+
+# ターミナル2: テスト実行
+cd backend
+python -m tests.ragas.run_e2e_chat</code></pre>
+        <p class="small mt-1">HTTPリクエストでチャットフロー全体を検証。サーバー起動必須。</p>
+      </div>
+    </div>
+
+    <div>
+      <div class="card card-blue" style="height: 100%; display: flex; flex-direction: column;">
+        <h3>テスト結果の活用サイクル</h3>
+        <div style="flex: 1; display: flex; align-items: center; justify-content: center;">
+          <div style="display: flex; flex-direction: column; gap: 0; align-items: center; width: 100%;">
+            <div class="flow-node" style="width: 80%;">
+              <b>ベースラインスコア取得</b><br>
+              <span class="small">RAGAS評価を実行 → 現状を記録</span>
+            </div>
+            <div class="flow-arrow-down"></div>
+            <div class="flow-node active" style="width: 80%;">
+              <b>改善を実施</b><br>
+              <span class="small">チャンキング / プロンプト / embedding変更</span>
+            </div>
+            <div class="flow-arrow-down"></div>
+            <div class="flow-node" style="width: 80%;">
+              <b>再評価</b><br>
+              <span class="small">同じ10テストケースでRAGAS実行</span>
+            </div>
+            <div class="flow-arrow-down"></div>
+            <div class="flow-node success" style="width: 80%;">
+              <b>スコア比較</b><br>
+              <span class="small">JSONファイルを時系列比較</span>
+            </div>
+            <div class="flow-arrow-down"></div>
+            <div style="display: flex; gap: 1rem; width: 80%;">
+              <div class="flow-node success" style="flex: 1; font-size: 0.78rem;">
+                改善 → デプロイ
+              </div>
+              <div class="flow-node danger" style="flex: 1; font-size: 0.78rem;">
+                劣化 → ロールバック
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <span class="slide-num">9</span>
+</div>
+
+<!-- ============================================ -->
+<!-- SLIDE 10 — Summary -->
+<!-- ============================================ -->
+<div class="slide">
+  <span class="label label-blue mb-1">Summary</span>
+  <h2>まとめ — <span class="accent">今回の改修で変わったこと</span></h2>
+
+  <div class="cols cols-3 mt-2">
+    <div class="card card-purple" style="text-align: center;">
+      <div style="font-size: 2.5rem; font-weight: 800; color: #c4b5fd;">4</div>
+      <div style="font-size: 1.1rem; font-weight: 700; margin-top: 0.3rem;">評価メトリクス</div>
+      <div class="divider"></div>
+      <div class="small">
+        Faithfulness / Answer Relevancy<br>
+        Context Precision / Context Recall
+      </div>
+    </div>
+    <div class="card card-warning" style="text-align: center;">
+      <div style="font-size: 2.5rem; font-weight: 800; color: #fbbf24;">10</div>
+      <div style="font-size: 1.1rem; font-weight: 700; margin-top: 0.3rem;">標準テストケース</div>
+      <div class="divider"></div>
+      <div class="small">
+        critical 2件 / high 3件<br>
+        medium 3件 / low 2件
+      </div>
+    </div>
+    <div class="card card-success" style="text-align: center;">
+      <div style="font-size: 2.5rem; font-weight: 800; color: #34d399;">2</div>
+      <div style="font-size: 1.1rem; font-weight: 700; margin-top: 0.3rem;">テストスクリプト</div>
+      <div class="divider"></div>
+      <div class="small">
+        RAGAS自動評価<br>
+        E2Eチャットフローテスト
+      </div>
+    </div>
+  </div>
+
+  <div class="cols cols-2 mt-3">
+    <div class="card">
+      <h3>追加・変更ファイル一覧</h3>
+      <table style="font-size: 0.82rem;">
+        <tr>
+          <th>ファイル</th>
+          <th>種別</th>
+          <th>内容</th>
+        </tr>
+        <tr>
+          <td><code>tests/ragas/test_cases.py</code></td>
+          <td><span class="badge badge-green">NEW</span></td>
+          <td>10テストケース定義</td>
+        </tr>
+        <tr>
+          <td><code>tests/ragas/run_ragas_eval.py</code></td>
+          <td><span class="badge badge-green">NEW</span></td>
+          <td>RAGAS 4メトリクス評価</td>
+        </tr>
+        <tr>
+          <td><code>tests/ragas/run_e2e_chat.py</code></td>
+          <td><span class="badge badge-green">NEW</span></td>
+          <td>E2Eチャットテスト</td>
+        </tr>
+        <tr>
+          <td><code>docs/ragas-test-guide.md</code></td>
+          <td><span class="badge badge-green">NEW</span></td>
+          <td>テスト手順ドキュメント</td>
+        </tr>
+        <tr>
+          <td><code>requirements.txt</code></td>
+          <td><span class="badge badge-amber">MOD</span></td>
+          <td>ragas, datasets 追加</td>
+        </tr>
+      </table>
+    </div>
+
+    <div class="card card-blue">
+      <h3>次のステップ</h3>
+      <ul>
+        <li>ベースラインスコアの取得・記録</li>
+        <li>チャンキング戦略の最適化（スコアに基づく）</li>
+        <li>テストケースの拡充（他車種・複合症状）</li>
+        <li>CI/CDパイプラインへの組み込み</li>
+      </ul>
+      <div class="highlight-box mt-1" style="font-size: 0.82rem;">
+        <b>ポイント:</b> RAGASスコアを「品質の共通言語」として、改善サイクルを回す基盤が整った。
+      </div>
+    </div>
+  </div>
+
+  <span class="slide-num">10</span>
+</div>
+
+</body>
+</html>
