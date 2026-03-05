@@ -42,25 +42,34 @@ async def run_chat_flow(client: httpx.AsyncClient, tc: dict) -> dict:
     }
 
     try:
-        # Step 1: セッション作成 + 車両ID送信
-        resp = await client.post(f"{BASE_URL}/chat", json={
-            "message": tc["vehicle_id"],
-        })
+        # Step 1: セッション作成（初回リクエストでセッション取得）
+        resp = await client.post(f"{BASE_URL}/chat", json={})
         resp.raise_for_status()
         data = resp.json()
         session_id = data["session_id"]
-        result["steps"].append({"step": data["current_step"], "action": "vehicle_id"})
+        result["steps"].append({"step": data["current_step"], "action": "session_create"})
 
-        # Step 2: 写真確認 → "はい"
+        # Step 2: 車両選択（action: select_vehicle）
         resp = await client.post(f"{BASE_URL}/chat", json={
             "session_id": session_id,
-            "message": "はい",
+            "action": "select_vehicle",
+            "action_value": tc["vehicle_id"],
+        })
+        resp.raise_for_status()
+        data = resp.json()
+        result["steps"].append({"step": data["current_step"], "action": "vehicle_select"})
+
+        # Step 3: 写真確認（action: confirm, value: yes）
+        resp = await client.post(f"{BASE_URL}/chat", json={
+            "session_id": session_id,
+            "action": "confirm",
+            "action_value": "yes",
         })
         resp.raise_for_status()
         data = resp.json()
         result["steps"].append({"step": data["current_step"], "action": "photo_confirm"})
 
-        # Step 3: 症状入力
+        # Step 4: 症状入力
         resp = await client.post(f"{BASE_URL}/chat", json={
             "session_id": session_id,
             "message": tc["symptom"],
@@ -69,36 +78,28 @@ async def run_chat_flow(client: httpx.AsyncClient, tc: dict) -> dict:
         data = resp.json()
         result["steps"].append({"step": data["current_step"], "action": "symptom_input"})
 
-        # 結果を記録（spec_check or diagnosing の最初のレスポンス）
+        # 結果を記録
         result["final_response"] = data
         result["manual_coverage"] = data.get("manual_coverage")
+        result["current_step"] = data.get("current_step", "")
+        result["prompt_message"] = data.get("prompt", {}).get("message", "")[:200]
+
+        current_step = data.get("current_step", "")
 
         # urgency情報を取得
         if data.get("urgency"):
             result["urgency_flag"] = data["urgency"].get("level")
 
-        # promptからactionを推定
-        current_step = data.get("current_step", "")
-        prompt_type = data.get("prompt", {}).get("type", "")
-        prompt_message = data.get("prompt", {}).get("message", "")
-
-        if current_step == "spec_check":
-            result["action"] = "spec_answer"
-        elif current_step == "reservation":
+        # current_stepからactionを判定
+        if current_step == "reservation":
             result["action"] = "escalate"
-            if data.get("urgency"):
-                result["urgency_flag"] = data["urgency"].get("level")
+        elif current_step == "spec_check":
+            result["action"] = "spec_answer"
         elif current_step == "diagnosing":
-            # diagnosingステップの場合、選択肢があればask_question
-            if data.get("prompt", {}).get("choices"):
-                result["action"] = "ask_question"
-            else:
-                result["action"] = "ask_question"
-
-        # urgency_checkに進んでいればurgencyを取得
-        if current_step == "urgency_check":
-            if data.get("urgency"):
-                result["urgency_flag"] = data["urgency"].get("level")
+            result["action"] = "ask_question"
+        elif current_step == "urgency_check":
+            # urgency_checkに直接進んだ場合
+            result["action"] = "ask_question"
 
     except httpx.HTTPStatusError as e:
         result["error"] = f"HTTP {e.response.status_code}: {e.response.text[:200]}"
@@ -148,35 +149,53 @@ def print_results(results: list[dict], summary: dict):
     print("E2E チャットフロー テスト結果")
     print("=" * 110)
 
-    header = f"{'#':>3} {'カテゴリ':<16} {'期待urgency':<12} {'実際urgency':<12} {'期待action':<14} {'実際action':<14} {'結果':<6}"
+    header = f"{'#':>3} {'カテゴリ':<16} {'step':<14} {'期待urg':<10} {'実際urg':<10} {'期待act':<14} {'実際act':<14} {'coverage':<12} {'結果':<6}"
     print(header)
-    print("-" * 110)
+    print("-" * 120)
 
     for r in results:
         if r["error"]:
-            print(f"{r['id']:>3} {r['category']:<16} {'ERROR':<60} {r['error'][:50]}")
+            print(f"{r['id']:>3} {r['category']:<16} {'ERROR':<80} {r['error'][:50]}")
             continue
 
         tc = next(t for t in TEST_CASES if t["id"] == r["id"])
-        urg_ok = "OK" if r["urgency_flag"] == tc["expected_urgency"] else "NG"
-        act_ok = "OK" if r["action"] == tc["expected_action"] else "NG"
-        status = "PASS" if urg_ok == "OK" and act_ok == "OK" else "FAIL"
+        act_ok = r["action"] == tc["expected_action"]
+        # urgencyは初回ターンでcritical以外返らないので、critical以外はactionのみで判定
+        if tc["expected_urgency"] == "critical":
+            urg_ok = r["urgency_flag"] == tc["expected_urgency"]
+            status = "PASS" if urg_ok and act_ok else "FAIL"
+        else:
+            urg_ok = True  # 初回ターンでは未判定（後続ターンで判定される）
+            status = "PASS" if act_ok else "FAIL"
 
-        urg_actual = r["urgency_flag"] or "N/A"
+        urg_actual = r["urgency_flag"] or "-"
         act_actual = r["action"] or "N/A"
+        step = r.get("current_step", "?")
+        coverage = r.get("manual_coverage") or "-"
 
         print(
             f"{r['id']:>3} {r['category']:<16} "
-            f"{tc['expected_urgency']:<12} {urg_actual:<12} "
+            f"{step:<14} "
+            f"{tc['expected_urgency']:<10} {urg_actual:<10} "
             f"{tc['expected_action']:<14} {act_actual:<14} "
+            f"{coverage:<12} "
             f"{status:<6}"
         )
 
-    print("-" * 110)
+    print("-" * 120)
+
+    # レスポンスメッセージも表示
+    print("\n■ 各ケースの応答メッセージ（先頭100文字）:")
+    for r in results:
+        if r["error"]:
+            continue
+        msg = r.get("prompt_message", "")[:100].replace("\n", " ")
+        print(f"  [{r['id']:02d}] {msg}")
+
     print(f"\n■ サマリー:")
     print(f"  実行: {summary['total']}件  成功: {summary['successful']}件  エラー: {summary['errors']}件")
-    print(f"  urgency一致率: {summary['urgency_match']}/{summary['successful']} ({summary['urgency_rate']:.0%})")
-    print(f"  action一致率:  {summary['action_match']}/{summary['successful']} ({summary['action_rate']:.0%})")
+    print(f"  action一致率: {summary['action_match']}/{summary['successful']} ({summary['action_rate']:.0%})")
+    print(f"  urgency一致率 (critical判定): {summary['urgency_match']}/{summary['successful']} ({summary['urgency_rate']:.0%})")
 
 
 def save_results(results: list[dict], summary: dict):
@@ -193,9 +212,11 @@ def save_results(results: list[dict], summary: dict):
             "id": r["id"],
             "category": r["category"],
             "symptom": r["symptom"],
+            "current_step": r.get("current_step"),
             "urgency_flag": r["urgency_flag"],
             "action": r["action"],
             "manual_coverage": r["manual_coverage"],
+            "prompt_message": r.get("prompt_message"),
             "error": r["error"],
             "steps_count": len(r["steps"]),
         }

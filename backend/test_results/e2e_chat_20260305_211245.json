@@ -1,0 +1,135 @@
+{
+  "timestamp": "2026-03-05T21:12:45.564603",
+  "base_url": "http://localhost:8000/api",
+  "summary": {
+    "total": 10,
+    "successful": 10,
+    "errors": 0,
+    "urgency_match": 2,
+    "urgency_rate": 0.2,
+    "action_match": 9,
+    "action_rate": 0.9
+  },
+  "results": [
+    {
+      "id": 1,
+      "category": "ブレーキ故障",
+      "symptom": "ブレーキを踏んでも止まらない感じがする",
+      "current_step": "reservation",
+      "urgency_flag": "critical",
+      "action": "escalate",
+      "manual_coverage": null,
+      "prompt_message": "🚨 今すぐロードサービスまたは来場が必要です。\n\n走行が危険な状態と判断されます。\n出張整備の手配をおすすめします。\n\n出張手配の予約を行いますか？",
+      "error": null,
+      "steps_count": 4
+    },
+    {
+      "id": 2,
+      "category": "エンジン警告灯",
+      "symptom": "エンジンの警告灯が点灯している",
+      "current_step": "diagnosing",
+      "urgency_flag": null,
+      "action": "ask_question",
+      "manual_coverage": "covered",
+      "prompt_message": "エンジンの警告灯が点灯する前に、何か異常を感じましたか？",
+      "error": null,
+      "steps_count": 4
+    },
+    {
+      "id": 3,
+      "category": "走行中異音",
+      "symptom": "走行中にガタガタと異音がする",
+      "current_step": "diagnosing",
+      "urgency_flag": null,
+      "action": "ask_question",
+      "manual_coverage": "covered",
+      "prompt_message": "異音は加速中、ブレーキ時、カーブ時のどれですか？",
+      "error": null,
+      "steps_count": 4
+    },
+    {
+      "id": 4,
+      "category": "エアコン不調",
+      "symptom": "エアコンから冷たい風が出ない",
+      "current_step": "diagnosing",
+      "urgency_flag": null,
+      "action": "ask_question",
+      "manual_coverage": null,
+      "prompt_message": "症状について詳しくお伺いします。",
+      "error": null,
+      "steps_count": 4
+    },
+    {
+      "id": 5,
+      "category": "エンジン始動不良",
+      "symptom": "エンジンがかからない",
+      "current_step": "diagnosing",
+      "urgency_flag": null,
+      "action": "ask_question",
+      "manual_coverage": "covered",
+      "prompt_message": "室内灯は点灯していますか？",
+      "error": null,
+      "steps_count": 4
+    },
+    {
+      "id": 6,
+      "category": "オイル漏れ",
+      "symptom": "駐車場の地面に油のシミがある",
+      "current_step": "diagnosing",
+      "urgency_flag": null,
+      "action": "ask_question",
+      "manual_coverage": "covered",
+      "prompt_message": "オイルの色は何色ですか？",
+      "error": null,
+      "steps_count": 4
+    },
+    {
+      "id": 7,
+      "category": "タイヤ空気圧",
+      "symptom": "タイヤの空気圧警告灯がついた",
+      "current_step": "diagnosing",
+      "urgency_flag": null,
+      "action": "ask_question",
+      "manual_coverage": "covered",
+      "prompt_message": "タイヤの空気圧を確認しましたか？",
+      "error": null,
+      "steps_count": 4
+    },
+    {
+      "id": 8,
+      "category": "ハンドル重い",
+      "symptom": "ハンドルが急に重くなった",
+      "current_step": "diagnosing",
+      "urgency_flag": null,
+      "action": "ask_question",
+      "manual_coverage": "covered",
+      "prompt_message": "エンジンはかかっていますか？",
+      "error": null,
+      "steps_count": 4
+    },
+    {
+      "id": 9,
+      "category": "仕様確認系",
+      "symptom": "停車中にエンジンが止まることがある",
+      "current_step": "diagnosing",
+      "urgency_flag": null,
+      "action": "ask_question",
+      "manual_coverage": "covered",
+      "prompt_message": "燃料計はどのようになっていますか？",
+      "error": null,
+      "steps_count": 4
+    },
+    {
+      "id": 10,
+      "category": "オーバーヒート",
+      "symptom": "水温計が赤いところまで上がっている",
+      "current_step": "reservation",
+      "urgency_flag": "critical",
+      "action": "escalate",
+      "manual_coverage": null,
+      "prompt_message": "🚨 今すぐロードサービスまたは来場が必要です。\n\n走行が危険な状態と判断されます。\n出張整備の手配をおすすめします。\n\n出張手配の予約を行いますか？",
+      "error": null,
+      "steps_count": 4
+    }
+  ]
+}
