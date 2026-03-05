@@ -18,6 +18,10 @@ from datetime import datetime
 # backendディレクトリをパスに追加
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
 
+# .envからOPENAI_API_KEYを環境変数にロード（RAGAS内部のOpenAIクライアントが参照する）
+from dotenv import load_dotenv
+load_dotenv(os.path.join(os.path.dirname(__file__), "..", "..", ".env"))
+
 from tests.ragas.test_cases import TEST_CASES, VEHICLE_MAKE, VEHICLE_MODEL, VEHICLE_YEAR
 
 
@@ -25,6 +29,11 @@ async def run_rag_queries() -> list[dict]:
     """各テストケースでRAG検索 + LLM回答を取得"""
     from app.rag.vector_store import vector_store
     from app.services.rag_service import rag_service
+    from app.llm.registry import provider_registry
+
+    # スクリプト単独実行時はFastAPIの初期化が走らないため手動で初期化
+    if not provider_registry.providers:
+        provider_registry.initialize()
 
     results = []
     for tc in TEST_CASES:
@@ -75,6 +84,9 @@ def build_ragas_dataset(rag_results: list[dict]):
 
 async def evaluate_with_ragas(samples):
     """RAGAS メトリクスで評価実行"""
+    import warnings
+    warnings.filterwarnings("ignore", category=DeprecationWarning)
+
     from ragas import EvaluationDataset, evaluate
     from ragas.metrics import (
         Faithfulness,
@@ -82,14 +94,20 @@ async def evaluate_with_ragas(samples):
         LLMContextPrecisionWithoutReference,
         LLMContextRecall,
     )
+    from ragas.llms import LangchainLLMWrapper
+    from ragas.embeddings import LangchainEmbeddingsWrapper
+    from langchain_openai import ChatOpenAI, OpenAIEmbeddings
 
     dataset = EvaluationDataset(samples=samples)
 
+    evaluator_llm = LangchainLLMWrapper(ChatOpenAI(model="gpt-4o-mini"))
+    evaluator_emb = LangchainEmbeddingsWrapper(OpenAIEmbeddings(model="text-embedding-3-small"))
+
     metrics = [
-        Faithfulness(),
-        ResponseRelevancy(),
-        LLMContextPrecisionWithoutReference(),
-        LLMContextRecall(),
+        Faithfulness(llm=evaluator_llm),
+        ResponseRelevancy(llm=evaluator_llm, embeddings=evaluator_emb),
+        LLMContextPrecisionWithoutReference(llm=evaluator_llm),
+        LLMContextRecall(llm=evaluator_llm),
     ]
 
     result = evaluate(

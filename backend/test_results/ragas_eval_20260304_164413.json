@@ -1,0 +1,142 @@
+{
+  "timestamp": "2026-03-04T16:44:13.253729",
+  "vehicle_id": "30TA06210_web",
+  "overall_scores": {
+    "faithfulness": 0.8013,
+    "answer_relevancy": 0.2115,
+    "llm_context_precision_without_reference": 0.8912,
+    "context_recall": 0.6117
+  },
+  "per_case": [
+    {
+      "id": 1,
+      "category": "ブレーキ故障",
+      "symptom": "ブレーキを踏んでも止まらない感じがする",
+      "response_preview": "ブレーキを踏んでも止まらない感じがするとのこと、とても心配ですね。まずは安全を第一に考えましょう。以下の手順で確認してみてください。\n\n1. **車を安全な場所に停める**  \n   まず、交通の少ない安全な場所に車を停めてください。エンジンを切り、周囲の安全を確認します。\n\n2. **ブレーキペダルの確認**  \n   ブレーキペダルを何回か軽く踏んでみて、ペダルの感触を確認してください。ペダル",
+      "contexts_count": 5,
+      "scores": {
+        "faithfulness": 0.5263,
+        "answer_relevancy": 0.0,
+        "llm_context_precision_without_reference": 1.0,
+        "context_recall": 0.5
+      }
+    },
+    {
+      "id": 2,
+      "category": "エンジン警告灯",
+      "symptom": "エンジンの警告灯が点灯している",
+      "response_preview": "エンジンの警告灯が点灯しているとのことですね。まずは、どの警告灯が点灯しているかによって対処方法が異なります。以下の手順で確認してみましょう。\n\n### 1. 車を安全な場所に停車する\nまず、走行中であれば、すぐに安全な場所に車を停めてください。\n\n### 2. 警告灯の種類を確認する\n- **油圧警告灯**：オイルの圧力が低下している場合に点灯します。\n- **PGM-FI警告灯**：エンジンの",
+      "contexts_count": 5,
+      "scores": {
+        "faithfulness": 0.9474,
+        "answer_relevancy": 0.5962,
+        "llm_context_precision_without_reference": 1.0,
+        "context_recall": 0.75
+      }
+    },
+    {
+      "id": 3,
+      "category": "走行中異音",
+      "symptom": "走行中にガタガタと異音がする",
+      "response_preview": "走行中にガタガタと異音がするとのことですね。まずは、いくつかの点を確認してみましょう。以下の手順に従って、問題の原因を特定する手助けをします。\n\n1. **車を安全な場所に停める**  \n   まずは、周囲に危険がない場所で車を停めてください。安全が最優先です。\n\n2. **ボンネットが閉まっているか確認**  \n   ボンネットがしっかり閉まっていないと、走行中に異音がすることがあります。ボンネ",
+      "contexts_count": 5,
+      "scores": {
+        "faithfulness": 0.913,
+        "answer_relevancy": 0.0,
+        "llm_context_precision_without_reference": 1.0,
+        "context_recall": 1.0
+      }
+    },
+    {
+      "id": 4,
+      "category": "エアコン不調",
+      "symptom": "エアコンから冷たい風が出ない",
+      "response_preview": "エアコンから冷たい風が出ないとのことですね。いくつかの原因が考えられますので、まずは簡単にチェックできることから始めましょう。\n\n### 1. エアクリーンフィルターの確認\nエアクリーンフィルターが詰まっていると、風量が減少し、冷たい風が出にくくなることがあります。以下の手順で確認してみてください。\n\n1. **グローブボックスを開ける**：車内の助手席側にあるグローブボックスを開けてください。\n",
+      "contexts_count": 5,
+      "scores": {
+        "faithfulness": 0.8846,
+        "answer_relevancy": 0.0,
+        "llm_context_precision_without_reference": 1.0,
+        "context_recall": 0.6667
+      }
+    },
+    {
+      "id": 5,
+      "category": "エンジン始動不良",
+      "symptom": "エンジンがかからない",
+      "response_preview": "エンジンがかからないとのことですね。まずは、いくつかの確認を行ってみましょう。以下の手順に従って、問題を特定してみてください。\n\n### 1. バッテリーの状態を確認する\n- **室内灯を点灯させてみてください。**  \n  明るさが非常に暗い、または全く点灯しない場合、バッテリーがあがっている可能性があります。\n\n### 2. エンジンスイッチを操作する\n- **エンジンスイッチをIIIに回して",
+      "contexts_count": 5,
+      "scores": {
+        "faithfulness": 1.0,
+        "answer_relevancy": 0.0,
+        "llm_context_precision_without_reference": 1.0,
+        "context_recall": 1.0
+      }
+    },
+    {
+      "id": 6,
+      "category": "オイル漏れ",
+      "symptom": "駐車場の地面に油のシミがある",
+      "response_preview": "駐車場の地面に油のシミがあるとのことですね。これは車両からのオイル漏れの可能性がありますので、注意が必要です。以下の手順で確認してみてください。\n\n1. **車を安全な場所に停める**  \n   駐車場の平らで安全な場所に車を停めてください。\n\n2. **エンジンを停止する**  \n   エンジンを切り、しばらく待ってから作業を始めましょう。\n\n3. **オイルの量を確認する**  \n   - ボ",
+      "contexts_count": 5,
+      "scores": {
+        "faithfulness": 0.875,
+        "answer_relevancy": 0.5739,
+        "llm_context_precision_without_reference": 1.0,
+        "context_recall": 1.0
+      }
+    },
+    {
+      "id": 7,
+      "category": "タイヤ空気圧",
+      "symptom": "タイヤの空気圧警告灯がついた",
+      "response_preview": "タイヤの空気圧警告灯が点灯したとのことですね。これはタイヤの空気圧が低下している可能性を示しています。以下の手順で対処してみてください。\n\n1. **安全な場所に停車する**  \n   まず、車を安全な場所に停めてください。交通の妨げにならない場所が理想です。\n\n2. **タイヤの空気圧を確認する**  \n   車が停まったら、各タイヤの空気圧を確認します。空気圧はタイヤの側面に記載されていること",
+      "contexts_count": 5,
+      "scores": {
+        "faithfulness": 0.0556,
+        "answer_relevancy": 0.5645,
+        "llm_context_precision_without_reference": 0.4778,
+        "context_recall": 0.0
+      }
+    },
+    {
+      "id": 8,
+      "category": "ハンドル重い",
+      "symptom": "ハンドルが急に重くなった",
+      "response_preview": "ハンドルが急に重くなったとのことですね。これはいくつかの原因が考えられますので、まずは以下の手順で確認してみましょう。\n\n### 1. パワーステアリングの確認\nパワーステアリング（ハンドルを軽く回すための補助装置）が正常に動作していない可能性があります。以下のことを確認してください。\n\n- **エンジンがかかっているか確認**: エンジンが停止していると、パワーステアリングが作動しないため、ハン",
+      "contexts_count": 5,
+      "scores": {
+        "faithfulness": 0.9474,
+        "answer_relevancy": 0.0,
+        "llm_context_precision_without_reference": 0.7556,
+        "context_recall": 0.4
+      }
+    },
+    {
+      "id": 9,
+      "category": "仕様確認系",
+      "symptom": "停車中にエンジンが止まることがある",
+      "response_preview": "停車中にエンジンが止まるという症状についてお話ししますね。いくつかの原因が考えられますので、以下の手順で確認してみてください。\n\n### 1. 燃料の確認\nまず、燃料が十分に入っているか確認してください。燃料計（ガソリンの残量を示すメーター）を見て、燃料が少ない場合は給油してください。\n\n### 2. 警告灯の確認\n次に、ダッシュボードにある警告灯を確認してください。特に「PGM-FI警告灯」が点",
+      "contexts_count": 5,
+      "scores": {
+        "faithfulness": 0.9474,
+        "answer_relevancy": 0.0,
+        "llm_context_precision_without_reference": 0.6792,
+        "context_recall": 0.0
+      }
+    },
+    {
+      "id": 10,
+      "category": "オーバーヒート",
+      "symptom": "水温計が赤いところまで上がっている",
+      "response_preview": "水温計が赤いところまで上がっているとのこと、これはオーバーヒート（エンジンが過熱している状態）を示しています。すぐに対処が必要ですので、以下の手順に従ってください。\n\n### 1. 安全な場所に停める\n- まず、車を安全な場所に停めてください。\n- セレクトレバーを「P」に入れ、パーキングブレーキをかけます。\n- すべてのアクセサリーの電源を切り、非常点滅表示灯を点滅させて周囲に注意を促します。\n",
+      "contexts_count": 5,
+      "scores": {
+        "faithfulness": 0.9167,
+        "answer_relevancy": 0.3801,
+        "llm_context_precision_without_reference": 1.0,
+        "context_recall": 0.8
+      }
+    }
+  ]
+}
