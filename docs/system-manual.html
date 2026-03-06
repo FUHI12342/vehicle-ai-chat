@@ -1,0 +1,1328 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>車両AI問診チャットシステム 取り扱い説明書</title>
+<style>
+  /* ── Reset & Base ── */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { font-size: 16px; scroll-behavior: smooth; }
+  body {
+    font-family: "Hiragino Kaku Gothic ProN", "Noto Sans JP", "Segoe UI", sans-serif;
+    background: #0f172a; color: #e2e8f0;
+    line-height: 1.7;
+  }
+
+  /* ── Slide Container ── */
+  .slide {
+    min-height: 100vh; padding: 3rem 4rem;
+    display: flex; flex-direction: column; justify-content: center;
+    position: relative; overflow: hidden;
+  }
+  .slide::before {
+    content: ''; position: absolute; inset: 0; opacity: 0.04;
+    background: radial-gradient(circle at 30% 40%, #3b82f6 0%, transparent 60%),
+                radial-gradient(circle at 80% 70%, #8b5cf6 0%, transparent 50%);
+    pointer-events: none;
+  }
+  .slide-num {
+    position: absolute; bottom: 1.5rem; right: 2rem;
+    font-size: 0.8rem; color: #475569; font-weight: 600;
+  }
+
+  /* ── Typography ── */
+  h1 { font-size: 2.6rem; font-weight: 800; letter-spacing: -0.02em; }
+  h2 { font-size: 2rem; font-weight: 700; margin-bottom: 1.5rem; letter-spacing: -0.01em; }
+  h3 { font-size: 1.3rem; font-weight: 700; margin-bottom: 0.8rem; }
+  h4 { font-size: 1.05rem; font-weight: 700; margin-bottom: 0.5rem; color: #93c5fd; }
+  .subtitle { font-size: 1.2rem; color: #94a3b8; margin-top: 0.5rem; }
+  .accent { color: #60a5fa; }
+  .accent-green { color: #34d399; }
+  .accent-amber { color: #fbbf24; }
+  .accent-red { color: #f87171; }
+  .accent-purple { color: #a78bfa; }
+  .small { font-size: 0.85rem; color: #94a3b8; }
+  .label {
+    display: inline-block; font-size: 0.7rem; font-weight: 700;
+    padding: 0.15rem 0.5rem; border-radius: 4px; text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+  .label-blue { background: #1e3a5f; color: #60a5fa; }
+  .label-green { background: #064e3b; color: #34d399; }
+  .label-red { background: #7f1d1d; color: #fca5a5; }
+  .label-amber { background: #78350f; color: #fbbf24; }
+  .label-purple { background: #4c1d95; color: #c4b5fd; }
+  .label-gray { background: #334155; color: #94a3b8; }
+
+  /* ── Layout ── */
+  .cols { display: grid; gap: 2rem; }
+  .cols-2 { grid-template-columns: 1fr 1fr; }
+  .cols-3 { grid-template-columns: 1fr 1fr 1fr; }
+  .cols-4 { grid-template-columns: 1fr 1fr 1fr 1fr; }
+  .cols-1-2 { grid-template-columns: 1fr 2fr; }
+  .cols-2-1 { grid-template-columns: 2fr 1fr; }
+  .cols-3-2 { grid-template-columns: 3fr 2fr; }
+
+  /* ── Cards ── */
+  .card {
+    background: rgba(30, 41, 59, 0.7); border: 1px solid #334155;
+    border-radius: 12px; padding: 1.5rem;
+    backdrop-filter: blur(8px);
+  }
+  .card-danger { border-color: #ef4444; background: rgba(127, 29, 29, 0.2); }
+  .card-success { border-color: #10b981; background: rgba(6, 78, 59, 0.2); }
+  .card-warning { border-color: #f59e0b; background: rgba(120, 53, 15, 0.2); }
+  .card-blue { border-color: #3b82f6; background: rgba(30, 58, 95, 0.25); }
+  .card-purple { border-color: #8b5cf6; background: rgba(76, 29, 149, 0.2); }
+
+  /* ── Flow / Pipeline ── */
+  .flow {
+    display: flex; align-items: center; gap: 0; flex-wrap: wrap;
+    justify-content: center;
+  }
+  .flow-node {
+    background: rgba(30, 58, 95, 0.5); border: 2px solid #3b82f6;
+    border-radius: 10px; padding: 0.6rem 1rem;
+    font-size: 0.85rem; font-weight: 600; text-align: center;
+    min-width: 100px; position: relative;
+  }
+  .flow-node.active { border-color: #f59e0b; background: rgba(120, 53, 15, 0.3); color: #fbbf24; }
+  .flow-node.danger { border-color: #ef4444; background: rgba(127, 29, 29, 0.3); color: #fca5a5; }
+  .flow-node.success { border-color: #10b981; background: rgba(6, 78, 59, 0.3); color: #34d399; }
+  .flow-node.purple { border-color: #8b5cf6; background: rgba(76, 29, 149, 0.3); color: #c4b5fd; }
+  .flow-arrow {
+    width: 32px; height: 2px; background: #475569; position: relative;
+    flex-shrink: 0;
+  }
+  .flow-arrow::after {
+    content: ''; position: absolute; right: -1px; top: -4px;
+    border: 5px solid transparent; border-left-color: #475569;
+  }
+  .flow-arrow-down {
+    width: 2px; height: 28px; background: #475569; position: relative;
+    margin: 0 auto;
+  }
+  .flow-arrow-down::after {
+    content: ''; position: absolute; bottom: -1px; left: -4px;
+    border: 5px solid transparent; border-top-color: #475569;
+  }
+
+  /* ── Table ── */
+  table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+  th { background: rgba(30, 58, 95, 0.5); color: #93c5fd; font-weight: 700;
+       padding: 0.6rem 0.8rem; text-align: left; border-bottom: 2px solid #334155; }
+  td { padding: 0.55rem 0.8rem; border-bottom: 1px solid #1e293b; }
+  tr:hover td { background: rgba(51, 65, 85, 0.3); }
+
+  /* ── Code ── */
+  code {
+    font-family: "SF Mono", "Fira Code", monospace;
+    background: rgba(15, 23, 42, 0.8); border: 1px solid #334155;
+    padding: 0.1rem 0.4rem; border-radius: 4px; font-size: 0.82rem;
+    color: #93c5fd;
+  }
+  pre {
+    background: rgba(15, 23, 42, 0.9); border: 1px solid #334155;
+    border-radius: 8px; padding: 1rem 1.2rem; overflow-x: auto;
+    font-size: 0.78rem; line-height: 1.6;
+  }
+  pre code { background: none; border: none; padding: 0; }
+
+  /* ── Diagram ── */
+  .diagram-box {
+    background: rgba(15, 23, 42, 0.6); border: 1px solid #334155;
+    border-radius: 12px; padding: 1.5rem; text-align: center;
+  }
+
+  /* ── List ── */
+  ul, ol { padding-left: 1.5rem; }
+  li { margin-bottom: 0.4rem; }
+  li::marker { color: #60a5fa; }
+
+  /* ── TOC ── */
+  .toc { list-style: none; padding-left: 0; }
+  .toc li { margin-bottom: 0.8rem; padding: 0.6rem 1rem; border-left: 3px solid #334155; transition: border-color 0.2s; }
+  .toc li:hover { border-left-color: #60a5fa; }
+  .toc a { color: #93c5fd; text-decoration: none; font-weight: 600; }
+  .toc a:hover { color: #60a5fa; }
+  .toc .toc-num { display: inline-block; width: 2rem; color: #475569; font-weight: 800; }
+
+  /* ── Spec Block ── */
+  .spec-row { display: flex; border-bottom: 1px solid #1e293b; padding: 0.5rem 0; }
+  .spec-label { width: 200px; color: #94a3b8; font-weight: 600; flex-shrink: 0; }
+  .spec-value { color: #e2e8f0; }
+
+  /* ── Section divider ── */
+  .section-divider { border-top: 2px solid #334155; margin: 2rem 0 1.5rem; }
+
+  /* ── State Machine Diagram ── */
+  .state-grid {
+    display: grid; grid-template-columns: repeat(5, 1fr); gap: 0.8rem;
+    max-width: 900px; margin: 0 auto;
+  }
+  .state-box {
+    background: rgba(30, 58, 95, 0.5); border: 2px solid #3b82f6;
+    border-radius: 10px; padding: 0.8rem; text-align: center;
+    font-size: 0.8rem; font-weight: 600;
+  }
+  .state-box.highlight { border-color: #f59e0b; color: #fbbf24; }
+  .state-box.critical { border-color: #ef4444; color: #fca5a5; }
+  .state-box.done { border-color: #10b981; color: #34d399; }
+
+  /* ── Print ── */
+  @media print {
+    .slide { min-height: auto; page-break-after: always; padding: 2rem; }
+    body { background: white; color: #1e293b; }
+    .card { background: #f8fafc; border-color: #e2e8f0; }
+    th { background: #f1f5f9; color: #1e3a5f; }
+    td { border-color: #e2e8f0; }
+    .flow-node { background: #f1f5f9; }
+    h1, h2, h3, .accent { color: #1e40af; }
+    .accent-green { color: #059669; }
+    .accent-amber { color: #d97706; }
+    .accent-red { color: #dc2626; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ============================================================ -->
+<!-- SLIDE 1: 表紙 -->
+<!-- ============================================================ -->
+<section class="slide" id="cover">
+  <div>
+    <span class="label label-blue">SYSTEM MANUAL v1.0</span>
+    <h1 style="margin-top: 1rem;">車両AI問診チャットシステム<br><span class="accent">取り扱い説明書</span></h1>
+    <p class="subtitle" style="margin-top: 1rem;">Vehicle AI Chat &mdash; システム仕様・操作手順・技術スペック</p>
+    <div style="margin-top: 2.5rem; display: flex; gap: 1rem;">
+      <span class="label label-green">FastAPI + Next.js</span>
+      <span class="label label-purple">RAG + LLM</span>
+      <span class="label label-amber">OpenAI GPT-4o-mini</span>
+    </div>
+    <p class="small" style="margin-top: 2rem;">最終更新: 2026年3月</p>
+  </div>
+  <div class="slide-num">1 / 16</div>
+</section>
+
+<!-- ============================================================ -->
+<!-- SLIDE 2: 目次 -->
+<!-- ============================================================ -->
+<section class="slide" id="toc">
+  <h2><span class="accent">目次</span></h2>
+  <div class="cols cols-2">
+    <ul class="toc">
+      <li><a href="#overview"><span class="toc-num">01</span> システム概要</a></li>
+      <li><a href="#architecture"><span class="toc-num">02</span> システム構成・アーキテクチャ</a></li>
+      <li><a href="#techstack"><span class="toc-num">03</span> 技術スペック</a></li>
+      <li><a href="#chatflow"><span class="toc-num">04</span> チャットフロー（ステートマシン）</a></li>
+      <li><a href="#step-detail"><span class="toc-num">05</span> 各ステップ詳細</a></li>
+      <li><a href="#urgency"><span class="toc-num">06</span> 緊急度判定システム</a></li>
+      <li><a href="#rag"><span class="toc-num">07</span> RAGパイプライン</a></li>
+      <li><a href="#llm-schemas"><span class="toc-num">08</span> LLMスキーマ・プロンプト設計</a></li>
+    </ul>
+    <ul class="toc">
+      <li><a href="#features"><span class="toc-num">09</span> 主要機能一覧</a></li>
+      <li><a href="#user-operation"><span class="toc-num">10</span> ユーザー操作手順</a></li>
+      <li><a href="#api-spec"><span class="toc-num">11</span> API仕様</a></li>
+      <li><a href="#data-models"><span class="toc-num">12</span> データモデル</a></li>
+      <li><a href="#config"><span class="toc-num">13</span> 設定・環境変数</a></li>
+      <li><a href="#deploy"><span class="toc-num">14</span> デプロイ・起動手順</a></li>
+      <li><a href="#testing"><span class="toc-num">15</span> テスト・品質管理</a></li>
+      <li><a href="#appendix"><span class="toc-num">16</span> 付録：警告灯アイコン・車両データ</a></li>
+    </ul>
+  </div>
+  <div class="slide-num">2 / 16</div>
+</section>
+
+<!-- ============================================================ -->
+<!-- SLIDE 3: システム概要 -->
+<!-- ============================================================ -->
+<section class="slide" id="overview">
+  <h2><span class="toc-num" style="color:#475569">01</span> <span class="accent">システム概要</span></h2>
+  <div class="card card-blue" style="margin-bottom: 2rem;">
+    <h3>コンセプト</h3>
+    <p>車両オーナーがトラブルや不調を感じた際に、AIチャットで症状を入力すると、
+    車両マニュアル（PDF）をRAG検索し、一問一答形式の問診を経て
+    <strong>原因特定 → 対処手順の提示 → 緊急度判定 → 予約導線</strong>までを一気通貫で提供するシステムです。</p>
+  </div>
+
+  <div class="cols cols-3">
+    <div class="card">
+      <h4>対象ユーザー</h4>
+      <ul>
+        <li>車に詳しくない一般オーナー</li>
+        <li>日本語で利用</li>
+        <li>スマートフォン / PCブラウザ</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h4>主な機能</h4>
+      <ul>
+        <li>車両選択 + 写真確認</li>
+        <li>AI問診（RAG + LLM）</li>
+        <li>緊急度判定（4段階）</li>
+        <li>予約導線（出張/来店）</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h4>安全設計</h4>
+      <ul>
+        <li>キーワード即時判定</li>
+        <li>迷ったら安全側（false）</li>
+        <li>マニュアル記載外の検出</li>
+        <li>走行可否の独立評価</li>
+      </ul>
+    </div>
+  </div>
+  <div class="slide-num">3 / 16</div>
+</section>
+
+<!-- ============================================================ -->
+<!-- SLIDE 4: システム構成 -->
+<!-- ============================================================ -->
+<section class="slide" id="architecture">
+  <h2><span class="toc-num" style="color:#475569">02</span> <span class="accent">システム構成・アーキテクチャ</span></h2>
+
+  <div class="diagram-box" style="margin-bottom: 2rem;">
+    <div class="flow" style="margin-bottom: 1.5rem;">
+      <div class="flow-node" style="min-width:140px;">
+        <div style="font-size:0.7rem;color:#94a3b8;">FRONTEND</div>
+        <div>Next.js 15</div>
+        <div style="font-size:0.7rem;color:#64748b;">React 19 / TypeScript</div>
+      </div>
+      <div class="flow-arrow"></div>
+      <div class="flow-node active" style="min-width:140px;">
+        <div style="font-size:0.7rem;color:#94a3b8;">BACKEND</div>
+        <div>FastAPI</div>
+        <div style="font-size:0.7rem;color:#64748b;">Python 3.12</div>
+      </div>
+      <div class="flow-arrow"></div>
+      <div class="flow-node purple" style="min-width:140px;">
+        <div style="font-size:0.7rem;color:#94a3b8;">LLM</div>
+        <div>OpenAI API</div>
+        <div style="font-size:0.7rem;color:#64748b;">GPT-4o-mini</div>
+      </div>
+    </div>
+    <div class="flow">
+      <div class="flow-node" style="min-width:140px;border-color:#10b981;">
+        <div style="font-size:0.7rem;color:#94a3b8;">VECTOR DB</div>
+        <div style="color:#34d399;">ChromaDB</div>
+        <div style="font-size:0.7rem;color:#64748b;">ローカルストレージ</div>
+      </div>
+      <div class="flow-arrow"></div>
+      <div class="flow-node" style="min-width:140px;border-color:#10b981;">
+        <div style="font-size:0.7rem;color:#94a3b8;">EMBEDDINGS</div>
+        <div style="color:#34d399;">E5-large-instruct</div>
+        <div style="font-size:0.7rem;color:#64748b;">多言語対応</div>
+      </div>
+      <div class="flow-arrow"></div>
+      <div class="flow-node" style="min-width:140px;border-color:#10b981;">
+        <div style="font-size:0.7rem;color:#94a3b8;">SESSION</div>
+        <div style="color:#34d399;">InMemory Store</div>
+        <div style="font-size:0.7rem;color:#64748b;">TTL: 3600秒</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="cols cols-2">
+    <div class="card">
+      <h4>フロントエンド → バックエンド</h4>
+      <ul>
+        <li><code>POST /api/chat</code> — 全チャットインタラクション</li>
+        <li><code>GET /api/health</code> — ヘルスチェック</li>
+        <li>JSON形式のリクエスト/レスポンス</li>
+        <li>CORS: <code>http://localhost:3000</code></li>
+      </ul>
+    </div>
+    <div class="card">
+      <h4>バックエンド → 外部サービス</h4>
+      <ul>
+        <li>OpenAI Chat Completions API（Structured Outputs）</li>
+        <li>ChromaDB（ローカルファイル永続化）</li>
+        <li>PDF取り込み時: PyPDF2</li>
+      </ul>
+    </div>
+  </div>
+  <div class="slide-num">4 / 16</div>
+</section>
+
+<!-- ============================================================ -->
+<!-- SLIDE 5: 技術スペック -->
+<!-- ============================================================ -->
+<section class="slide" id="techstack">
+  <h2><span class="toc-num" style="color:#475569">03</span> <span class="accent">技術スペック</span></h2>
+
+  <div class="cols cols-2">
+    <div class="card">
+      <h4>フロントエンド</h4>
+      <div class="spec-row"><span class="spec-label">フレームワーク</span><span class="spec-value">Next.js 15 / React 19</span></div>
+      <div class="spec-row"><span class="spec-label">言語</span><span class="spec-value">TypeScript</span></div>
+      <div class="spec-row"><span class="spec-label">スタイリング</span><span class="spec-value">Tailwind CSS</span></div>
+      <div class="spec-row"><span class="spec-label">国際化</span><span class="spec-value">カスタム i18n（ja.ts）</span></div>
+      <div class="spec-row"><span class="spec-label">状態管理</span><span class="spec-value">React Hooks（useChat）</span></div>
+    </div>
+    <div class="card">
+      <h4>バックエンド</h4>
+      <div class="spec-row"><span class="spec-label">フレームワーク</span><span class="spec-value">FastAPI</span></div>
+      <div class="spec-row"><span class="spec-label">言語</span><span class="spec-value">Python 3.12</span></div>
+      <div class="spec-row"><span class="spec-label">バリデーション</span><span class="spec-value">Pydantic v2</span></div>
+      <div class="spec-row"><span class="spec-label">設定管理</span><span class="spec-value">pydantic-settings (.env)</span></div>
+      <div class="spec-row"><span class="spec-label">非同期</span><span class="spec-value">asyncio / uvicorn</span></div>
+    </div>
+    <div class="card">
+      <h4>AI / RAG</h4>
+      <div class="spec-row"><span class="spec-label">LLMモデル</span><span class="spec-value">GPT-4o-mini</span></div>
+      <div class="spec-row"><span class="spec-label">レスポンス形式</span><span class="spec-value">Structured Outputs (JSON Schema)</span></div>
+      <div class="spec-row"><span class="spec-label">埋め込みモデル</span><span class="spec-value">multilingual-e5-large-instruct</span></div>
+      <div class="spec-row"><span class="spec-label">ベクトルDB</span><span class="spec-value">ChromaDB（ローカル永続化）</span></div>
+      <div class="spec-row"><span class="spec-label">PDF解析</span><span class="spec-value">PyPDF2</span></div>
+    </div>
+    <div class="card">
+      <h4>セッション管理</h4>
+      <div class="spec-row"><span class="spec-label">方式</span><span class="spec-value">インメモリ辞書ストア</span></div>
+      <div class="spec-row"><span class="spec-label">TTL</span><span class="spec-value">3600秒（1時間）</span></div>
+      <div class="spec-row"><span class="spec-label">ID生成</span><span class="spec-value">UUID v4</span></div>
+      <div class="spec-row"><span class="spec-label">スナップショット上限</span><span class="spec-value">8件（最大約40KB）</span></div>
+      <div class="spec-row"><span class="spec-label">永続化</span><span class="spec-value">なし（再起動でクリア）</span></div>
+    </div>
+  </div>
+  <div class="slide-num">5 / 16</div>
+</section>
+
+<!-- ============================================================ -->
+<!-- SLIDE 6: チャットフロー -->
+<!-- ============================================================ -->
+<section class="slide" id="chatflow">
+  <h2><span class="toc-num" style="color:#475569">04</span> <span class="accent">チャットフロー（ステートマシン）</span></h2>
+
+  <p style="margin-bottom: 1.5rem;">全10ステップのステートマシンで問診を管理。各ステップにハンドラー関数が対応。</p>
+
+  <div class="diagram-box" style="margin-bottom: 2rem;">
+    <!-- Row 1: Main flow -->
+    <div class="flow" style="margin-bottom: 1rem;">
+      <div class="flow-node">1. vehicle_id<br><span style="font-size:0.7rem;color:#94a3b8;">車両選択</span></div>
+      <div class="flow-arrow"></div>
+      <div class="flow-node">2. photo_confirm<br><span style="font-size:0.7rem;color:#94a3b8;">写真確認</span></div>
+      <div class="flow-arrow"></div>
+      <div class="flow-node active">3. free_text<br><span style="font-size:0.7rem;color:#94a3b8;">症状入力</span></div>
+      <div class="flow-arrow"></div>
+      <div class="flow-node purple">4. spec_check<br><span style="font-size:0.7rem;color:#94a3b8;">仕様確認</span></div>
+      <div class="flow-arrow"></div>
+      <div class="flow-node active">5. diagnosing<br><span style="font-size:0.7rem;color:#94a3b8;">問診ループ</span></div>
+    </div>
+    <!-- Row 2: Continuation -->
+    <div class="flow" style="margin-top: 1rem;">
+      <div class="flow-node" style="border-color:#f59e0b;">6. urgency_check<br><span style="font-size:0.7rem;color:#94a3b8;">緊急度評価</span></div>
+      <div class="flow-arrow"></div>
+      <div class="flow-node danger">7. reservation<br><span style="font-size:0.7rem;color:#94a3b8;">予約提案</span></div>
+      <div class="flow-arrow"></div>
+      <div class="flow-node">8. booking_info<br><span style="font-size:0.7rem;color:#94a3b8;">予約情報入力</span></div>
+      <div class="flow-arrow"></div>
+      <div class="flow-node">9. booking_confirm<br><span style="font-size:0.7rem;color:#94a3b8;">予約確認</span></div>
+      <div class="flow-arrow"></div>
+      <div class="flow-node success">10. done<br><span style="font-size:0.7rem;color:#94a3b8;">完了</span></div>
+    </div>
+  </div>
+
+  <div class="cols cols-2">
+    <div class="card card-warning">
+      <h4>分岐ルール</h4>
+      <ul>
+        <li><strong>free_text → spec_check</strong>: RAG結果が仕様説明に該当する可能性がある場合</li>
+        <li><strong>free_text → diagnosing</strong>: 通常の不具合の場合</li>
+        <li><strong>diagnosing → reservation</strong>: CRITICAL判定時は即座にスキップ</li>
+        <li><strong>spec_check → diagnosing</strong>: 仕様ではない（不具合）と判定された場合</li>
+      </ul>
+    </div>
+    <div class="card card-blue">
+      <h4>問診ループ（diagnosing）</h4>
+      <ul>
+        <li>最大 <code>8ターン</code> の一問一答</li>
+        <li>LLMが <code>confidence_to_answer ≥ 0.7</code> で回答提示</li>
+        <li>各ターンで RAG 再検索 + LLM 判定</li>
+        <li>Rewind機能で過去の回答に戻れる</li>
+      </ul>
+    </div>
+  </div>
+  <div class="slide-num">6 / 16</div>
+</section>
+
+<!-- ============================================================ -->
+<!-- SLIDE 7: 各ステップ詳細 -->
+<!-- ============================================================ -->
+<section class="slide" id="step-detail">
+  <h2><span class="toc-num" style="color:#475569">05</span> <span class="accent">各ステップ詳細</span></h2>
+
+  <table>
+    <thead>
+      <tr>
+        <th style="width:40px;">#</th>
+        <th style="width:160px;">ステップ名</th>
+        <th>処理内容</th>
+        <th style="width:200px;">ユーザー入力</th>
+        <th style="width:160px;">ハンドラー</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>1</td>
+        <td><code>vehicle_id</code></td>
+        <td>登録車両の一覧を表示し、ユーザーに選択させる</td>
+        <td><code>action: select_vehicle</code><br><code>action_value: 車両ID</code></td>
+        <td>step1_vehicle_id.py</td>
+      </tr>
+      <tr>
+        <td>2</td>
+        <td><code>photo_confirm</code></td>
+        <td>選択した車両の写真を表示して確認を求める</td>
+        <td><code>action: confirm</code><br><code>action_value: yes/no</code></td>
+        <td>step2_photo_confirm.py</td>
+      </tr>
+      <tr>
+        <td>3</td>
+        <td><code>free_text</code></td>
+        <td>症状を自由テキストで入力。RAG検索実行、仕様確認分岐の判定</td>
+        <td><code>message: 症状テキスト</code></td>
+        <td>step3_free_text.py</td>
+      </tr>
+      <tr>
+        <td>4</td>
+        <td><code>spec_check</code></td>
+        <td>LLMが仕様動作か不具合かを分類。仕様なら説明を返す</td>
+        <td>自動処理</td>
+        <td>step_spec_check.py</td>
+      </tr>
+      <tr>
+        <td>5</td>
+        <td><code>diagnosing</code></td>
+        <td>一問一答ループ。RAG + LLMで質問→原因絞り込み→回答提供</td>
+        <td><code>message: ユーザー回答</code><br>or 選択肢クリック</td>
+        <td>step_diagnosing.py</td>
+      </tr>
+      <tr>
+        <td>6</td>
+        <td><code>urgency_check</code></td>
+        <td>キーワード + LLMで最終緊急度評価</td>
+        <td>自動処理</td>
+        <td>step_urgency.py</td>
+      </tr>
+      <tr>
+        <td>7</td>
+        <td><code>reservation</code></td>
+        <td>緊急度に応じた予約提案（出張手配 / 来店予約）</td>
+        <td><code>action: reservation_choice</code></td>
+        <td>step_reservation.py</td>
+      </tr>
+      <tr>
+        <td>8</td>
+        <td><code>booking_info</code></td>
+        <td>予約に必要な情報を入力フォームで収集</td>
+        <td><code>action: submit_booking</code></td>
+        <td>step_reservation.py</td>
+      </tr>
+      <tr>
+        <td>9</td>
+        <td><code>booking_confirm</code></td>
+        <td>入力内容を確認画面で表示、確定 or 修正</td>
+        <td><code>action: booking_confirm</code></td>
+        <td>step_reservation.py</td>
+      </tr>
+      <tr>
+        <td>10</td>
+        <td><code>done</code></td>
+        <td>完了メッセージを表示</td>
+        <td>—</td>
+        <td>—</td>
+      </tr>
+    </tbody>
+  </table>
+  <div class="slide-num">7 / 16</div>
+</section>
+
+<!-- ============================================================ -->
+<!-- SLIDE 8: 緊急度判定 -->
+<!-- ============================================================ -->
+<section class="slide" id="urgency">
+  <h2><span class="toc-num" style="color:#475569">06</span> <span class="accent">緊急度判定システム</span></h2>
+
+  <p style="margin-bottom: 1.5rem;">二重判定方式：キーワードベースの即時判定 + LLMによる詳細判定。より高い緊急度を採用。</p>
+
+  <div class="cols cols-2" style="margin-bottom: 2rem;">
+    <div>
+      <h3>緊急度レベル（4段階）</h3>
+      <table>
+        <thead>
+          <tr><th>レベル</th><th>意味</th><th>can_drive</th><th>対応</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><span class="label label-red">CRITICAL</span></td>
+            <td>直ちに運転中止</td>
+            <td><span class="accent-red">false</span></td>
+            <td>ロードサービス手配</td>
+          </tr>
+          <tr>
+            <td><span class="label label-amber">HIGH</span></td>
+            <td>早急にディーラーへ</td>
+            <td><span class="accent-green">true</span></td>
+            <td>本日中の来店推奨</td>
+          </tr>
+          <tr>
+            <td><span class="label label-blue">MEDIUM</span></td>
+            <td>近いうちに点検推奨</td>
+            <td><span class="accent-green">true</span></td>
+            <td>今週中の来店推奨</td>
+          </tr>
+          <tr>
+            <td><span class="label label-gray">LOW</span></td>
+            <td>経過観察で問題なし</td>
+            <td><span class="accent-green">true</span></td>
+            <td>ご都合の良い時に</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div>
+      <h3>visit_urgency（来場緊急度）</h3>
+      <p class="small" style="margin-bottom: 0.5rem;">can_driveとは独立した軸で評価</p>
+      <table>
+        <thead>
+          <tr><th>値</th><th>意味</th><th>アクション</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>immediate</code></td><td>今すぐ来場/ロードサービス</td><td>出張手配</td></tr>
+          <tr><td><code>today</code></td><td>本日中に来場推奨</td><td>来店予約</td></tr>
+          <tr><td><code>this_week</code></td><td>今週中に来場推奨</td><td>来店予約</td></tr>
+          <tr><td><code>when_convenient</code></td><td>ご都合の良い時に</td><td>アドバイスのみ</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <h3>キーワード即時判定ルール</h3>
+  <div class="cols cols-3">
+    <div class="card card-danger">
+      <h4>CRITICAL（8パターン）</h4>
+      <ul style="font-size:0.85rem;">
+        <li>ブレーキ + 効かない/止まらない</li>
+        <li>煙 / 白煙 / 黒煙</li>
+        <li>発火 / 火 / 燃え</li>
+        <li>オイル + 漏</li>
+        <li>ステアリング + 効かない/ロック</li>
+        <li>冷却水 + 漏/減/なくなる</li>
+        <li>オーバーヒート / 水温 + 赤</li>
+        <li>ブレーキ + 故障</li>
+      </ul>
+    </div>
+    <div class="card card-warning">
+      <h4>HIGH（7パターン）</h4>
+      <ul style="font-size:0.85rem;">
+        <li>警告灯 / 警告ランプ</li>
+        <li>エンジン + ランプ/点灯</li>
+        <li>異音 / ガタガタ / キーキー</li>
+        <li>振動 / ブルブル / ガクガク</li>
+        <li>焦げ臭い / ゴム臭</li>
+        <li>タイヤ + 空気/減/漏</li>
+        <li>ABS/エアバッグ + 点灯</li>
+      </ul>
+    </div>
+    <div class="card card-blue">
+      <h4>MEDIUM（4パターン）</h4>
+      <ul style="font-size:0.85rem;">
+        <li>燃費 + 悪い/減る</li>
+        <li>エアコン + 効かない/出ない</li>
+        <li>バッテリー + 弱い/上がる</li>
+        <li>ワイパー/ウォッシャー + 動かない</li>
+      </ul>
+    </div>
+  </div>
+  <div class="slide-num">8 / 16</div>
+</section>
+
+<!-- ============================================================ -->
+<!-- SLIDE 9: RAGパイプライン -->
+<!-- ============================================================ -->
+<section class="slide" id="rag">
+  <h2><span class="toc-num" style="color:#475569">07</span> <span class="accent">RAGパイプライン</span></h2>
+
+  <div class="cols cols-2" style="margin-bottom: 2rem;">
+    <div>
+      <h3>データ取り込みフロー</h3>
+      <div class="diagram-box">
+        <div style="display: flex; flex-direction: column; gap: 0.5rem; align-items: center;">
+          <div class="flow-node" style="min-width:200px;">PDF（車両マニュアル）</div>
+          <div class="flow-arrow-down"></div>
+          <div class="flow-node" style="min-width:200px;">PyPDF2 でテキスト抽出</div>
+          <div class="flow-arrow-down"></div>
+          <div class="flow-node" style="min-width:200px;">チャンク分割</div>
+          <div class="flow-arrow-down"></div>
+          <div class="flow-node success" style="min-width:200px;">E5 Embeddings 生成</div>
+          <div class="flow-arrow-down"></div>
+          <div class="flow-node success" style="min-width:200px;">ChromaDB に保存</div>
+        </div>
+      </div>
+    </div>
+    <div>
+      <h3>検索フロー（クエリ時）</h3>
+      <div class="diagram-box">
+        <div style="display: flex; flex-direction: column; gap: 0.5rem; align-items: center;">
+          <div class="flow-node active" style="min-width:200px;">ユーザー症状テキスト</div>
+          <div class="flow-arrow-down"></div>
+          <div class="flow-node" style="min-width:200px;">E5 Embeddings 変換</div>
+          <div class="flow-arrow-down"></div>
+          <div class="flow-node" style="min-width:200px;">ChromaDB 類似検索</div>
+          <div class="flow-arrow-down"></div>
+          <div class="flow-node" style="min-width:200px;">スコア閾値フィルタ (≥ 0.3)</div>
+          <div class="flow-arrow-down"></div>
+          <div class="flow-node purple" style="min-width:200px;">LLM コンテキストとして利用</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="cols cols-3">
+    <div class="card">
+      <h4>埋め込みモデル</h4>
+      <div class="spec-row"><span class="spec-label">モデル</span><span class="spec-value">intfloat/multilingual-e5-large-instruct</span></div>
+      <div class="spec-row"><span class="spec-label">プロバイダー</span><span class="spec-value">ローカル実行</span></div>
+      <div class="spec-row"><span class="spec-label">代替</span><span class="spec-value">OpenAI text-embedding-3-small</span></div>
+    </div>
+    <div class="card">
+      <h4>検索パラメータ</h4>
+      <div class="spec-row"><span class="spec-label">類似度閾値</span><span class="spec-value">0.3</span></div>
+      <div class="spec-row"><span class="spec-label">返却件数</span><span class="spec-value">上位5件</span></div>
+      <div class="spec-row"><span class="spec-label">メタデータ</span><span class="spec-value">page, section, score</span></div>
+    </div>
+    <div class="card">
+      <h4>rewritten_query</h4>
+      <p style="font-size:0.85rem;">問診の各ターンでLLMが次回検索用にクエリを改善。元の症状+会話で判明した条件を含む50文字以内のクエリを生成。</p>
+    </div>
+  </div>
+  <div class="slide-num">9 / 16</div>
+</section>
+
+<!-- ============================================================ -->
+<!-- SLIDE 10: LLMスキーマ -->
+<!-- ============================================================ -->
+<section class="slide" id="llm-schemas">
+  <h2><span class="toc-num" style="color:#475569">08</span> <span class="accent">LLMスキーマ・プロンプト設計</span></h2>
+
+  <p style="margin-bottom: 1.5rem;">OpenAI Structured Outputs（JSON Schema）で応答形式を厳格に制御。3種のスキーマを使い分け。</p>
+
+  <div class="cols cols-3" style="margin-bottom: 2rem;">
+    <div class="card card-blue">
+      <h4>DIAGNOSTIC_SCHEMA</h4>
+      <p class="small" style="margin-bottom: 0.5rem;">問診ループ用（step_diagnosing）</p>
+      <ul style="font-size:0.82rem;">
+        <li><code>action</code>: ask_question / clarify_term / provide_answer / escalate / spec_answer</li>
+        <li><code>message</code>: ユーザー表示文</li>
+        <li><code>urgency_flag</code>: none〜critical</li>
+        <li><code>choices</code>: 選択肢配列 or null</li>
+        <li><code>can_drive</code>: 走行可否</li>
+        <li><code>confidence_to_answer</code>: 0.0〜1.0</li>
+        <li><code>rewritten_query</code>: 次回RAG検索用</li>
+        <li><code>question_topic</code>: 質問トピック</li>
+        <li><code>manual_coverage</code>: マニュアルカバー率</li>
+        <li><code>visit_urgency</code>: 来場緊急度</li>
+      </ul>
+    </div>
+    <div class="card card-purple">
+      <h4>URGENCY_SCHEMA</h4>
+      <p class="small" style="margin-bottom: 0.5rem;">緊急度評価用（step_urgency）</p>
+      <ul style="font-size:0.82rem;">
+        <li><code>level</code>: low / medium / high / critical</li>
+        <li><code>can_drive</code>: 走行可否</li>
+        <li><code>reasons</code>: 判定理由リスト</li>
+        <li><code>recommendation</code>: 推奨アクション</li>
+        <li><code>visit_urgency</code>: immediate / today / this_week / when_convenient</li>
+      </ul>
+    </div>
+    <div class="card card-success">
+      <h4>SPEC_CLASSIFICATION_SCHEMA</h4>
+      <p class="small" style="margin-bottom: 0.5rem;">仕様確認用（step_spec_check）</p>
+      <ul style="font-size:0.82rem;">
+        <li><code>is_spec_behavior</code>: 仕様かどうか</li>
+        <li><code>confidence</code>: high / medium / low</li>
+        <li><code>explanation</code>: ユーザー向け解説</li>
+        <li><code>manual_reference</code>: マニュアル参照</li>
+        <li><code>reasoning</code>: 内部判断理由</li>
+      </ul>
+      <p style="font-size:0.8rem; margin-top:0.5rem; color:#94a3b8;">
+        confidence=high のみ is_spec_behavior=true を許可（安全側設計）
+      </p>
+    </div>
+  </div>
+
+  <div class="card" style="max-height: 200px; overflow-y: auto;">
+    <h4>プロンプト一覧</h4>
+    <table>
+      <thead>
+        <tr><th>プロンプト名</th><th>用途</th><th>主な指示内容</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><code>SYSTEM_PROMPT</code></td><td>全LLM呼び出し共通</td><td>日本語回答、素人向け、専門用語にカッコ書き、危険な操作を勧めない</td></tr>
+        <tr><td><code>DIAGNOSTIC_PROMPT</code></td><td>問診ループ</td><td>元の症状に集中、2-3回で回答、選択肢フォーマット、manual_coverage判定</td></tr>
+        <tr><td><code>URGENCY_ASSESSMENT_PROMPT</code></td><td>緊急度評価</td><td>4段階レベル判定、can_drive判定、visit_urgency判定</td></tr>
+        <tr><td><code>SPEC_CLASSIFICATION_PROMPT</code></td><td>仕様確認</td><td>仕様vs不具合の分類、安全側に倒す、confidence基準</td></tr>
+        <tr><td><code>RAG_ANSWER_PROMPT</code></td><td>RAG回答生成</td><td>マニュアルベースの回答、手順番号付き、安全注意事項</td></tr>
+        <tr><td><code>NO_RAG_ANSWER_PROMPT</code></td><td>RAGなし回答</td><td>一般知識での回答、マニュアル利用不可の旨を通知</td></tr>
+        <tr><td><code>CONVERSATION_SUMMARY_PROMPT</code></td><td>会話要約</td><td>200文字以内、症状・判明事実の保持、挨拶は除外</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="slide-num">10 / 16</div>
+</section>
+
+<!-- ============================================================ -->
+<!-- SLIDE 11: 主要機能一覧 -->
+<!-- ============================================================ -->
+<section class="slide" id="features">
+  <h2><span class="toc-num" style="color:#475569">09</span> <span class="accent">主要機能一覧</span></h2>
+
+  <div class="cols cols-2" style="margin-bottom: 2rem;">
+    <div class="card card-blue">
+      <h3>manual_coverage（マニュアルカバレッジ）</h3>
+      <p style="margin-bottom: 0.8rem;">LLMがRAG結果と症状を照合し、マニュアルでカバーされているかを毎ターン判定。</p>
+      <table>
+        <thead><tr><th>値</th><th>意味</th><th>UI表示</th></tr></thead>
+        <tbody>
+          <tr><td><code>covered</code></td><td>マニュアルに原因/対処法が記載</td><td>表示なし</td></tr>
+          <tr><td><code>partially_covered</code></td><td>関連情報あるが症状自体の記載なし</td><td>グレーバッジ</td></tr>
+          <tr><td><code>not_covered</code></td><td>該当記載なし</td><td>黄色バッジ + urgency引き上げ</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="card card-purple">
+      <h3>Rewind（回答やり直し）</h3>
+      <p style="margin-bottom: 0.8rem;">DIAGNOSING中の各ターンでSessionStateのスナップショットを保存。過去の回答に遡って別の回答を試せる。</p>
+      <ul>
+        <li>各ターン開始時にスナップショット保存</li>
+        <li>上限: 8件（max_diagnostic_turns）</li>
+        <li>「やり直す」ボタンで <code>rewind_to_turn</code> パラメータ送信</li>
+        <li>該当ターンの状態を復元、以降のスナップショット削除</li>
+        <li>フロントエンド側も該当ターン以降のメッセージを削除</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="cols cols-3">
+    <div class="card card-warning">
+      <h3>警告灯アイコンカード</h3>
+      <p style="font-size:0.85rem;">問診で警告灯の質問が出た際、テキストボタンではなくアイコン付きカードを3列グリッドで表示。10種のSVGアイコン対応。</p>
+      <p class="small" style="margin-top:0.5rem;">対応: エンジン, ABS, 油圧, 水温, バッテリー, エアバッグ, ブレーキ, パワステ, TPMS, シートベルト</p>
+    </div>
+    <div class="card">
+      <h3>選択肢の自動付与</h3>
+      <p style="font-size:0.85rem;">LLMが返す選択肢の末尾に、システムが自動で以下を追加:</p>
+      <ul style="font-size:0.85rem;">
+        <li>「わからない」</li>
+        <li>「✏️ 自由入力」</li>
+      </ul>
+      <p class="small" style="margin-top:0.5rem;">LLMのプロンプトでこれらの汎用選択肢を生成しないよう指示済み。</p>
+    </div>
+    <div class="card">
+      <h3>予約フロー</h3>
+      <p style="font-size:0.85rem;">緊急度に応じて2種類の予約を提供:</p>
+      <ul style="font-size:0.85rem;">
+        <li><strong>出張手配</strong>（dispatch）: 名前, 電話番号, 現在地住所</li>
+        <li><strong>来店予約</strong>（visit）: 名前, 電話番号, 希望日時</li>
+      </ul>
+      <p class="small" style="margin-top:0.5rem;">can_drive=false の場合、来店予約を拒否し出張手配のみ許可。</p>
+    </div>
+  </div>
+  <div class="slide-num">11 / 16</div>
+</section>
+
+<!-- ============================================================ -->
+<!-- SLIDE 12: ユーザー操作手順 -->
+<!-- ============================================================ -->
+<section class="slide" id="user-operation">
+  <h2><span class="toc-num" style="color:#475569">10</span> <span class="accent">ユーザー操作手順</span></h2>
+
+  <div class="cols cols-2">
+    <div>
+      <h3>基本フロー</h3>
+      <div class="card" style="margin-bottom: 1rem;">
+        <h4>Step 1: 車両選択</h4>
+        <p style="font-size:0.85rem;">チャット画面を開くと、登録車両の一覧が表示されます。
+        診断したい車両をタップ/クリックして選択してください。</p>
+      </div>
+      <div class="card" style="margin-bottom: 1rem;">
+        <h4>Step 2: 車両写真の確認</h4>
+        <p style="font-size:0.85rem;">選択した車両の写真が表示されます。
+        正しい車両であることを確認し、「はい」をタップしてください。</p>
+      </div>
+      <div class="card" style="margin-bottom: 1rem;">
+        <h4>Step 3: 症状の入力</h4>
+        <p style="font-size:0.85rem;">車の困りごと・症状をテキストで入力してください。
+        <br>例:「ブレーキを踏んでも止まらない感じがする」
+        <br>例:「走行中にガタガタと異音がする」</p>
+      </div>
+      <div class="card" style="margin-bottom: 1rem;">
+        <h4>Step 4: AI問診に回答</h4>
+        <p style="font-size:0.85rem;">AIが症状を絞り込むための質問をします。
+        選択肢をタップするか、自由入力で回答してください。
+        わからない場合は「わからない」を選択できます。</p>
+      </div>
+    </div>
+    <div>
+      <div class="card" style="margin-bottom: 1rem;">
+        <h4>Step 5: 診断結果の確認</h4>
+        <p style="font-size:0.85rem;">AIが原因と対処手順を提示します。
+        マニュアルに記載がある場合はページ番号も表示されます。</p>
+      </div>
+      <div class="card" style="margin-bottom: 1rem;">
+        <h4>Step 6: 予約（必要な場合）</h4>
+        <p style="font-size:0.85rem;">緊急度に応じて予約の提案が表示されます。
+        <br><span class="accent-red">CRITICAL</span>: 出張手配（ロードサービス）
+        <br><span class="accent-amber">HIGH以上</span>: 来店予約
+        <br>必要情報を入力し、確認画面で予約を確定してください。</p>
+      </div>
+
+      <div class="section-divider"></div>
+
+      <h3>便利機能</h3>
+      <div class="card" style="margin-bottom: 1rem;">
+        <h4>回答のやり直し（Rewind）</h4>
+        <p style="font-size:0.85rem;">問診中の各質問の横に「やり直す」ボタンが表示されます。
+        別の回答を試したい場合はこのボタンをタップすると、
+        その質問まで戻って別の回答ができます。</p>
+      </div>
+      <div class="card">
+        <h4>仕様確認の自動判定</h4>
+        <p style="font-size:0.85rem;">アイドリングストップなどの仕様動作の場合、
+        「これは正常な動作です」と仕様説明が表示されます。
+        不具合と判断された場合は通常の問診フローに進みます。</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-num">12 / 16</div>
+</section>
+
+<!-- ============================================================ -->
+<!-- SLIDE 13: API仕様 -->
+<!-- ============================================================ -->
+<section class="slide" id="api-spec">
+  <h2><span class="toc-num" style="color:#475569">11</span> <span class="accent">API仕様</span></h2>
+
+  <div class="cols cols-2" style="margin-bottom: 2rem;">
+    <div class="card card-blue">
+      <h4>POST /api/chat</h4>
+      <p class="small" style="margin-bottom: 0.5rem;">全チャットインタラクションを処理する単一エンドポイント</p>
+      <h4 style="margin-top: 1rem;">リクエスト (ChatRequest)</h4>
+      <pre><code>{
+  "session_id": "string | null",  // null=新規セッション
+  "message": "string | null",     // フリーテキスト入力
+  "action": "string | null",      // アクション種別
+  "action_value": "string | null", // アクション値
+  "rewind_to_turn": "int | null"  // 巻き戻し先ターン
+}</code></pre>
+    </div>
+    <div class="card card-blue">
+      <h4>レスポンス (ChatResponse)</h4>
+      <pre><code>{
+  "session_id": "string",
+  "current_step": "string",
+  "prompt": {
+    "type": "text | booking_form | ...",
+    "message": "string",
+    "choices": [{"value":"...", "label":"..."}],
+    "vehicle_photo_url": "string | null",
+    "booking_type": "string | null",
+    "booking_fields": [...],
+    "booking_summary": {...}
+  },
+  "urgency": {
+    "level": "low|medium|high|critical",
+    "requires_visit": true,
+    "reasons": ["..."],
+    "can_drive": true,
+    "visit_urgency": "immediate|today|..."
+  },
+  "rag_sources": [
+    {"content":"...", "page":1, "section":"...", "score":0.8}
+  ],
+  "manual_coverage": "covered|partially_covered|not_covered",
+  "diagnostic_turn": 3,
+  "rewound_to_turn": null
+}</code></pre>
+    </div>
+  </div>
+
+  <h3>アクション一覧</h3>
+  <table>
+    <thead>
+      <tr><th>ステップ</th><th>action</th><th>action_value</th><th>説明</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>vehicle_id</td><td><code>select_vehicle</code></td><td>車両ID (例: <code>30TA06210_web</code>)</td><td>車両選択</td></tr>
+      <tr><td>photo_confirm</td><td><code>confirm</code></td><td><code>yes</code> / <code>no</code></td><td>写真確認</td></tr>
+      <tr><td>reservation</td><td><code>reservation_choice</code></td><td><code>yes</code> / <code>dispatch</code> / <code>no</code></td><td>予約選択</td></tr>
+      <tr><td>booking_info</td><td><code>submit_booking</code></td><td>JSON文字列（予約情報）</td><td>予約情報送信</td></tr>
+      <tr><td>booking_confirm</td><td><code>booking_confirm</code></td><td><code>confirm</code> / <code>edit</code></td><td>予約確定/修正</td></tr>
+    </tbody>
+  </table>
+
+  <div style="margin-top: 1.5rem;">
+    <div class="card" style="display:inline-block;">
+      <h4>GET /api/health</h4>
+      <p style="font-size:0.85rem;">ヘルスチェック。サーバーの稼働状態を返却。</p>
+    </div>
+  </div>
+  <div class="slide-num">13 / 16</div>
+</section>
+
+<!-- ============================================================ -->
+<!-- SLIDE 14: データモデル -->
+<!-- ============================================================ -->
+<section class="slide" id="data-models">
+  <h2><span class="toc-num" style="color:#475569">12</span> <span class="accent">データモデル</span></h2>
+
+  <div class="cols cols-2">
+    <div class="card">
+      <h4>SessionState（セッション状態）</h4>
+      <table style="font-size:0.8rem;">
+        <thead><tr><th>フィールド</th><th>型</th><th>説明</th></tr></thead>
+        <tbody>
+          <tr><td><code>session_id</code></td><td>str</td><td>セッション識別子（UUID）</td></tr>
+          <tr><td><code>current_step</code></td><td>ChatStep</td><td>現在のステップ</td></tr>
+          <tr><td><code>vehicle_id</code></td><td>str?</td><td>選択車両ID</td></tr>
+          <tr><td><code>vehicle_make</code></td><td>str?</td><td>メーカー名</td></tr>
+          <tr><td><code>vehicle_model</code></td><td>str?</td><td>車種名</td></tr>
+          <tr><td><code>vehicle_year</code></td><td>int?</td><td>年式</td></tr>
+          <tr><td><code>vehicle_photo_url</code></td><td>str?</td><td>車両写真URL</td></tr>
+          <tr><td><code>symptom_text</code></td><td>str?</td><td>入力された症状テキスト</td></tr>
+          <tr><td><code>follow_up_count</code></td><td>int</td><td>フォローアップ回数</td></tr>
+          <tr><td><code>rag_answer</code></td><td>str?</td><td>RAG回答テキスト</td></tr>
+          <tr><td><code>diagnostic_turn</code></td><td>int</td><td>現在の問診ターン</td></tr>
+          <tr><td><code>max_diagnostic_turns</code></td><td>int</td><td>最大問診ターン（8）</td></tr>
+          <tr><td><code>collected_symptoms</code></td><td>list[str]</td><td>収集済み症状リスト</td></tr>
+          <tr><td><code>urgency_level</code></td><td>str?</td><td>判定済み緊急度</td></tr>
+          <tr><td><code>can_drive</code></td><td>bool?</td><td>走行可否</td></tr>
+          <tr><td><code>manual_coverage</code></td><td>str?</td><td>マニュアルカバー状態</td></tr>
+          <tr><td><code>visit_urgency</code></td><td>str?</td><td>来場緊急度</td></tr>
+          <tr><td><code>state_snapshots</code></td><td>list[dict]</td><td>Rewind用スナップショット</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div>
+      <div class="card" style="margin-bottom: 1.5rem;">
+        <h4>ChatStep（列挙型）</h4>
+        <table style="font-size:0.8rem;">
+          <thead><tr><th>値</th><th>説明</th></tr></thead>
+          <tbody>
+            <tr><td><code>vehicle_id</code></td><td>車両選択</td></tr>
+            <tr><td><code>photo_confirm</code></td><td>写真確認</td></tr>
+            <tr><td><code>free_text</code></td><td>症状入力</td></tr>
+            <tr><td><code>spec_check</code></td><td>仕様確認</td></tr>
+            <tr><td><code>diagnosing</code></td><td>問診ループ</td></tr>
+            <tr><td><code>urgency_check</code></td><td>緊急度評価</td></tr>
+            <tr><td><code>reservation</code></td><td>予約提案</td></tr>
+            <tr><td><code>booking_info</code></td><td>予約情報入力</td></tr>
+            <tr><td><code>booking_confirm</code></td><td>予約確認</td></tr>
+            <tr><td><code>done</code></td><td>完了</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="card">
+        <h4>その他のフィールド</h4>
+        <table style="font-size:0.8rem;">
+          <thead><tr><th>フィールド</th><th>説明</th></tr></thead>
+          <tbody>
+            <tr><td><code>conversation_history</code></td><td>会話履歴（role/content）</td></tr>
+            <tr><td><code>conversation_summary</code></td><td>会話要約（200字以内）</td></tr>
+            <tr><td><code>rewritten_query</code></td><td>改善済みRAGクエリ</td></tr>
+            <tr><td><code>last_confidence</code></td><td>最新の確信度</td></tr>
+            <tr><td><code>solutions_tried</code></td><td>試行済みソリューション数</td></tr>
+            <tr><td><code>last_questions</code></td><td>直近の質問リスト</td></tr>
+            <tr><td><code>booking_type</code></td><td>予約種別(dispatch/visit)</td></tr>
+            <tr><td><code>booking_data</code></td><td>予約入力データ</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  <div class="slide-num">14 / 16</div>
+</section>
+
+<!-- ============================================================ -->
+<!-- SLIDE 15: 設定・デプロイ -->
+<!-- ============================================================ -->
+<section class="slide" id="config">
+  <h2><span class="toc-num" style="color:#475569">13</span> <span class="accent">設定・環境変数</span></h2>
+
+  <div class="cols cols-2" style="margin-bottom: 2rem;">
+    <div class="card">
+      <h4>環境変数一覧 (.env)</h4>
+      <table>
+        <thead><tr><th>変数名</th><th>デフォルト</th><th>説明</th></tr></thead>
+        <tbody>
+          <tr><td><code>OPENAI_API_KEY</code></td><td>（必須）</td><td>OpenAI APIキー</td></tr>
+          <tr><td><code>OPENAI_MODEL</code></td><td><code>gpt-4o-mini</code></td><td>使用するLLMモデル</td></tr>
+          <tr><td><code>OPENAI_EMBEDDING_MODEL</code></td><td><code>text-embedding-3-small</code></td><td>OpenAI埋め込みモデル</td></tr>
+          <tr><td><code>EMBEDDING_PROVIDER</code></td><td><code>local</code></td><td><code>local</code>（E5）or <code>openai</code></td></tr>
+          <tr><td><code>LOCAL_EMBEDDING_MODEL</code></td><td><code>intfloat/multilingual-e5-large-instruct</code></td><td>ローカル埋め込みモデル</td></tr>
+          <tr><td><code>CHROMA_PERSIST_DIR</code></td><td><code>./chroma_data</code></td><td>ChromaDB永続化ディレクトリ</td></tr>
+          <tr><td><code>PDF_DIR</code></td><td><code>./pdfs</code></td><td>取り込みPDF格納ディレクトリ</td></tr>
+          <tr><td><code>CORS_ORIGINS</code></td><td><code>http://localhost:3000</code></td><td>CORS許可オリジン</td></tr>
+          <tr><td><code>SESSION_TTL_SECONDS</code></td><td><code>3600</code></td><td>セッション有効期限（秒）</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="card">
+      <h4>設定管理</h4>
+      <p style="margin-bottom: 1rem; font-size:0.85rem;">
+        <code>backend/app/config.py</code> で <code>pydantic-settings</code> の <code>BaseSettings</code> を使用。
+        <code>.env</code> ファイルから自動読み込み。
+      </p>
+      <pre><code>class Settings(BaseSettings):
+    openai_api_key: str = ""
+    openai_model: str = "gpt-4o-mini"
+    embedding_provider: str = "local"
+    chroma_persist_dir: str = "./chroma_data"
+    session_ttl_seconds: int = 3600
+
+    model_config = {
+        "env_file": ".env",
+        "env_file_encoding": "utf-8"
+    }</code></pre>
+    </div>
+  </div>
+  <div class="slide-num">15 / 16</div>
+</section>
+
+<!-- ============================================================ -->
+<!-- SLIDE 16: デプロイ・起動手順 -->
+<!-- ============================================================ -->
+<section class="slide" id="deploy">
+  <h2><span class="toc-num" style="color:#475569">14</span> <span class="accent">デプロイ・起動手順</span></h2>
+
+  <div class="cols cols-2" style="margin-bottom: 2rem;">
+    <div class="card">
+      <h4>バックエンド起動</h4>
+      <pre><code># 1. 依存パッケージをインストール
+cd backend
+pip install -r requirements.txt
+
+# 2. 環境変数を設定
+cp .env.example .env
+# .env に OPENAI_API_KEY を設定
+
+# 3. PDFマニュアルを配置（任意）
+# backend/pdfs/ にPDFファイルを配置
+
+# 4. サーバー起動
+uvicorn app.main:app --reload --port 8000</code></pre>
+      <p class="small" style="margin-top:0.5rem;">デフォルト: http://localhost:8000</p>
+    </div>
+    <div class="card">
+      <h4>フロントエンド起動</h4>
+      <pre><code># 1. 依存パッケージをインストール
+cd frontend
+npm install
+
+# 2. 開発サーバー起動
+npm run dev</code></pre>
+      <p class="small" style="margin-top:0.5rem;">デフォルト: http://localhost:3000</p>
+
+      <div class="section-divider"></div>
+
+      <h4>PDF取り込み</h4>
+      <pre><code># バックエンドのpdfsディレクトリにPDFを配置後
+# サーバー起動時に自動でChromaDBにインデックス
+# または手動でインジェスト実行
+python -m app.rag.ingest</code></pre>
+    </div>
+  </div>
+
+  <div class="cols cols-2">
+    <div class="card">
+      <h4>ディレクトリ構成</h4>
+      <pre style="font-size:0.75rem;"><code>backend/
+  app/
+    api/           # FastAPI ルーター
+    chat_flow/     # ステートマシン ハンドラー
+    llm/           # LLMプロバイダー, スキーマ, プロンプト
+    models/        # Pydantic モデル
+    services/      # ビジネスロジック (RAG, urgency)
+    rag/           # RAGパイプライン (PDF→ChromaDB)
+    data/          # 静的データ (vehicles.json)
+  tests/           # テストスイート
+  pdfs/            # 車両マニュアルPDF
+  chroma_data/     # ChromaDB永続化データ
+frontend/
+  src/
+    components/chat/  # チャットUIコンポーネント
+    hooks/            # useChat (チャットロジック)
+    lib/              # API, 型定義, 定数
+    i18n/             # 日本語ラベル
+  public/
+    icons/warning-lights/  # 警告灯SVGアイコン</code></pre>
+    </div>
+    <div class="card">
+      <h4>必要要件</h4>
+      <ul>
+        <li>Python 3.12+</li>
+        <li>Node.js 18+</li>
+        <li>OpenAI APIキー</li>
+        <li>十分なメモリ（E5モデルのロードに約2GB）</li>
+      </ul>
+
+      <div class="section-divider"></div>
+
+      <h4>注意事項</h4>
+      <ul style="font-size:0.85rem;">
+        <li>セッションはインメモリのため、サーバー再起動で全セッションがクリアされます</li>
+        <li>ChromaDBのデータは <code>chroma_data/</code> に永続化されます</li>
+        <li>初回起動時にE5モデルのダウンロードが発生します（約2GB）</li>
+        <li>CORS設定は開発用です。本番環境では適切に設定してください</li>
+      </ul>
+    </div>
+  </div>
+  <div class="slide-num">16 / 16</div>
+</section>
+
+<!-- ============================================================ -->
+<!-- SLIDE 17: テスト・品質管理 -->
+<!-- ============================================================ -->
+<section class="slide" id="testing">
+  <h2><span class="toc-num" style="color:#475569">15</span> <span class="accent">テスト・品質管理</span></h2>
+
+  <div class="cols cols-2" style="margin-bottom: 2rem;">
+    <div class="card card-blue">
+      <h3>RAGAS評価テスト</h3>
+      <p style="font-size:0.85rem; margin-bottom: 0.8rem;">RAGパイプラインの品質を4メトリクスで定量評価</p>
+      <pre><code>cd backend
+python -m tests.ragas.run_ragas_eval</code></pre>
+      <table style="margin-top:0.8rem;">
+        <thead><tr><th>メトリクス</th><th>ベースラインスコア</th></tr></thead>
+        <tbody>
+          <tr><td>Faithfulness（忠実度）</td><td>0.80</td></tr>
+          <tr><td>Answer Relevancy（回答関連度）</td><td>0.21</td></tr>
+          <tr><td>Context Precision（文脈精度）</td><td>0.89</td></tr>
+          <tr><td>Context Recall（文脈再現率）</td><td>0.61</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="card card-success">
+      <h3>E2Eチャットフローテスト</h3>
+      <p style="font-size:0.85rem; margin-bottom: 0.8rem;">10種の症状で実際のAPIにリクエストし、action/urgency一致率を検証</p>
+      <pre><code># バックエンド起動後
+cd backend
+python -m tests.ragas.run_e2e_chat</code></pre>
+      <table style="margin-top:0.8rem;">
+        <thead><tr><th>指標</th><th>結果</th></tr></thead>
+        <tbody>
+          <tr><td>Action一致率</td><td>9/10（90%）</td></tr>
+          <tr><td>CRITICAL検出率</td><td>2/2（100%）</td></tr>
+          <tr><td>エラー率</td><td>0/10（0%）</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>テストケース一覧（10種）</h3>
+    <table style="font-size:0.85rem;">
+      <thead>
+        <tr><th>#</th><th>カテゴリ</th><th>症状テキスト</th><th>期待urgency</th><th>期待action</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>1</td><td>ブレーキ故障</td><td>ブレーキを踏んでも止まらない感じがする</td><td><span class="label label-red">critical</span></td><td>escalate</td></tr>
+        <tr><td>2</td><td>エンジン警告灯</td><td>エンジンの警告灯が点灯している</td><td><span class="label label-amber">high</span></td><td>ask_question</td></tr>
+        <tr><td>3</td><td>走行中異音</td><td>走行中にガタガタと異音がする</td><td><span class="label label-blue">medium</span></td><td>ask_question</td></tr>
+        <tr><td>4</td><td>エアコン不調</td><td>エアコンから冷たい風が出ない</td><td><span class="label label-gray">low</span></td><td>ask_question</td></tr>
+        <tr><td>5</td><td>エンジン始動不良</td><td>エンジンがかからない</td><td><span class="label label-amber">high</span></td><td>ask_question</td></tr>
+        <tr><td>6</td><td>オイル漏れ</td><td>駐車場の地面に油のシミがある</td><td><span class="label label-amber">high</span></td><td>ask_question</td></tr>
+        <tr><td>7</td><td>タイヤ空気圧</td><td>タイヤの空気圧警告灯がついた</td><td><span class="label label-blue">medium</span></td><td>ask_question</td></tr>
+        <tr><td>8</td><td>ハンドル重い</td><td>ハンドルが急に重くなった</td><td><span class="label label-blue">medium</span></td><td>ask_question</td></tr>
+        <tr><td>9</td><td>仕様確認系</td><td>停車中にエンジンが止まることがある</td><td><span class="label label-gray">low</span></td><td>spec_answer</td></tr>
+        <tr><td>10</td><td>オーバーヒート</td><td>水温計が赤いところまで上がっている</td><td><span class="label label-red">critical</span></td><td>escalate</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="slide-num">17 / 16</div>
+</section>
+
+<!-- ============================================================ -->
+<!-- SLIDE 18: 付録 -->
+<!-- ============================================================ -->
+<section class="slide" id="appendix">
+  <h2><span class="toc-num" style="color:#475569">16</span> <span class="accent">付録：車両データ・警告灯アイコン</span></h2>
+
+  <div class="cols cols-2" style="margin-bottom: 2rem;">
+    <div>
+      <h3>登録車両データ</h3>
+      <table>
+        <thead>
+          <tr><th>車両ID</th><th>メーカー</th><th>車種</th><th>年式</th><th>グレード</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>30TA06210_web</code></td><td>ホンダ</td><td>アコード</td><td>2011</td><td>Z</td></tr>
+          <tr><td><code>honda_civic_2023</code></td><td>ホンダ</td><td>シビック</td><td>2023</td><td>EX</td></tr>
+          <tr><td><code>honda_fit_2023</code></td><td>ホンダ</td><td>フィット</td><td>2023</td><td>e:HEV HOME</td></tr>
+        </tbody>
+      </table>
+      <p class="small" style="margin-top:0.5rem;">データ定義: <code>backend/app/data/vehicles.json</code></p>
+    </div>
+    <div>
+      <h3>警告灯アイコン一覧</h3>
+      <table>
+        <thead>
+          <tr><th>キーワード</th><th>アイコンファイル</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>エンジン</td><td><code>engine.svg</code></td></tr>
+          <tr><td>ABS</td><td><code>abs.svg</code></td></tr>
+          <tr><td>油圧 / オイル</td><td><code>oil.svg</code></td></tr>
+          <tr><td>水温</td><td><code>coolant.svg</code></td></tr>
+          <tr><td>バッテリー / 充電</td><td><code>battery.svg</code></td></tr>
+          <tr><td>エアバッグ</td><td><code>airbag.svg</code></td></tr>
+          <tr><td>ブレーキ</td><td><code>brake.svg</code></td></tr>
+          <tr><td>パワステ</td><td><code>power-steering.svg</code></td></tr>
+          <tr><td>タイヤ / 空気圧</td><td><code>tpms.svg</code></td></tr>
+          <tr><td>シートベルト</td><td><code>seatbelt.svg</code></td></tr>
+        </tbody>
+      </table>
+      <p class="small" style="margin-top:0.5rem;">格納先: <code>frontend/public/icons/warning-lights/</code></p>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>予約フォームフィールド</h3>
+    <div class="cols cols-2">
+      <div>
+        <h4>出張手配 (dispatch)</h4>
+        <table style="font-size:0.85rem;">
+          <thead><tr><th>フィールド</th><th>ラベル</th><th>型</th><th>必須</th></tr></thead>
+          <tbody>
+            <tr><td><code>name</code></td><td>お名前</td><td>text</td><td>Yes</td></tr>
+            <tr><td><code>phone</code></td><td>電話番号</td><td>tel</td><td>Yes</td></tr>
+            <tr><td><code>address</code></td><td>現在地の住所</td><td>text</td><td>Yes</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div>
+        <h4>来店予約 (visit)</h4>
+        <table style="font-size:0.85rem;">
+          <thead><tr><th>フィールド</th><th>ラベル</th><th>型</th><th>必須</th></tr></thead>
+          <tbody>
+            <tr><td><code>name</code></td><td>お名前</td><td>text</td><td>Yes</td></tr>
+            <tr><td><code>phone</code></td><td>電話番号</td><td>tel</td><td>Yes</td></tr>
+            <tr><td><code>preferred_date</code></td><td>希望日時</td><td>text</td><td>Yes</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div style="margin-top: 2rem; text-align: center;">
+    <p class="small">Vehicle AI Chat System &mdash; 取り扱い説明書 v1.0</p>
+    <p class="small">2026年3月 作成</p>
+  </div>
+  <div class="slide-num">18 / 16</div>
+</section>
+
+</body>
+</html>
