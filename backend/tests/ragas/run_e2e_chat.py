@@ -8,9 +8,12 @@ E2Eチャットフローテスト
 
 使い方:
   cd backend
-  python -m tests.ragas.run_e2e_chat
+  python -m tests.ragas.run_e2e_chat              # 単一ターン（従来）
+  python -m tests.ragas.run_e2e_chat --multi-turn  # マルチターン
+  python -m tests.ragas.run_e2e_chat --multi-turn --max-turns 8
 """
 
+import argparse
 import asyncio
 import json
 import os
@@ -25,6 +28,7 @@ from tests.ragas.test_cases import TEST_CASES
 
 BASE_URL = os.environ.get("CHAT_API_URL", "http://localhost:8000/api")
 TIMEOUT = 30.0
+DEFAULT_MAX_TURNS = 12
 
 
 async def run_chat_flow(client: httpx.AsyncClient, tc: dict) -> dict:
@@ -198,6 +202,148 @@ def print_results(results: list[dict], summary: dict):
     print(f"  urgency一致率 (critical判定): {summary['urgency_match']}/{summary['successful']} ({summary['urgency_rate']:.0%})")
 
 
+async def run_multi_turn_flow(
+    client: httpx.AsyncClient, tc: dict, max_turns: int = DEFAULT_MAX_TURNS
+) -> dict:
+    """1テストケースのマルチターン問診フローを実行"""
+    result = {
+        "id": tc["id"],
+        "category": tc["category"],
+        "symptom": tc["symptom"],
+        "steps": [],
+        "conversation_log": [],
+        "final_response": None,
+        "urgency_flag": None,
+        "action": None,
+        "manual_coverage": None,
+        "turns": 0,
+        "error": None,
+    }
+
+    try:
+        # Steps 1-3: session → vehicle → photo (same as single-turn)
+        resp = await client.post(f"{BASE_URL}/chat", json={})
+        resp.raise_for_status()
+        data = resp.json()
+        session_id = data["session_id"]
+        result["steps"].append({"step": data["current_step"], "action": "session_create"})
+
+        resp = await client.post(f"{BASE_URL}/chat", json={
+            "session_id": session_id,
+            "action": "select_vehicle",
+            "action_value": tc["vehicle_id"],
+        })
+        resp.raise_for_status()
+        data = resp.json()
+        result["steps"].append({"step": data["current_step"], "action": "vehicle_select"})
+
+        resp = await client.post(f"{BASE_URL}/chat", json={
+            "session_id": session_id,
+            "action": "confirm",
+            "action_value": "yes",
+        })
+        resp.raise_for_status()
+        data = resp.json()
+        result["steps"].append({"step": data["current_step"], "action": "photo_confirm"})
+
+        # Step 4: 症状入力
+        resp = await client.post(f"{BASE_URL}/chat", json={
+            "session_id": session_id,
+            "message": tc["symptom"],
+        })
+        resp.raise_for_status()
+        data = resp.json()
+        result["steps"].append({"step": data["current_step"], "action": "symptom_input"})
+
+        # 初回レスポンスを記録
+        result["conversation_log"].append({"role": "user", "content": tc["symptom"]})
+        prompt_msg = data.get("prompt", {}).get("message", "")
+        result["conversation_log"].append({
+            "role": "assistant",
+            "content": prompt_msg,
+            "step": data.get("current_step"),
+            "choices": data.get("prompt", {}).get("choices"),
+        })
+        result["turns"] = 1
+        result["final_response"] = data
+        result["manual_coverage"] = data.get("manual_coverage")
+        result["current_step"] = data.get("current_step", "")
+        result["prompt_message"] = prompt_msg[:200]
+
+        if data.get("urgency"):
+            result["urgency_flag"] = data["urgency"].get("level")
+
+        current_step = data.get("current_step", "")
+
+        # 初回で終了するケース
+        if current_step == "reservation":
+            result["action"] = "escalate"
+            return result
+        if current_step == "spec_check":
+            result["action"] = "spec_answer"
+            return result
+
+        result["action"] = "ask_question"
+
+        # マルチターンループ
+        for turn in range(2, max_turns + 1):
+            choices = data.get("prompt", {}).get("choices")
+
+            if not choices:
+                user_msg = "はい"
+            else:
+                if isinstance(choices[0], dict):
+                    user_msg = choices[0].get("label", choices[0].get("text", "はい"))
+                else:
+                    user_msg = str(choices[0])
+
+            resp = await client.post(f"{BASE_URL}/chat", json={
+                "session_id": session_id,
+                "message": user_msg,
+            })
+            resp.raise_for_status()
+            data = resp.json()
+
+            result["conversation_log"].append({"role": "user", "content": user_msg})
+            assistant_msg = data.get("prompt", {}).get("message", "")
+            result["conversation_log"].append({
+                "role": "assistant",
+                "content": assistant_msg,
+                "step": data.get("current_step"),
+                "choices": data.get("prompt", {}).get("choices"),
+            })
+            result["turns"] = turn
+            result["final_response"] = data
+            result["current_step"] = data.get("current_step", "")
+            result["prompt_message"] = assistant_msg[:200]
+
+            if data.get("urgency"):
+                result["urgency_flag"] = data["urgency"].get("level")
+            if data.get("manual_coverage"):
+                result["manual_coverage"] = data["manual_coverage"]
+
+            current_step = data.get("current_step", "")
+
+            if current_step in ("reservation", "done", "urgency_check"):
+                result["action"] = "escalate" if current_step == "reservation" else "provide_answer"
+                return result
+
+            if current_step == "diagnosing" and not data.get("prompt", {}).get("choices"):
+                result["action"] = "provide_answer"
+                return result
+
+        result["action"] = "max_turns_reached"
+
+    except httpx.HTTPStatusError as e:
+        result["error"] = f"HTTP {e.response.status_code}: {e.response.text[:200]}"
+    except httpx.ConnectError:
+        result["error"] = f"接続エラー: {BASE_URL} に接続できません。"
+    except Exception as e:
+        result["error"] = f"{type(e).__name__}: {str(e)}"
+
+    return result
+
+
 def save_results(results: list[dict], summary: dict):
     """結果をJSONファイルに保存"""
     output = {
@@ -233,10 +379,18 @@ def save_results(results: list[dict], summary: dict):
 
 
 async def main():
+    parser = argparse.ArgumentParser(description="E2E チャットフローテスト")
+    parser.add_argument("--multi-turn", action="store_true", help="マルチターンモードで実行")
+    parser.add_argument("--max-turns", type=int, default=DEFAULT_MAX_TURNS, help="最大ターン数")
+    args = parser.parse_args()
+
+    mode = "マルチターン" if args.multi_turn else "単一ターン"
     print("=" * 60)
-    print("E2E チャットフローテスト")
+    print(f"E2E チャットフローテスト（{mode}）")
     print(f"対象API: {BASE_URL}")
     print(f"テストケース数: {len(TEST_CASES)}")
+    if args.multi_turn:
+        print(f"最大ターン数: {args.max_turns}")
     print("=" * 60)
 
     # 接続確認
@@ -253,13 +407,18 @@ async def main():
         results = []
         for tc in TEST_CASES:
             print(f"\n  [{tc['id']:02d}] {tc['category']}: {tc['symptom'][:30]}...")
-            result = await run_chat_flow(client, tc)
+
+            if args.multi_turn:
+                result = await run_multi_turn_flow(client, tc, max_turns=args.max_turns)
+            else:
+                result = await run_chat_flow(client, tc)
             results.append(result)
 
             if result["error"]:
                 print(f"       ERROR: {result['error'][:60]}")
             else:
-                print(f"       urgency={result['urgency_flag']}, action={result['action']}")
+                turns_info = f", turns={result['turns']}" if args.multi_turn else ""
+                print(f"       urgency={result['urgency_flag']}, action={result['action']}{turns_info}")
 
     # 集計・表示・保存
     summary = evaluate_results(results)

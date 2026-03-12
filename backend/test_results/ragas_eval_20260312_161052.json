@@ -1,0 +1,246 @@
+{
+  "timestamp": "2026-03-12T16:10:52.532236",
+  "vehicle_id": "30TA06210_web",
+  "overall_scores": {
+    "faithfulness": 0.7919,
+    "answer_relevancy": 0.2174,
+    "llm_context_precision_without_reference": 0.9132,
+    "context_recall": 0.4426
+  },
+  "per_case": [
+    {
+      "id": 1,
+      "category": "ブレーキ故障",
+      "symptom": "ブレーキを踏んでも止まらない感じがする",
+      "response_preview": "ブレーキを踏んでも止まらない感じがするとのこと、大変心配ですね。まずは安全を最優先に考えましょう。以下の手順を試してみてください。\n\n1. **ブレーキの効き具合を確認する**:\n   - 車が水たまりを通過した後など、ブレーキが効きにくくなることがあります。この場合、ブレーキペダルを何回か軽く踏んでみてください。これでブレーキの効きが戻ることがあります。\n\n2. **異音の確認**:\n   - ",
+      "contexts_count": 5,
+      "scores": {
+        "faithfulness": 0.913,
+        "answer_relevancy": 0.0,
+        "llm_context_precision_without_reference": 1.0,
+        "context_recall": 0.8
+      }
+    },
+    {
+      "id": 2,
+      "category": "エンジン警告灯",
+      "symptom": "エンジンの警告灯が点灯している",
+      "response_preview": "エンジンの警告灯が点灯しているとのことですね。これはいくつかの理由が考えられますので、以下の手順に従って対処してください。\n\n### 1. 車を安全な場所に停車する\nまず、運転中であれば、すぐに安全な場所に車を停めてください。警告灯が点灯している状態で運転を続けると、エンジンに深刻な損傷を与える可能性があります。\n\n### 2. 非常点滅表示灯を点滅させる\n停車したら、非常点滅表示灯（ハザードラン",
+      "contexts_count": 5,
+      "scores": {
+        "faithfulness": 0.8333,
+        "answer_relevancy": 0.0,
+        "llm_context_precision_without_reference": 1.0,
+        "context_recall": 1.0
+      }
+    },
+    {
+      "id": 3,
+      "category": "走行中異音",
+      "symptom": "走行中にガタガタと異音がする",
+      "response_preview": "走行中にガタガタと異音がするとのことですね。まずは、いくつかの点を確認してみましょう。\n\n1. **タイヤの状態を確認する**  \n   - タイヤの空気圧が適正か、亀裂や損傷がないか、異常な摩耗がないかをチェックしてください。タイヤの状態が悪いと、走行中に異音がすることがあります。\n\n2. **フロアマットの確認**  \n   - フロアマットがペダルに引っかかっていないか、または重ねていないか",
+      "contexts_count": 5,
+      "scores": {
+        "faithfulness": 0.7727,
+        "answer_relevancy": 0.3858,
+        "llm_context_precision_without_reference": 1.0,
+        "context_recall": 0.5
+      }
+    },
+    {
+      "id": 4,
+      "category": "エアコン不調",
+      "symptom": "エアコンから冷たい風が出ない",
+      "response_preview": "エアコンから冷たい風が出ないとのことですね。いくつか考えられる原因がありますので、以下の手順を試してみてください。\n\n1. **エアコンの設定を確認する**  \n   エアコンの温度設定が高くなっていないか確認してください。設定温度を低くして、冷房モードに切り替えてみてください。\n\n2. **エアクリーンフィルターの確認**  \n   エアクリーンフィルター（空気をきれいにするためのフィルター）が",
+      "contexts_count": 5,
+      "scores": {
+        "faithfulness": 1.0,
+        "answer_relevancy": 0.0,
+        "llm_context_precision_without_reference": 1.0,
+        "context_recall": 0.0
+      }
+    },
+    {
+      "id": 5,
+      "category": "エンジン始動不良",
+      "symptom": "エンジンがかからない",
+      "response_preview": "エンジンがかからないとのこと、お困りのことと思います。以下の手順に従って、状態を確認してみてください。\n\n1. **エンジンスイッチを確認**  \n   エンジンスイッチを「III」に回して、スターター（エンジンを始動させるための装置）が回るか確認してください。\n\n2. **スターターの状態を確認**  \n   - **全く回らない場合**:  \n     - 室内灯（車内の明かり）を点灯させて、",
+      "contexts_count": 5,
+      "scores": {
+        "faithfulness": 0.8889,
+        "answer_relevancy": 0.0,
+        "llm_context_precision_without_reference": 1.0,
+        "context_recall": 1.0
+      }
+    },
+    {
+      "id": 6,
+      "category": "オイル漏れ",
+      "symptom": "駐車場の地面に油のシミがある",
+      "response_preview": "駐車場の地面に油のシミがあるとのことですが、これは車からのオイル漏れの可能性があります。オイル漏れは、エンジンやトランスミッション（車の動力を伝える装置）などの重要な部分に影響を及ぼすことがあるため、早めの対処が必要です。\n\n以下の手順で確認してみてください：\n\n1. **車を安全な場所に停める**：まず、車を平坦な場所に停めて、エンジンを切ります。\n2. **ボンネットを開ける**：ボンネットを",
+      "contexts_count": 5,
+      "scores": {
+        "faithfulness": 0.85,
+        "answer_relevancy": 0.574,
+        "llm_context_precision_without_reference": 0.8875,
+        "context_recall": 1.0
+      }
+    },
+    {
+      "id": 7,
+      "category": "タイヤ空気圧",
+      "symptom": "タイヤの空気圧警告灯がついた",
+      "response_preview": "タイヤの空気圧警告灯が点灯したとのことですね。これは、タイヤの空気圧が適正でない場合に点灯する警告です。安全な走行のために、以下の手順をお勧めします。\n\n1. **安全な場所に停車する**: まず、車を安全な場所に停めてください。走行中に警告灯が点灯した場合は、急ブレーキを避けて、ゆっくりと停車してください。\n\n2. **タイヤの空気圧を確認する**: 車が停まったら、すべてのタイヤの空気圧を測定",
+      "contexts_count": 5,
+      "scores": {
+        "faithfulness": 0.9333,
+        "answer_relevancy": 0.5646,
+        "llm_context_precision_without_reference": 0.5333,
+        "context_recall": 0.0
+      }
+    },
+    {
+      "id": 8,
+      "category": "ハンドル重い",
+      "symptom": "ハンドルが急に重くなった",
+      "response_preview": "ハンドルが急に重くなってしまったとのことですね。これは非常に重要な症状で、運転に影響を及ぼす可能性がありますので、注意が必要です。\n\nマニュアルには、エンジンが停止している状態では「パワーステアリングのパワー装置が作動しないため、ハンドル操作が重くなる」と記載されています。これは、パワーステアリング（ハンドル操作を軽くするための装置）が機能しないため、ハンドルが重く感じることがあるという意味です。",
+      "contexts_count": 5,
+      "scores": {
+        "faithfulness": 0.7692,
+        "answer_relevancy": 0.0,
+        "llm_context_precision_without_reference": 0.6792,
+        "context_recall": 0.0
+      }
+    },
+    {
+      "id": 9,
+      "category": "仕様確認系",
+      "symptom": "停車中にエンジンが止まることがある",
+      "response_preview": "停車中にエンジンが止まるという症状についてお話ししますね。いくつかの原因が考えられますので、以下の手順を参考にしてみてください。\n\n1. **警告灯の確認**:\n   - 車のダッシュボードにある警告灯を確認してください。特に「PGM-FI警告灯」が点灯または点滅している場合、エンジンの排気ガス制御システムに異常があるかもしれません。この場合は、安全な場所に停車し、エンジンを10分以上止めて冷やし",
+      "contexts_count": 5,
+      "scores": {
+        "faithfulness": 0.9167,
+        "answer_relevancy": 0.5983,
+        "llm_context_precision_without_reference": 1.0,
+        "context_recall": 0.0
+      }
+    },
+    {
+      "id": 10,
+      "category": "オーバーヒート",
+      "symptom": "水温計が赤いところまで上がっている",
+      "response_preview": "水温計が赤いところまで上がっているとのこと、非常に心配ですね。これは「オーバーヒート」（エンジンが過熱している状態）を示している可能性がありますので、早急に対処が必要です。以下の手順に従って、安全に行動してください。\n\n### 1. すぐに車を安全な場所に停める\n- まず、運転中であれば、すぐに安全な場所に車を停めてください。\n- セレクトレバーを「P」（パーキング）に入れ、パーキングブレーキをか",
+      "contexts_count": 5,
+      "scores": {
+        "faithfulness": 1.0,
+        "answer_relevancy": 0.428,
+        "llm_context_precision_without_reference": 1.0,
+        "context_recall": 1.0
+      }
+    },
+    {
+      "id": 11,
+      "category": "煙の発生",
+      "symptom": "ボンネットから白い煙が出ている",
+      "response_preview": "ボンネットから白い煙が出ているとのこと、大変心配ですね。まずは安全を最優先に考えましょう。\n\n白い煙が出る原因としては、エンジンの冷却水が沸騰している場合や、オイルが燃えている場合などが考えられます。これらは重大な問題につながる可能性がありますので、以下の手順をお勧めします。\n\n1. **車を安全な場所に停める**：まず、車を安全な場所に停めて、エンジンを切ります。パーキングブレーキをかけてくださ",
+      "contexts_count": 5,
+      "scores": {
+        "faithfulness": 0.8667,
+        "answer_relevancy": 0.0,
+        "llm_context_precision_without_reference": 0.5333,
+        "context_recall": 0.0
+      }
+    },
+    {
+      "id": 12,
+      "category": "火災兆候",
+      "symptom": "エンジンルームから火が見える",
+      "response_preview": "エンジンルームから火が見えるとのこと、大変危険な状況ですので、まずは冷静に行動してください。\n\n1. **すぐに車を安全な場所に停めてください。**  \n   - セレクトレバーを「P」に入れ、パーキングブレーキをかけてください。\n   - すべてのアクセサリーの電源を切り、非常点滅表示灯（ハザードランプ）を点滅させて周囲に注意を促してください。\n\n2. **エンジンを止めてください。**  \n ",
+      "contexts_count": 5,
+      "scores": {
+        "faithfulness": 0.35,
+        "answer_relevancy": 0.5734,
+        "llm_context_precision_without_reference": 0.8042,
+        "context_recall": 0.0
+      }
+    },
+    {
+      "id": 13,
+      "category": "冷却水漏れ",
+      "symptom": "冷却水が減っている気がする",
+      "response_preview": "冷却水が減っているとのことですね。冷却水はエンジンを適切な温度に保つために非常に重要ですので、注意が必要です。以下の手順で確認してみてください。\n\n1. **ボンネットを開ける**: 車のボンネットを開けて、冷却水のリザーブタンク（冷却水をためるタンク）を探してください。通常はエンジンの近くにあります。\n\n2. **冷却水のレベルを確認する**: リザーブタンクの側面に目盛りがあるので、冷却水のレ",
+      "contexts_count": 5,
+      "scores": {
+        "faithfulness": 0.6,
+        "answer_relevancy": 0.3942,
+        "llm_context_precision_without_reference": 1.0,
+        "context_recall": 1.0
+      }
+    },
+    {
+      "id": 14,
+      "category": "走行中振動",
+      "symptom": "走行中にブルブル振動する",
+      "response_preview": "走行中にブルブル振動するとのことですね。これはいくつかの原因が考えられますが、まずは以下の点を確認してみてください。\n\n1. **タイヤの状態を確認する**\n   - タイヤの空気圧が適正かどうかを確認してください。空気圧が低いと振動の原因になります。\n   - タイヤに亀裂や損傷、異常な摩耗がないかもチェックしてください。これらがあると、走行中に振動が発生することがあります。\n\n2. **フロア",
+      "contexts_count": 5,
+      "scores": {
+        "faithfulness": 0.7222,
+        "answer_relevancy": 0.0,
+        "llm_context_precision_without_reference": 1.0,
+        "context_recall": 0.0
+      }
+    },
+    {
+      "id": 15,
+      "category": "異臭",
+      "symptom": "ゴム焦げた臭いがする",
+      "response_preview": "ゴムが焦げたような臭いがするとのことですが、これはいくつかの原因が考えられます。まず、以下の点を確認してみてください。\n\n1. **エンジンルームの点検**:\n   - エンジンルーム内にゴム製の部品（ベルトやホースなど）が摩耗しているか、異常な熱を受けている可能性があります。これらが焦げた臭いの原因になることがあります。\n   - エンジンルームを開けて、目で見て確認することはできますが、安全の",
+      "contexts_count": 5,
+      "scores": {
+        "faithfulness": 0.5,
+        "answer_relevancy": 0.0,
+        "llm_context_precision_without_reference": 1.0,
+        "context_recall": 0.0
+      }
+    },
+    {
+      "id": 16,
+      "category": "ABS警告灯",
+      "symptom": "ABSランプが点灯している",
+      "response_preview": "ABSランプが点灯しているとのことですね。ABS（アンチロックブレーキシステム）は、急ブレーキ時や滑りやすい路面で車輪のロックを防ぎ、車両の安定性を保つための重要な装置です。\n\n### ABSランプが点灯した場合の対処手順\n\n1. **運転を続ける際の注意**:\n   - ABSが正常に作動していない可能性がありますが、通常のブレーキ機能には問題はありません。ただし、ABSが作動しないため、滑りや",
+      "contexts_count": 5,
+      "scores": {
+        "faithfulness": 0.8125,
+        "answer_relevancy": 0.3944,
+        "llm_context_precision_without_reference": 1.0,
+        "context_recall": 1.0
+      }
+    },
+    {
+      "id": 17,
+      "category": "燃費悪化",
+      "symptom": "最近ガソリンの減りが早い",
+      "response_preview": "ガソリンの減りが早いとのことですね。いくつか考えられる原因がありますので、以下の点を確認してみてください。\n\n1. **指定燃料の確認**:\n   - お車には「無鉛レギュラーガソリン」を使用することが推奨されています。指定以外の燃料（有鉛ガソリンや軽油など）を使用していないか確認してください。不適切な燃料を使用すると、エンジンや燃料系に悪影響を及ぼす可能性があります。\n\n2. **給油キャップの",
+      "contexts_count": 5,
+      "scores": {
+        "faithfulness": 0.5263,
+        "answer_relevancy": 0.0,
+        "llm_context_precision_without_reference": 1.0,
+        "context_recall": 0.0
+      }
+    },
+    {
+      "id": 18,
+      "category": "ワイパー故障",
+      "symptom": "ワイパーが動かない",
+      "response_preview": "ワイパーが動かないとのことですね。いくつかの原因が考えられますので、以下の手順を試してみてください。\n\n1. **エンジンスイッチの確認**: エンジンが「II」の位置にあることを確認してください。ワイパーはエンジンがかかっている状態でないと動作しません。\n\n2. **ワイパースイッチの確認**: ワイパースイッチが「OFF」になっていないか確認してください。スイッチが「AUTO」や「LO」、「H",
+      "contexts_count": 5,
+      "scores": {
+        "faithfulness": 1.0,
+        "answer_relevancy": 0.0,
+        "llm_context_precision_without_reference": 1.0,
+        "context_recall": 0.6667
+      }
+    }
+  ]
+}

@@ -318,6 +318,8 @@ async def handle_diagnosing(session: SessionState, request: ChatRequest) -> Chat
                 return await handle_urgency_check(session, request)
             # まだ別の解決策を試す → DIAGNOSING に留まり次の策を提示
             request.message = "解決しませんでした。他の原因を教えてください。"
+            request.action = None
+            request.action_value = None
             return await handle_diagnosing(session, request)
         elif request.action_value == "book":
             # 後方互換: 「点検を予約する」を直接選択
@@ -327,6 +329,8 @@ async def handle_diagnosing(session: SessionState, request: ChatRequest) -> Chat
         elif request.action_value == "guide_start":
             session.guide_phase = "guiding"
             request.message = f"「{session.identified_issue[:80]}」の解決手順を教えてください"
+            request.action = None
+            request.action_value = None
             return await handle_diagnosing(session, request)
         elif request.action_value and request.action_value.startswith("followup_"):
             # 動的選択肢: ユーザーの選択テキストを次の入力として処理
@@ -351,6 +355,8 @@ async def handle_diagnosing(session: SessionState, request: ChatRequest) -> Chat
                 )
             # その他 → 追加質問として DIAGNOSING 続行
             request.message = selected_label
+            request.action = None
+            request.action_value = None
             return await handle_diagnosing(session, request)
         else:
             # null choices で provide_answer → 自動的に DONE

@@ -25,13 +25,13 @@ async def handle_spec_check(session: SessionState, request: ChatRequest) -> Chat
 
     # ── Phase 2: ユーザー選択後 ──
     if session.spec_check_shown:
-        return _handle_user_choice(session, request)
+        return await _handle_user_choice(session, request)
 
     # ── Phase 1: LLM分類 ──
     return await _classify_and_respond(session, request)
 
 
-def _handle_user_choice(session: SessionState, request: ChatRequest) -> ChatResponse:
+async def _handle_user_choice(session: SessionState, request: ChatRequest) -> ChatResponse:
     """Phase 2: Process user's response to spec explanation."""
     action_value = request.action_value or ""
 
@@ -52,21 +52,14 @@ def _handle_user_choice(session: SessionState, request: ChatRequest) -> ChatResp
 
     session.current_step = ChatStep.DIAGNOSING
     from app.chat_flow.step_diagnosing import handle_diagnosing
-    return ChatResponse(
-        session_id=session.session_id,
-        current_step=ChatStep.DIAGNOSING.value,
-        prompt=PromptInfo(
-            type="text",
-            message="承知しました。詳しく症状をお伺いします。",
-        ),
-    )
+    return await handle_diagnosing(session, request)
 
 
 async def _classify_and_respond(session: SessionState, request: ChatRequest) -> ChatResponse:
     """Phase 1: Use LLM to classify whether symptom is spec behavior."""
     provider = provider_registry.get_active()
     if not provider or not provider.is_configured():
-        return _fallthrough_to_diagnosing(session)
+        return await _fallthrough_to_diagnosing(session, request)
 
     # Build RAG context from spec_rag_sources
     rag_context = _build_rag_context(session.spec_rag_sources)
@@ -132,7 +125,7 @@ async def _classify_and_respond(session: SessionState, request: ChatRequest) -> 
         )
 
     # Low/medium confidence or not spec → fall through
-    return _fallthrough_to_diagnosing(session)
+    return await _fallthrough_to_diagnosing(session, request)
 
 
 def _build_rag_context(sources: list[dict]) -> str:
@@ -151,15 +144,8 @@ def _build_rag_context(sources: list[dict]) -> str:
     return "\n\n".join(parts)
 
 
-def _fallthrough_to_diagnosing(session: SessionState) -> ChatResponse:
-    """Fall through to DIAGNOSING step."""
+async def _fallthrough_to_diagnosing(session: SessionState, request: ChatRequest) -> ChatResponse:
+    """Fall through to DIAGNOSING step — actually call handle_diagnosing."""
     session.current_step = ChatStep.DIAGNOSING
     from app.chat_flow.step_diagnosing import handle_diagnosing
-    return ChatResponse(
-        session_id=session.session_id,
-        current_step=ChatStep.DIAGNOSING.value,
-        prompt=PromptInfo(
-            type="text",
-            message="症状について詳しくお伺いします。",
-        ),
-    )
+    return await handle_diagnosing(session, request)

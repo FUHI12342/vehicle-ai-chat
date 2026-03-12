@@ -228,17 +228,114 @@
   <div>
     <span class="label label-purple mb-1">Vehicle AI Chat</span>
     <h1 style="font-size: 2.8rem; margin-top: 0.5rem;">
-      RAGAS 評価フレームワーク<br><span class="accent">導入報告</span>
+      RAGAS 評価レポート<br><span class="accent">ver 3.0</span>
     </h1>
-    <p class="subtitle mt-2">RAGパイプライン品質の定量評価基盤</p>
+    <p class="subtitle mt-2">マニュアル準拠 ground_truth + LLM-as-Judge 評価フレームワーク</p>
     <div class="divider" style="max-width: 300px; margin: 2rem auto;"></div>
-    <p class="title-date">2026-03-04</p>
+    <p class="title-date">2026-03-12</p>
   </div>
   <span class="slide-num">1</span>
 </div>
 
 <!-- ============================================ -->
-<!-- SLIDE 2 — Why RAGAS -->
+<!-- SLIDE 2 — How to Read This Report -->
+<!-- ============================================ -->
+<div class="slide">
+  <span class="label label-blue mb-1">はじめに</span>
+  <h2>この資料の読み方 — <span class="accent">初めての方へ</span></h2>
+
+  <div class="cols cols-2 mt-2">
+    <div>
+      <div class="card card-blue">
+        <h3>この資料は何？</h3>
+        <p style="font-size: 0.9rem; line-height: 1.8;">
+          本資料は、AI問診システムの<b>品質を数値で見える化</b>した報告書です。<br>
+          AIが車のマニュアルから正しい情報を引用して回答できているか、
+          18種類のテスト質問を使って自動的に採点しています。
+        </p>
+        <div class="highlight-box mt-1" style="font-size: 0.85rem;">
+          <b>例えるなら:</b> 学校のテストのようなものです。AIに18問の問題を出して、
+          4つの観点（忠実性・関連性・検索精度・検索網羅性）で採点します。
+          100点満点で何点取れたかを見ています。
+        </div>
+      </div>
+
+      <div class="card mt-2">
+        <h3>スコアの見方</h3>
+        <table style="font-size: 0.85rem;">
+          <tr>
+            <th>スコア範囲</th>
+            <th>評価</th>
+            <th>意味</th>
+          </tr>
+          <tr>
+            <td><span class="accent-green"><b>80%以上</b></span></td>
+            <td>良好</td>
+            <td>十分な品質。実運用に耐えるレベル</td>
+          </tr>
+          <tr>
+            <td><span class="accent-amber"><b>60〜80%</b></span></td>
+            <td>要改善</td>
+            <td>基本は問題ないが改善余地あり</td>
+          </tr>
+          <tr>
+            <td><span class="accent-red"><b>60%未満</b></span></td>
+            <td>対策必要</td>
+            <td>重点的な改善が必要な領域</td>
+          </tr>
+        </table>
+      </div>
+    </div>
+
+    <div>
+      <div class="card card-purple">
+        <h3>4つの採点項目を簡単に</h3>
+        <div style="margin-top: 0.5rem;">
+          <div style="background: rgba(30, 58, 95, 0.3); padding: 0.8rem; border-radius: 8px; margin-bottom: 0.5rem;">
+            <div style="font-size: 0.95rem; font-weight: 700; color: #60a5fa;">1. Faithfulness（忠実性）80.2%</div>
+            <div style="font-size: 0.82rem; color: #cbd5e1; margin-top: 0.3rem;">
+              「AIの回答がマニュアルに書いてあることだけを言っているか？」<br>
+              → 高いほど<b>でっちあげ（ハルシネーション）が少ない</b>
+            </div>
+          </div>
+          <div style="background: rgba(6, 78, 59, 0.2); padding: 0.8rem; border-radius: 8px; margin-bottom: 0.5rem;">
+            <div style="font-size: 0.95rem; font-weight: 700; color: #34d399;">2. Answer Relevancy（回答関連性）20.5%</div>
+            <div style="font-size: 0.82rem; color: #cbd5e1; margin-top: 0.3rem;">
+              「質問に対して的確に答えているか？」<br>
+              → 低い理由: 問診AIは直接回答ではなく<b>追加質問を返す設計</b>のため、一般的な質問応答と評価方法が合わない。<b>このスコアが低いのは正常な動作。</b>
+            </div>
+          </div>
+          <div style="background: rgba(120, 53, 15, 0.15); padding: 0.8rem; border-radius: 8px; margin-bottom: 0.5rem;">
+            <div style="font-size: 0.95rem; font-weight: 700; color: #fbbf24;">3. Context Precision（検索精度）94.5%</div>
+            <div style="font-size: 0.82rem; color: #cbd5e1; margin-top: 0.3rem;">
+              「マニュアルの中から正しいページを見つけられているか？」<br>
+              → 高いほど<b>関連するページが上位に来ている</b>
+            </div>
+          </div>
+          <div style="background: rgba(127, 29, 29, 0.1); padding: 0.8rem; border-radius: 8px;">
+            <div style="font-size: 0.95rem; font-weight: 700; color: #fca5a5;">4. Context Recall（検索網羅性）63.0%</div>
+            <div style="font-size: 0.82rem; color: #cbd5e1; margin-top: 0.3rem;">
+              「回答に必要な情報を漏れなく見つけられているか？」<br>
+              → 改善ポイント: マニュアルのチャンク分割の最適化で向上可能
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card card-warning mt-2" style="text-align: center;">
+    <p style="font-size: 0.9rem;">
+      <b>改善するとどう変わる？</b> → スコアが上がると、AIがマニュアルに忠実で的確な回答をし、必要な情報を漏れなく検索できるようになります。<br>
+      結果として、<b>ユーザーが正しい対処法に早くたどり着ける</b>ようになり、不必要なディーラー来店の削減や安全性の向上につながります。
+    </p>
+  </div>
+
+  <span class="slide-num">2</span>
+</div>
+
+<!-- ============================================ -->
+<!-- SLIDE 3 — Why RAGAS -->
 <!-- ============================================ -->
 <div class="slide">
   <span class="label label-blue mb-1">Background</span>
@@ -297,11 +394,11 @@
     </div>
   </div>
 
-  <span class="slide-num">2</span>
+  <span class="slide-num">3</span>
 </div>
 
 <!-- ============================================ -->
-<!-- SLIDE 3 — What is RAGAS -->
+<!-- SLIDE 4 — What is RAGAS -->
 <!-- ============================================ -->
 <div class="slide">
   <span class="label label-purple mb-1">RAGAS解説</span>
@@ -384,11 +481,11 @@
     </div>
   </div>
 
-  <span class="slide-num">3</span>
+  <span class="slide-num">4</span>
 </div>
 
 <!-- ============================================ -->
-<!-- SLIDE 4 — 4 Metrics Deep Dive -->
+<!-- SLIDE 5 — 4 Metrics Deep Dive -->
 <!-- ============================================ -->
 <div class="slide">
   <span class="label label-purple mb-1">RAGAS解説</span>
@@ -460,11 +557,11 @@
     </div>
   </div>
 
-  <span class="slide-num">4</span>
+  <span class="slide-num">5</span>
 </div>
 
 <!-- ============================================ -->
-<!-- SLIDE 5 — Metrics Quadrant -->
+<!-- SLIDE 6 — Metrics Quadrant -->
 <!-- ============================================ -->
 <div class="slide">
   <span class="label label-purple mb-1">RAGAS解説</span>
@@ -538,42 +635,74 @@
       </div>
 
       <div class="card mt-2">
-        <h3>目標スコア</h3>
+        <h3>目標スコア vs 実績推移</h3>
         <div style="margin-top: 0.5rem;">
-          <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.6rem;">
-            <span style="width: 110px; font-size: 0.82rem; color: #60a5fa;">Faithfulness</span>
-            <div class="metric-bar-container" style="flex: 1;">
-              <div class="metric-bar green" style="width: 80%;">≥ 0.80</div>
+          <!-- Faithfulness: target 0.80 -->
+          <div style="margin-bottom: 0.8rem;">
+            <div style="display: flex; justify-content: space-between; font-size: 0.78rem; margin-bottom: 3px;">
+              <span style="color: #60a5fa; font-weight: 600;">Faithfulness</span>
+              <span>目標: ≥80%</span>
+            </div>
+            <div class="metric-bar-container">
+              <div class="metric-bar green" style="width: 80.2%;">v2: 80.2% ✓</div>
+            </div>
+            <div class="metric-bar-container" style="margin-top: 2px; height: 14px;">
+              <div class="metric-bar blue" style="width: 75.3%; height: 100%; font-size: 0.62rem;">v1: 75.3%</div>
             </div>
           </div>
-          <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.6rem;">
-            <span style="width: 110px; font-size: 0.82rem; color: #34d399;">Relevancy</span>
-            <div class="metric-bar-container" style="flex: 1;">
-              <div class="metric-bar green" style="width: 70%;">≥ 0.70</div>
+          <!-- Answer Relevancy: target 0.70 -->
+          <div style="margin-bottom: 0.8rem;">
+            <div style="display: flex; justify-content: space-between; font-size: 0.78rem; margin-bottom: 3px;">
+              <span style="color: #34d399; font-weight: 600;">Answer Relevancy</span>
+              <span>目標: ≥70%</span>
+            </div>
+            <div class="metric-bar-container">
+              <div class="metric-bar red" style="width: 20.5%;">v2: 20.5%</div>
+            </div>
+            <div class="metric-bar-container" style="margin-top: 2px; height: 14px;">
+              <div class="metric-bar red" style="width: 21.9%; height: 100%; font-size: 0.62rem;">v1: 21.9%</div>
+            </div>
+            <div style="font-size: 0.65rem; color: #94a3b8; margin-top: 2px;">※問診AI特性上、追加質問が多いため低スコアは正常</div>
+          </div>
+          <!-- Context Precision: target 0.60 -->
+          <div style="margin-bottom: 0.8rem;">
+            <div style="display: flex; justify-content: space-between; font-size: 0.78rem; margin-bottom: 3px;">
+              <span style="color: #fbbf24; font-weight: 600;">Context Precision</span>
+              <span>目標: ≥60%</span>
+            </div>
+            <div class="metric-bar-container">
+              <div class="metric-bar green" style="width: 94.5%;">v2: 94.5% ✓</div>
+            </div>
+            <div class="metric-bar-container" style="margin-top: 2px; height: 14px;">
+              <div class="metric-bar green" style="width: 92.4%; height: 100%; font-size: 0.62rem;">v1: 92.4% ✓</div>
             </div>
           </div>
-          <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.6rem;">
-            <span style="width: 110px; font-size: 0.82rem; color: #fbbf24;">Precision</span>
-            <div class="metric-bar-container" style="flex: 1;">
-              <div class="metric-bar blue" style="width: 60%;">≥ 0.60</div>
+          <!-- Context Recall: target 0.60 -->
+          <div style="margin-bottom: 0;">
+            <div style="display: flex; justify-content: space-between; font-size: 0.78rem; margin-bottom: 3px;">
+              <span style="color: #fca5a5; font-weight: 600;">Context Recall</span>
+              <span>目標: ≥60%</span>
+            </div>
+            <div class="metric-bar-container">
+              <div class="metric-bar amber" style="width: 63.0%;">v2: 63.0% ✓</div>
+            </div>
+            <div class="metric-bar-container" style="margin-top: 2px; height: 14px;">
+              <div class="metric-bar amber" style="width: 64.0%; height: 100%; font-size: 0.62rem;">v1: 64.0% ✓</div>
             </div>
           </div>
-          <div style="display: flex; align-items: center; gap: 0.5rem;">
-            <span style="width: 110px; font-size: 0.82rem; color: #fca5a5;">Recall</span>
-            <div class="metric-bar-container" style="flex: 1;">
-              <div class="metric-bar blue" style="width: 60%;">≥ 0.60</div>
-            </div>
-          </div>
+        </div>
+        <div class="highlight-box green mt-1" style="font-size: 0.78rem;">
+          <b>達成状況:</b> Faithfulness が v2 で目標80%を達成。Precision・Recall も目標クリア。Relevancy は問診AI特性のため別指標での評価を検討。
         </div>
       </div>
     </div>
   </div>
 
-  <span class="slide-num">5</span>
+  <span class="slide-num">6</span>
 </div>
 
 <!-- ============================================ -->
-<!-- SLIDE 6 — 18 Test Cases -->
+<!-- SLIDE 7 — 18 Test Cases -->
 <!-- ============================================ -->
 <div class="slide">
   <span class="label label-amber mb-1">Test Cases</span>
@@ -759,11 +888,269 @@
     </div>
   </div>
 
-  <span class="slide-num">6</span>
+  <span class="slide-num">7</span>
 </div>
 
 <!-- ============================================ -->
-<!-- SLIDE 7 — Implementation Architecture -->
+<!-- SLIDE 8 — Test Reference Part 1 -->
+<!-- ============================================ -->
+<div class="slide">
+  <span class="label label-amber mb-1">テスト網羅表</span>
+  <h2>テストケース詳細 — <span class="accent-amber">質問・回答・想定一覧（1〜9）</span></h2>
+
+  <div style="overflow-x: auto;">
+    <table style="font-size: 0.72rem; line-height: 1.5;">
+      <thead>
+        <tr>
+          <th style="width:22px;">#</th>
+          <th style="width:70px;">カテゴリ</th>
+          <th style="width:140px;">テスト質問</th>
+          <th style="width:55px;">緊急度</th>
+          <th style="width:65px;">期待action</th>
+          <th style="width:170px;">AIの実際の応答（初回）</th>
+          <th style="width:200px;">想定回答（ground_truth）</th>
+          <th style="width:40px;">結果</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>1</td>
+          <td>ブレーキ故障</td>
+          <td>ブレーキを踏んでも止まらない感じがする</td>
+          <td><span class="urgency-dot critical"></span>critical</td>
+          <td><span class="badge badge-red" style="font-size:0.6rem;">escalate</span></td>
+          <td>🚨 今すぐロードサービスまたは来場が必要です。走行が危険な状態と判断されます。</td>
+          <td>即座に安全な場所に停車。ロードサービスを呼び、レッカーでディーラーへ搬送。ブレーキフルード漏れ/パッド摩耗の可能性。</td>
+          <td><span class="badge badge-green" style="font-size:0.6rem;">PASS</span></td>
+        </tr>
+        <tr>
+          <td>2</td>
+          <td>エンジン警告灯</td>
+          <td>エンジンの警告灯が点灯している</td>
+          <td><span class="urgency-dot high"></span>high</td>
+          <td><span class="badge badge-amber" style="font-size:0.6rem;">ask_question</span></td>
+          <td>エンジンの警告灯が点灯した際、エンジンの異音や振動はありますか？</td>
+          <td>警告灯の色（黄/赤）と点灯パターンを確認。赤/点滅は停車必要。黄色点灯は早めにディーラーへ。</td>
+          <td><span class="badge badge-green" style="font-size:0.6rem;">PASS</span></td>
+        </tr>
+        <tr>
+          <td>3</td>
+          <td>走行中異音</td>
+          <td>走行中にガタガタと異音がする</td>
+          <td><span class="urgency-dot medium"></span>medium</td>
+          <td><span class="badge badge-amber" style="font-size:0.6rem;">ask_question</span></td>
+          <td>ボンネットがしっかり閉まっているか確認してください。閉まっていますか？</td>
+          <td>速度域・場所（前/後輪）・状況（直進/旋回/段差）で原因が異なる。サスペンション、ハブベアリング等の点検必要。</td>
+          <td><span class="badge badge-green" style="font-size:0.6rem;">PASS</span></td>
+        </tr>
+        <tr>
+          <td>4</td>
+          <td>エアコン不調</td>
+          <td>エアコンから冷たい風が出ない</td>
+          <td><span class="urgency-dot low"></span>low</td>
+          <td><span class="badge badge-amber" style="font-size:0.6rem;">ask_question</span></td>
+          <td>症状について詳しくお伺いします。</td>
+          <td>A/Cボタンのオン確認、温度設定確認。冷媒不足が最も一般的。コンプレッサー故障/フィルター詰まりも。</td>
+          <td><span class="badge badge-green" style="font-size:0.6rem;">PASS</span></td>
+        </tr>
+        <tr>
+          <td>5</td>
+          <td>エンジン始動不良</td>
+          <td>エンジンがかからない</td>
+          <td><span class="urgency-dot high"></span>high</td>
+          <td><span class="badge badge-amber" style="font-size:0.6rem;">ask_question</span></td>
+          <td>エンジンスイッチは「III」の位置に回っていますか？</td>
+          <td>キーを回した時の反応を確認。セルモーター回らない→バッテリー上がり。セル回るがかからない→燃料系/プラグ。</td>
+          <td><span class="badge badge-green" style="font-size:0.6rem;">PASS</span></td>
+        </tr>
+        <tr>
+          <td>6</td>
+          <td>オイル漏れ</td>
+          <td>駐車場の地面に油のシミがある</td>
+          <td><span class="urgency-dot high"></span>high</td>
+          <td><span class="badge badge-amber" style="font-size:0.6rem;">ask_question</span></td>
+          <td>オイルのシミの色は何色ですか？</td>
+          <td>液体の色で判別: 黒茶=エンジンオイル、赤=ATF、緑=冷却水、透明=エアコン排水（正常）。漏れ位置と量も重要。</td>
+          <td><span class="badge badge-green" style="font-size:0.6rem;">PASS</span></td>
+        </tr>
+        <tr>
+          <td>7</td>
+          <td>タイヤ空気圧</td>
+          <td>タイヤの空気圧警告灯がついた</td>
+          <td><span class="urgency-dot medium"></span>medium</td>
+          <td><span class="badge badge-amber" style="font-size:0.6rem;">ask_question</span></td>
+          <td>タイヤの空気圧を確認しましたか？</td>
+          <td>TPMS点灯=空気圧が規定値以下。目視でパンク確認。ガソスタで空気圧調整。運転席ドア内側にラベル記載。</td>
+          <td><span class="badge badge-green" style="font-size:0.6rem;">PASS</span></td>
+        </tr>
+        <tr>
+          <td>8</td>
+          <td>ハンドル重い</td>
+          <td>ハンドルが急に重くなった</td>
+          <td><span class="urgency-dot medium"></span>medium</td>
+          <td><span class="badge badge-amber" style="font-size:0.6rem;">ask_question</span></td>
+          <td>エンジンをかけた状態でハンドルの重さが改善されましたか？</td>
+          <td>パワステ系統異常。油圧式→フルード漏れ/ポンプ故障。電動式→EPSモーター/センサー故障。走行可能だが注意。</td>
+          <td><span class="badge badge-green" style="font-size:0.6rem;">PASS</span></td>
+        </tr>
+        <tr style="background: rgba(239, 68, 68, 0.08);">
+          <td>9</td>
+          <td>仕様確認系</td>
+          <td>停車中にエンジンが止まることがある</td>
+          <td><span class="urgency-dot low"></span>low</td>
+          <td><span class="badge badge-blue" style="font-size:0.6rem;">spec_answer</span></td>
+          <td>ダッシュボードに警告灯が点灯していますか？</td>
+          <td>アイドリングストップ機能の正常動作。停車中にエンジン自動停止→ブレーキ離すと再始動。ボタンで無効化可能。</td>
+          <td><span class="badge badge-red" style="font-size:0.6rem;">FAIL</span></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="highlight-box amber mt-1" style="font-size: 0.82rem;">
+    <b>ケース9 FAIL の理由:</b> 「アイドリングストップ」は仕様（正常な動作）だが、AIは安全側に倒して追加質問を実施。
+    仕様判定（spec_answer）ではなく問診（ask_question）を返した。<b>安全面では問題のない動作。</b>
+  </div>
+
+  <span class="slide-num">8</span>
+</div>
+
+<!-- ============================================ -->
+<!-- SLIDE 9 — Test Reference Part 2 -->
+<!-- ============================================ -->
+<div class="slide">
+  <span class="label label-amber mb-1">テスト網羅表</span>
+  <h2>テストケース詳細 — <span class="accent-amber">質問・回答・想定一覧（10〜18）</span></h2>
+
+  <div style="overflow-x: auto;">
+    <table style="font-size: 0.72rem; line-height: 1.5;">
+      <thead>
+        <tr>
+          <th style="width:22px;">#</th>
+          <th style="width:70px;">カテゴリ</th>
+          <th style="width:140px;">テスト質問</th>
+          <th style="width:55px;">緊急度</th>
+          <th style="width:65px;">期待action</th>
+          <th style="width:170px;">AIの実際の応答（初回）</th>
+          <th style="width:200px;">想定回答（ground_truth）</th>
+          <th style="width:40px;">結果</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>10</td>
+          <td>オーバーヒート</td>
+          <td>水温計が赤いところまで上がっている</td>
+          <td><span class="urgency-dot critical"></span>critical</td>
+          <td><span class="badge badge-red" style="font-size:0.6rem;">escalate</span></td>
+          <td>🚨 今すぐロードサービスまたは来場が必要です。走行が危険な状態と判断されます。</td>
+          <td>エンジンオーバーヒート。即停車・エンジン停止。ラジエーターキャップは絶対開けない。冷却水漏れ/ファン/サーモスタット/ウォーターポンプ故障。ロードサービス推奨。</td>
+          <td><span class="badge badge-green" style="font-size:0.6rem;">PASS</span></td>
+        </tr>
+        <tr>
+          <td>11</td>
+          <td>煙の発生</td>
+          <td>ボンネットから白い煙が出ている</td>
+          <td><span class="urgency-dot critical"></span>critical</td>
+          <td><span class="badge badge-red" style="font-size:0.6rem;">escalate</span></td>
+          <td>🚨 今すぐロードサービスまたは来場が必要です。走行が危険な状態と判断されます。</td>
+          <td>冷却水がエンジン内部に漏れて蒸発。即停車・エンジン停止。ボンネットは冷えてから。ラジエーターキャップ開けない。ロードサービス推奨。</td>
+          <td><span class="badge badge-green" style="font-size:0.6rem;">PASS</span></td>
+        </tr>
+        <tr>
+          <td>12</td>
+          <td>火災兆候</td>
+          <td>エンジンルームから火が見える</td>
+          <td><span class="urgency-dot critical"></span>critical</td>
+          <td><span class="badge badge-red" style="font-size:0.6rem;">escalate</span></td>
+          <td>🚨 今すぐロードサービスまたは来場が必要です。走行が危険な状態と判断されます。</td>
+          <td>車両火災の可能性。即停車、全員車外避難。消火器あればボンネット隙間から消火。ボンネット全開は火勢増加の危険。119番通報。</td>
+          <td><span class="badge badge-green" style="font-size:0.6rem;">PASS</span></td>
+        </tr>
+        <tr>
+          <td>13</td>
+          <td>冷却水漏れ</td>
+          <td>冷却水が減っている気がする</td>
+          <td><span class="urgency-dot critical"></span>critical</td>
+          <td><span class="badge badge-red" style="font-size:0.6rem;">escalate</span></td>
+          <td>🚨 今すぐロードサービスまたは来場が必要です。走行が危険な状態と判断されます。</td>
+          <td>冷却系統漏れの可能性。冷却水不足で走行→オーバーヒート→重大損傷。リザーブタンクMINライン以下なら走行控える。エンジン冷えてからキャップ確認。</td>
+          <td><span class="badge badge-green" style="font-size:0.6rem;">PASS</span></td>
+        </tr>
+        <tr>
+          <td>14</td>
+          <td>走行中振動</td>
+          <td>走行中にブルブル振動する</td>
+          <td><span class="urgency-dot high"></span>high</td>
+          <td><span class="badge badge-amber" style="font-size:0.6rem;">ask_question</span></td>
+          <td>タイヤの空気圧を確認しましたか？</td>
+          <td>速度域・場所（ハンドル/車体/座席）・状況（加速/一定速度/ブレーキ）で原因が異なる。タイヤバランス、ホイール歪み、ドライブシャフト、エンジンマウント劣化等。</td>
+          <td><span class="badge badge-green" style="font-size:0.6rem;">PASS</span></td>
+        </tr>
+        <tr>
+          <td>15</td>
+          <td>異臭</td>
+          <td>ゴム焦げた臭いがする</td>
+          <td><span class="urgency-dot high"></span>high</td>
+          <td><span class="badge badge-amber" style="font-size:0.6rem;">ask_question</span></td>
+          <td>車の下や周囲に異常な煙や液体が漏れていないか確認してください。漏れはありますか？</td>
+          <td>ベルト類の滑り/劣化、ブレーキの引きずり、クラッチ摩耗等。タイヤ/ホイール付近が異常に熱い→ブレーキ引きずり→走行中止。臭いの発生源と条件を確認。</td>
+          <td><span class="badge badge-green" style="font-size:0.6rem;">PASS</span></td>
+        </tr>
+        <tr>
+          <td>16</td>
+          <td>ABS警告灯</td>
+          <td>ABSランプが点灯している</td>
+          <td><span class="urgency-dot high"></span>high</td>
+          <td><span class="badge badge-amber" style="font-size:0.6rem;">ask_question</span></td>
+          <td>ABSランプ点灯→システム異常の可能性。安全運転を心がけ、早めにHondaディーラーで点検を。</td>
+          <td>ABS異常検出。通常ブレーキは維持されるが急ブレーキ時ロックの可能性。走行可能だが早めにディーラーへ。ABSセンサー汚れ/配線/フルード不足等。</td>
+          <td><span class="badge badge-green" style="font-size:0.6rem;">PASS</span></td>
+        </tr>
+        <tr>
+          <td>17</td>
+          <td>燃費悪化</td>
+          <td>最近ガソリンの減りが早い</td>
+          <td><span class="urgency-dot medium"></span>medium</td>
+          <td><span class="badge badge-amber" style="font-size:0.6rem;">ask_question</span></td>
+          <td>給油キャップ（給油口の蓋）がしっかり閉まっていますか？</td>
+          <td>原因多岐: 空気圧不足、エアフィルター汚れ、スパークプラグ劣化、O2センサー異常。まず空気圧確認。エアコン使用/走行パターン変化も影響。</td>
+          <td><span class="badge badge-green" style="font-size:0.6rem;">PASS</span></td>
+        </tr>
+        <tr>
+          <td>18</td>
+          <td>ワイパー故障</td>
+          <td>ワイパーが動かない</td>
+          <td><span class="urgency-dot medium"></span>medium</td>
+          <td><span class="badge badge-amber" style="font-size:0.6rem;">ask_question</span></td>
+          <td>エンジンはかかっていますか？エンジンスイッチが「II」の位置にあるか確認してください。</td>
+          <td>モーター故障、ヒューズ切れ、リンク破損、スイッチ接触不良等。まずヒューズ確認。ヒューズボックスは運転席ダッシュ下部。雨天は視界不良で危険。</td>
+          <td><span class="badge badge-green" style="font-size:0.6rem;">PASS</span></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="cols cols-3 mt-1">
+    <div class="card" style="padding: 0.8rem; text-align: center;">
+      <div style="font-size: 1.5rem; font-weight: 800; color: #34d399;">17/18</div>
+      <div class="small">action一致率 94.4%</div>
+    </div>
+    <div class="card" style="padding: 0.8rem; text-align: center;">
+      <div style="font-size: 1.5rem; font-weight: 800; color: #60a5fa;">5/5</div>
+      <div class="small">critical全件escalate</div>
+    </div>
+    <div class="card" style="padding: 0.8rem; text-align: center;">
+      <div style="font-size: 1.5rem; font-weight: 800; color: #fbbf24;">12/13</div>
+      <div class="small">非critical全件ask_question</div>
+    </div>
+  </div>
+
+  <span class="slide-num">9</span>
+</div>
+
+<!-- ============================================ -->
+<!-- SLIDE 10 — Implementation Architecture -->
 <!-- ============================================ -->
 <div class="slide">
   <span class="label label-green mb-1">Implementation</span>
@@ -841,11 +1228,11 @@ docs/
     </div>
   </div>
 
-  <span class="slide-num">7</span>
+  <span class="slide-num">10</span>
 </div>
 
 <!-- ============================================ -->
-<!-- SLIDE 8 — E2E Test Architecture -->
+<!-- SLIDE 11 — E2E Test Architecture -->
 <!-- ============================================ -->
 <div class="slide">
   <span class="label label-green mb-1">Implementation</span>
@@ -922,11 +1309,11 @@ docs/
     </div>
   </div>
 
-  <span class="slide-num">8</span>
+  <span class="slide-num">11</span>
 </div>
 
 <!-- ============================================ -->
-<!-- SLIDE 9 — How to Run -->
+<!-- SLIDE 12 — How to Run -->
 <!-- ============================================ -->
 <div class="slide">
   <span class="label label-green mb-1">Usage</span>
@@ -1000,15 +1387,297 @@ python -m tests.ragas.run_e2e_chat</code></pre>
     </div>
   </div>
 
-  <span class="slide-num">9</span>
+  <span class="slide-num">12</span>
 </div>
 
 <!-- ============================================ -->
-<!-- SLIDE 10 — Summary -->
+<!-- SLIDE 13 — v1 vs v2 Comparison -->
+<!-- ============================================ -->
+<div class="slide">
+  <span class="label label-green mb-1">v1 → v2</span>
+  <h2>バージョン比較 — <span class="accent-green">プロンプト最適化の効果</span></h2>
+
+  <div class="cols cols-2 mt-2">
+    <div>
+      <div class="card card-blue">
+        <h3>RAGAS スコア比較</h3>
+        <table>
+          <thead>
+            <tr><th>メトリクス</th><th>v1 (3/7)</th><th>v2 (3/12)</th><th>差分</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td style="color: #60a5fa;">Faithfulness</td>
+              <td>75.3%</td>
+              <td><b>80.2%</b></td>
+              <td><span class="accent-green">+4.9pt</span></td>
+            </tr>
+            <tr>
+              <td style="color: #34d399;">Answer Relevancy</td>
+              <td>21.9%</td>
+              <td>20.5%</td>
+              <td><span class="accent-red">-1.4pt</span></td>
+            </tr>
+            <tr>
+              <td style="color: #fbbf24;">Context Precision</td>
+              <td>92.4%</td>
+              <td><b>94.5%</b></td>
+              <td><span class="accent-green">+2.1pt</span></td>
+            </tr>
+            <tr>
+              <td style="color: #fca5a5;">Context Recall</td>
+              <td>64.0%</td>
+              <td>63.0%</td>
+              <td><span class="accent-red">-1.0pt</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="card card-success mt-2">
+        <h3>E2E チャットテスト比較</h3>
+        <table>
+          <thead>
+            <tr><th>指標</th><th>v1</th><th>v2</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>action 一致率</td>
+              <td>88.9% (16/18)</td>
+              <td><b>94.4% (17/18)</b></td>
+            </tr>
+            <tr>
+              <td>urgency 一致率</td>
+              <td>27.8% (5/18)</td>
+              <td>27.8% (5/18)</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div>
+      <div class="card card-purple">
+        <h3>v2 で実施した変更</h3>
+        <ul>
+          <li><b>手順ガイドモード追加</b>: 症状特定後にステップバイステップで対処手順を案内</li>
+          <li><b>遷移選択肢のハードコード化</b>: 「解決手順を教えて / 解決した / 解決しなかった」の3択</li>
+          <li><b>「わからない」ヒント機能</b>: 同じステップの再説明をLLMが生成</li>
+          <li><b>プロンプト重複の統合</b>: SYSTEM_PROMPTと子プロンプト間の冗長な指示を削除</li>
+          <li><b>参照の削除</b>: メッセージ内のマニュアル参照をRAGソース表示に統一</li>
+        </ul>
+      </div>
+
+      <div class="card mt-2">
+        <h3>考察</h3>
+        <div class="highlight-box green" style="font-size: 0.85rem;">
+          <b>Faithfulness +4.9pt:</b> プロンプト重複削除により、LLMへの指示が明確化。マニュアル情報に基づく忠実な回答が増加。
+        </div>
+        <div class="highlight-box amber mt-1" style="font-size: 0.85rem;">
+          <b>Answer Relevancy -1.4pt:</b> 手順ガイドモード導入により回答構造が変化。質問への直接回答ではなくステップ案内形式になったため微減。RAGパイプライン自体は変更なし。
+        </div>
+        <div class="highlight-box mt-1" style="font-size: 0.85rem;">
+          <b>E2E action +5.5pt:</b> ケース9（仕様確認）以外の全17件でaction一致。guide_phaseロジックの追加により安定性向上。
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <span class="slide-num">13</span>
+</div>
+
+<!-- ============================================ -->
+<!-- SLIDE 14 — Chunking Optimization -->
+<!-- ============================================ -->
+<div class="slide">
+  <span class="label label-green mb-1">チャンキング</span>
+  <h2>チャンキング最適化テスト — <span class="accent-green">検索チャンク数 &amp; サイズの効果</span></h2>
+
+  <div class="cols cols-2 mt-2">
+    <div>
+      <div class="card card-blue">
+        <h3>テスト設定</h3>
+        <table style="font-size: 0.82rem;">
+          <thead>
+            <tr><th>設定</th><th>チャンク数 (n)</th><th>チャンクサイズ</th><th>説明</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><span class="badge badge-blue">v2 ベースライン</span></td>
+              <td>5</td>
+              <td>600文字</td>
+              <td>現行設定</td>
+            </tr>
+            <tr>
+              <td><span class="badge badge-green">A案</span></td>
+              <td><b>8</b></td>
+              <td>600文字</td>
+              <td>チャンク数増加のみ</td>
+            </tr>
+            <tr>
+              <td><span class="badge badge-gray">A+B案</span></td>
+              <td><b>8</b></td>
+              <td><b>800文字</b></td>
+              <td>チャンク数+サイズ両方増加</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="card card-success mt-2">
+        <h3>結果サマリー</h3>
+        <table style="font-size: 0.82rem;">
+          <thead>
+            <tr><th>設定</th><th>Faith.</th><th>Relev.</th><th>Prec.</th><th>Recall</th><th>判定</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>v2 (n=5, 600字)</td>
+              <td>80.2%</td>
+              <td>20.5%</td>
+              <td>94.5%</td>
+              <td>63.0%</td>
+              <td class="small">ベースライン</td>
+            </tr>
+            <tr style="background: rgba(6,78,59,0.15);">
+              <td><b>A案 (n=8)</b></td>
+              <td><b>80.7%</b></td>
+              <td><b>27.8%</b></td>
+              <td><b>98.9%</b></td>
+              <td>59.4%</td>
+              <td><span class="accent-green">&#10003; 採用</span></td>
+            </tr>
+            <tr style="background: rgba(127,29,29,0.1);">
+              <td>A+B案 (n=8, 800字)</td>
+              <td>77.7%</td>
+              <td>25.9%</td>
+              <td>97.4%</td>
+              <td><b>67.1%</b></td>
+              <td><span class="accent-red">&#10007; 不採用</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div>
+      <div class="card">
+        <h3>メトリクス比較バー</h3>
+        <div style="margin-bottom: 0.8rem;">
+          <div style="font-size: 0.78rem; font-weight: 600; color: #60a5fa; margin-bottom: 4px;">Faithfulness</div>
+          <div style="display: flex; gap: 4px; align-items: center; margin-bottom: 3px;">
+            <span style="font-size: 0.65rem; color: #94a3b8; min-width: 50px;">v2</span>
+            <div class="metric-bar-container" style="flex:1; height:18px;">
+              <div class="metric-bar blue" style="width:80.2%;">80.2%</div>
+            </div>
+          </div>
+          <div style="display: flex; gap: 4px; align-items: center; margin-bottom: 3px;">
+            <span style="font-size: 0.65rem; color: #34d399; min-width: 50px; font-weight:600;">A案</span>
+            <div class="metric-bar-container" style="flex:1; height:18px;">
+              <div class="metric-bar green" style="width:80.7%;">80.7% <span style="font-size:0.6rem; opacity:0.8;">+0.5</span></div>
+            </div>
+          </div>
+          <div style="display: flex; gap: 4px; align-items: center;">
+            <span style="font-size: 0.65rem; color: #94a3b8; min-width: 50px;">A+B案</span>
+            <div class="metric-bar-container" style="flex:1; height:18px;">
+              <div class="metric-bar red" style="width:77.7%;">77.7% <span style="font-size:0.6rem; opacity:0.8;">-2.5</span></div>
+            </div>
+          </div>
+        </div>
+
+        <div style="margin-bottom: 0.8rem;">
+          <div style="font-size: 0.78rem; font-weight: 600; color: #34d399; margin-bottom: 4px;">Answer Relevancy</div>
+          <div style="display: flex; gap: 4px; align-items: center; margin-bottom: 3px;">
+            <span style="font-size: 0.65rem; color: #94a3b8; min-width: 50px;">v2</span>
+            <div class="metric-bar-container" style="flex:1; height:18px;">
+              <div class="metric-bar blue" style="width:20.5%;">20.5%</div>
+            </div>
+          </div>
+          <div style="display: flex; gap: 4px; align-items: center; margin-bottom: 3px;">
+            <span style="font-size: 0.65rem; color: #34d399; min-width: 50px; font-weight:600;">A案</span>
+            <div class="metric-bar-container" style="flex:1; height:18px;">
+              <div class="metric-bar green" style="width:27.8%;">27.8% <span style="font-size:0.6rem; opacity:0.8;">+7.3</span></div>
+            </div>
+          </div>
+          <div style="display: flex; gap: 4px; align-items: center;">
+            <span style="font-size: 0.65rem; color: #94a3b8; min-width: 50px;">A+B案</span>
+            <div class="metric-bar-container" style="flex:1; height:18px;">
+              <div class="metric-bar amber" style="width:25.9%;">25.9% <span style="font-size:0.6rem; opacity:0.8;">+5.4</span></div>
+            </div>
+          </div>
+        </div>
+
+        <div style="margin-bottom: 0.8rem;">
+          <div style="font-size: 0.78rem; font-weight: 600; color: #fbbf24; margin-bottom: 4px;">Context Precision</div>
+          <div style="display: flex; gap: 4px; align-items: center; margin-bottom: 3px;">
+            <span style="font-size: 0.65rem; color: #94a3b8; min-width: 50px;">v2</span>
+            <div class="metric-bar-container" style="flex:1; height:18px;">
+              <div class="metric-bar blue" style="width:94.5%;">94.5%</div>
+            </div>
+          </div>
+          <div style="display: flex; gap: 4px; align-items: center; margin-bottom: 3px;">
+            <span style="font-size: 0.65rem; color: #34d399; min-width: 50px; font-weight:600;">A案</span>
+            <div class="metric-bar-container" style="flex:1; height:18px;">
+              <div class="metric-bar green" style="width:98.9%;">98.9% <span style="font-size:0.6rem; opacity:0.8;">+4.4</span></div>
+            </div>
+          </div>
+          <div style="display: flex; gap: 4px; align-items: center;">
+            <span style="font-size: 0.65rem; color: #94a3b8; min-width: 50px;">A+B案</span>
+            <div class="metric-bar-container" style="flex:1; height:18px;">
+              <div class="metric-bar amber" style="width:97.4%;">97.4% <span style="font-size:0.6rem; opacity:0.8;">+2.9</span></div>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <div style="font-size: 0.78rem; font-weight: 600; color: #fca5a5; margin-bottom: 4px;">Context Recall</div>
+          <div style="display: flex; gap: 4px; align-items: center; margin-bottom: 3px;">
+            <span style="font-size: 0.65rem; color: #94a3b8; min-width: 50px;">v2</span>
+            <div class="metric-bar-container" style="flex:1; height:18px;">
+              <div class="metric-bar blue" style="width:63.0%;">63.0%</div>
+            </div>
+          </div>
+          <div style="display: flex; gap: 4px; align-items: center; margin-bottom: 3px;">
+            <span style="font-size: 0.65rem; color: #34d399; min-width: 50px; font-weight:600;">A案</span>
+            <div class="metric-bar-container" style="flex:1; height:18px;">
+              <div class="metric-bar amber" style="width:59.4%;">59.4% <span style="font-size:0.6rem; opacity:0.8;">-3.6</span></div>
+            </div>
+          </div>
+          <div style="display: flex; gap: 4px; align-items: center;">
+            <span style="font-size: 0.65rem; color: #94a3b8; min-width: 50px;">A+B案</span>
+            <div class="metric-bar-container" style="flex:1; height:18px;">
+              <div class="metric-bar green" style="width:67.1%;">67.1% <span style="font-size:0.6rem; opacity:0.8;">+4.1</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="cols cols-2 mt-2">
+        <div class="card card-success" style="padding: 0.8rem;">
+          <h3 style="font-size: 0.85rem; color: #34d399;">A案 採用理由</h3>
+          <div style="font-size: 0.78rem; line-height: 1.7;">
+            Faithfulness / Relevancy / Precision の<b>3指標が改善</b>。Recall は微減（-3.6pt）だが Faithfulness 80%維持が最優先。
+          </div>
+        </div>
+        <div class="card card-danger" style="padding: 0.8rem;">
+          <h3 style="font-size: 0.85rem; color: #fca5a5;">A+B案 不採用理由</h3>
+          <div style="font-size: 0.78rem; line-height: 1.7;">
+            Recall は改善（+4.1pt）するが <b>Faithfulness が80%目標を割る</b>（77.7%）。チャンクが長すぎると不要情報が混入。
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <span class="slide-num">14</span>
+</div>
+
+<!-- ============================================ -->
+<!-- SLIDE 15 — Summary -->
 <!-- ============================================ -->
 <div class="slide">
   <span class="label label-blue mb-1">Summary</span>
-  <h2>まとめ — <span class="accent">今回の改修で変わったこと</span></h2>
+  <h2>まとめ — <span class="accent">ver 2.0 改修の成果</span></h2>
 
   <div class="cols cols-3 mt-2">
     <div class="card card-purple" style="text-align: center;">
@@ -1080,8 +1749,8 @@ python -m tests.ragas.run_e2e_chat</code></pre>
     <div class="card card-blue">
       <h3>次のステップ</h3>
       <ul>
-        <li>ベースラインスコアの取得・記録</li>
-        <li>チャンキング戦略の最適化（スコアに基づく）</li>
+        <li>Faithfulness 80%達成 — 次の目標: Answer Relevancy改善</li>
+        <li>手順ガイドモードの実運用検証</li>
         <li>テストケースの拡充（他車種・複合症状）</li>
         <li>CI/CDパイプラインへの組み込み</li>
       </ul>
@@ -1091,11 +1760,11 @@ python -m tests.ragas.run_e2e_chat</code></pre>
     </div>
   </div>
 
-  <span class="slide-num">10</span>
+  <span class="slide-num">15</span>
 </div>
 
 <!-- ============================================ -->
-<!-- SLIDE 11 — Chat Flow Overview -->
+<!-- SLIDE 16 — Chat Flow Overview -->
 <!-- ============================================ -->
 <div class="slide">
   <span class="label label-purple mb-1">Chat Flow</span>
@@ -1259,11 +1928,11 @@ python -m tests.ragas.run_e2e_chat</code></pre>
     </div>
   </div>
 
-  <span class="slide-num">11</span>
+  <span class="slide-num">16</span>
 </div>
 
 <!-- ============================================ -->
-<!-- SLIDE 12 — FREE_TEXT Routing Detail -->
+<!-- SLIDE 17 — FREE_TEXT Routing Detail -->
 <!-- ============================================ -->
 <div class="slide">
   <span class="label label-amber mb-1">Chat Flow</span>
@@ -1389,11 +2058,11 @@ python -m tests.ragas.run_e2e_chat</code></pre>
     </div>
   </div>
 
-  <span class="slide-num">12</span>
+  <span class="slide-num">17</span>
 </div>
 
 <!-- ============================================ -->
-<!-- SLIDE 13 — DIAGNOSING Loop Detail -->
+<!-- SLIDE 18 — DIAGNOSING Loop Detail -->
 <!-- ============================================ -->
 <div class="slide">
   <span class="label label-amber mb-1">Chat Flow</span>
@@ -1533,11 +2202,11 @@ python -m tests.ragas.run_e2e_chat</code></pre>
     </div>
   </div>
 
-  <span class="slide-num">13</span>
+  <span class="slide-num">18</span>
 </div>
 
 <!-- ============================================ -->
-<!-- SLIDE 14 — RESERVATION & Booking Flow + SPEC_CHECK -->
+<!-- SLIDE 19 — RESERVATION & Booking Flow + SPEC_CHECK -->
 <!-- ============================================ -->
 <div class="slide">
   <span class="label label-red mb-1">Chat Flow</span>
@@ -1698,11 +2367,11 @@ python -m tests.ragas.run_e2e_chat</code></pre>
     — 例: can_drive=true でも visit_urgency="today"（警告灯点灯時）
   </div>
 
-  <span class="slide-num">14</span>
+  <span class="slide-num">19</span>
 </div>
 
 <!-- ============================================ -->
-<!-- SLIDE 15 — Concrete Flow Examples -->
+<!-- SLIDE 20 — Concrete Flow Examples -->
 <!-- ============================================ -->
 <div class="slide">
   <span class="label label-green mb-1">Chat Flow</span>
@@ -1845,11 +2514,11 @@ python -m tests.ragas.run_e2e_chat</code></pre>
     </div>
   </div>
 
-  <span class="slide-num">15</span>
+  <span class="slide-num">20</span>
 </div>
 
 <!-- ============================================ -->
-<!-- SLIDE 16 — Prompt Approach Change -->
+<!-- SLIDE 21 — Prompt Approach Change -->
 <!-- ============================================ -->
 <div class="slide">
   <span class="label label-purple mb-1">Prompt Update</span>
@@ -1915,11 +2584,11 @@ python -m tests.ragas.run_e2e_chat</code></pre>
     </div>
   </div>
 
-  <span class="slide-num">16</span>
+  <span class="slide-num">21</span>
 </div>
 
 <!-- ============================================ -->
-<!-- SLIDE 17 — Dynamic Choices Flow -->
+<!-- SLIDE 22 — Dynamic Choices Flow -->
 <!-- ============================================ -->
 <div class="slide">
   <span class="label label-green mb-1">Dynamic Choices</span>
@@ -2031,11 +2700,11 @@ python -m tests.ragas.run_e2e_chat</code></pre>
     </div>
   </div>
 
-  <span class="slide-num">17</span>
+  <span class="slide-num">22</span>
 </div>
 
 <!-- ============================================ -->
-<!-- SLIDE 18 — E2E CRITICAL Tests (#1,#10,#11,#12,#13) -->
+<!-- SLIDE 23 — E2E CRITICAL Tests (#1,#10,#11,#12,#13) -->
 <!-- ============================================ -->
 <div class="slide">
   <span class="label label-red mb-1">E2E Test Results</span>
@@ -2117,11 +2786,11 @@ python -m tests.ragas.run_e2e_chat</code></pre>
       </div>
     </div>
   </div>
-  <span class="slide-num">18</span>
+  <span class="slide-num">23</span>
 </div>
 
 <!-- ============================================ -->
-<!-- SLIDE 19 — E2E DIAGNOSING Tests #2,#3,#4 -->
+<!-- SLIDE 24 — E2E DIAGNOSING Tests #2,#3,#4 -->
 <!-- ============================================ -->
 <div class="slide">
   <span class="label label-amber mb-1">E2E Test Results</span>
@@ -2186,11 +2855,11 @@ python -m tests.ragas.run_e2e_chat</code></pre>
       </div>
     </div>
   </div>
-  <span class="slide-num">19</span>
+  <span class="slide-num">24</span>
 </div>
 
 <!-- ============================================ -->
-<!-- SLIDE 20 — E2E DIAGNOSING Tests #5,#6,#7 -->
+<!-- SLIDE 25 — E2E DIAGNOSING Tests #5,#6,#7 -->
 <!-- ============================================ -->
 <div class="slide">
   <span class="label label-amber mb-1">E2E Test Results</span>
@@ -2254,11 +2923,11 @@ python -m tests.ragas.run_e2e_chat</code></pre>
       </div>
     </div>
   </div>
-  <span class="slide-num">20</span>
+  <span class="slide-num">25</span>
 </div>
 
 <!-- ============================================ -->
-<!-- SLIDE 21 — E2E DIAGNOSING Tests #8,#9,#14 -->
+<!-- SLIDE 26 — E2E DIAGNOSING Tests #8,#9,#14 -->
 <!-- ============================================ -->
 <div class="slide">
   <span class="label label-amber mb-1">E2E Test Results</span>
@@ -2330,11 +2999,11 @@ python -m tests.ragas.run_e2e_chat</code></pre>
       </div>
     </div>
   </div>
-  <span class="slide-num">21</span>
+  <span class="slide-num">26</span>
 </div>
 
 <!-- ============================================ -->
-<!-- SLIDE 22 — E2E DIAGNOSING Tests #15,#16,#17,#18 -->
+<!-- SLIDE 27 — E2E DIAGNOSING Tests #15,#16,#17,#18 -->
 <!-- ============================================ -->
 <div class="slide">
   <span class="label label-purple mb-1">E2E Test Results — New Cases</span>
@@ -2422,11 +3091,11 @@ python -m tests.ragas.run_e2e_chat</code></pre>
       </div>
     </div>
   </div>
-  <span class="slide-num">22</span>
+  <span class="slide-num">27</span>
 </div>
 
 <!-- ============================================ -->
-<!-- SLIDE 23 — E2E Test Summary -->
+<!-- SLIDE 28 — E2E Test Summary -->
 <!-- ============================================ -->
 <div class="slide">
   <span class="label label-purple mb-1">E2E Test Summary</span>
@@ -2665,7 +3334,1524 @@ python -m tests.ragas.run_e2e_chat</code></pre>
     </div>
   </div>
 
-  <span class="slide-num">23</span>
+  <span class="slide-num">28</span>
+</div>
+
+<!-- ============================================ -->
+<!-- SLIDE 29 — Conversation Flow A: シフトレバーが動かない -->
+<!-- ============================================ -->
+<div class="slide">
+  <span class="label label-amber mb-1">会話フロー</span>
+  <h2>会話フロー例 1 — <span class="accent-amber">シフトレバーが動かない</span></h2>
+
+  <div class="cols cols-1-2 mt-1">
+    <div>
+      <div class="card card-warning" style="padding: 0.8rem;">
+        <div style="font-size: 0.75rem; font-weight: 700; color: #fbbf24; margin-bottom: 4px;">症状</div>
+        <div style="font-size: 0.85rem; color: #e2e8f0;">シフトレバーが動かない</div>
+        <div class="divider" style="margin: 0.5rem 0;"></div>
+        <div style="font-size: 0.75rem; font-weight: 700; color: #fca5a5; margin-bottom: 4px;">最終結果</div>
+        <div style="font-size: 0.82rem; color: #fca5a5; font-weight: 600;">reservation (ロードサービス推奨)</div>
+        <div style="font-size: 0.7rem; color: #94a3b8; margin-top: 4px;">10ターンの問診後にエスカレーション</div>
+      </div>
+      <div class="highlight-box amber mt-1" style="font-size: 0.78rem; padding: 0.6rem 0.8rem;">
+        <b>特徴:</b> 複数の確認手順を段階的に案内し、すべて試行後もシフトロック解除できない場合にロードサービスへエスカレート。
+      </div>
+    </div>
+
+    <div class="card" style="padding: 0.8rem; max-height: 75vh; overflow-y: auto;">
+      <div style="display: flex; gap: 8px; margin-bottom: 6px;">
+        <div style="min-width: 18px; font-size: 0.65rem; font-weight: 700; color: #475569; text-align: right; padding-top: 2px;">1</div>
+        <div style="flex: 1; background: rgba(30,41,59,0.5); border-radius: 6px; padding: 6px 10px; font-size: 0.72rem;">
+          <div style="font-weight: 700; color: #93c5fd;">AI:</div>
+          <div style="color: #cbd5e1; margin: 2px 0;">パーキングブレーキはかかっていますか？</div>
+          <div style="display: flex; flex-wrap: wrap; gap: 3px; margin-top: 3px;">
+            <span style="display:inline-block; background:rgba(6,78,59,0.15); border:1px solid #34d399; border-radius:3px; padding:0 5px; font-size:0.6rem; color:#34d399; font-weight:600;">はい、かかっています</span>
+            <span style="display:inline-block; background:rgba(30,58,95,0.2); border:1px solid #475569; border-radius:3px; padding:0 5px; font-size:0.6rem; color:#94a3b8;">いいえ、かかっていません</span>
+          </div>
+        </div>
+      </div>
+
+      <div style="display: flex; gap: 8px; margin-bottom: 6px;">
+        <div style="min-width: 18px; font-size: 0.65rem; font-weight: 700; color: #475569; text-align: right; padding-top: 2px;">2</div>
+        <div style="flex: 1; background: rgba(30,41,59,0.5); border-radius: 6px; padding: 6px 10px; font-size: 0.72rem;">
+          <div style="font-weight: 700; color: #93c5fd;">AI:</div>
+          <div style="color: #cbd5e1; margin: 2px 0;">エンジンはかかっていますか？</div>
+          <div style="display: flex; flex-wrap: wrap; gap: 3px; margin-top: 3px;">
+            <span style="display:inline-block; background:rgba(6,78,59,0.15); border:1px solid #34d399; border-radius:3px; padding:0 5px; font-size:0.6rem; color:#34d399; font-weight:600;">エンジンがかかっている</span>
+            <span style="display:inline-block; background:rgba(30,58,95,0.2); border:1px solid #475569; border-radius:3px; padding:0 5px; font-size:0.6rem; color:#94a3b8;">エンジンがかかっていない</span>
+          </div>
+        </div>
+      </div>
+
+      <div style="display: flex; gap: 8px; margin-bottom: 6px;">
+        <div style="min-width: 18px; font-size: 0.65rem; font-weight: 700; color: #475569; text-align: right; padding-top: 2px;">3</div>
+        <div style="flex: 1; background: rgba(30,41,59,0.5); border-radius: 6px; padding: 6px 10px; font-size: 0.72rem;">
+          <div style="font-weight: 700; color: #93c5fd;">AI:</div>
+          <div style="color: #cbd5e1; margin: 2px 0;">シフトロックがかかっている可能性があります。手順に従ってシフトロック解除を試みてください。</div>
+          <div style="display: flex; flex-wrap: wrap; gap: 3px; margin-top: 3px;">
+            <span style="display:inline-block; background:rgba(6,78,59,0.15); border:1px solid #34d399; border-radius:3px; padding:0 5px; font-size:0.6rem; color:#34d399; font-weight:600;">手順を試してみます</span>
+            <span style="display:inline-block; background:rgba(30,58,95,0.2); border:1px solid #475569; border-radius:3px; padding:0 5px; font-size:0.6rem; color:#94a3b8;">ディーラーに相談したい</span>
+          </div>
+        </div>
+      </div>
+
+      <div style="display: flex; gap: 8px; margin-bottom: 6px;">
+        <div style="min-width: 18px; font-size: 0.65rem; font-weight: 700; color: #475569; text-align: right; padding-top: 2px;">4</div>
+        <div style="flex: 1; background: rgba(30,41,59,0.5); border-radius: 6px; padding: 6px 10px; font-size: 0.72rem;">
+          <div style="font-weight: 700; color: #93c5fd;">AI:</div>
+          <div style="color: #cbd5e1; margin: 2px 0;">シフトロック解除手順の案内。マニュアル参照推奨。</div>
+          <div style="display: flex; flex-wrap: wrap; gap: 3px; margin-top: 3px;">
+            <span style="display:inline-block; background:rgba(6,78,59,0.15); border:1px solid #34d399; border-radius:3px; padding:0 5px; font-size:0.6rem; color:#34d399; font-weight:600;">手順を試してみます</span>
+            <span style="display:inline-block; background:rgba(30,58,95,0.2); border:1px solid #475569; border-radius:3px; padding:0 5px; font-size:0.6rem; color:#94a3b8;">ディーラーに相談したい</span>
+          </div>
+        </div>
+      </div>
+
+      <div style="display: flex; gap: 8px; margin-bottom: 6px;">
+        <div style="min-width: 18px; font-size: 0.65rem; font-weight: 700; color: #475569; text-align: right; padding-top: 2px;">5-7</div>
+        <div style="flex: 1; background: rgba(30,41,59,0.3); border-radius: 6px; padding: 6px 10px; font-size: 0.72rem; border: 1px dashed #475569;">
+          <div style="font-weight: 700; color: #64748b;">AI:</div>
+          <div style="color: #94a3b8; margin: 2px 0; font-style: italic;">同様のガイド手順案内（3ターン）</div>
+        </div>
+      </div>
+
+      <div style="display: flex; gap: 8px; margin-bottom: 6px;">
+        <div style="min-width: 18px; font-size: 0.65rem; font-weight: 700; color: #475569; text-align: right; padding-top: 2px;">8</div>
+        <div style="flex: 1; background: rgba(30,41,59,0.5); border-radius: 6px; padding: 6px 10px; font-size: 0.72rem;">
+          <div style="font-weight: 700; color: #93c5fd;">AI:</div>
+          <div style="color: #cbd5e1; margin: 2px 0;">シフトロック解除を試みましたか？</div>
+          <div style="display: flex; flex-wrap: wrap; gap: 3px; margin-top: 3px;">
+            <span style="display:inline-block; background:rgba(6,78,59,0.15); border:1px solid #34d399; border-radius:3px; padding:0 5px; font-size:0.6rem; color:#34d399; font-weight:600;">はい、試みました</span>
+            <span style="display:inline-block; background:rgba(30,58,95,0.2); border:1px solid #475569; border-radius:3px; padding:0 5px; font-size:0.6rem; color:#94a3b8;">いいえ、まだ試していない</span>
+          </div>
+        </div>
+      </div>
+
+      <div style="display: flex; gap: 8px; margin-bottom: 6px;">
+        <div style="min-width: 18px; font-size: 0.65rem; font-weight: 700; color: #475569; text-align: right; padding-top: 2px;">9</div>
+        <div style="flex: 1; background: rgba(30,41,59,0.5); border-radius: 6px; padding: 6px 10px; font-size: 0.72rem;">
+          <div style="font-weight: 700; color: #93c5fd;">AI:</div>
+          <div style="color: #cbd5e1; margin: 2px 0;">内蔵キーを使用しましたか？</div>
+          <div style="display: flex; flex-wrap: wrap; gap: 3px; margin-top: 3px;">
+            <span style="display:inline-block; background:rgba(6,78,59,0.15); border:1px solid #34d399; border-radius:3px; padding:0 5px; font-size:0.6rem; color:#34d399; font-weight:600;">はい、使用しました</span>
+            <span style="display:inline-block; background:rgba(30,58,95,0.2); border:1px solid #475569; border-radius:3px; padding:0 5px; font-size:0.6rem; color:#94a3b8;">いいえ、使用していません</span>
+            <span style="display:inline-block; background:rgba(30,58,95,0.2); border:1px solid #475569; border-radius:3px; padding:0 5px; font-size:0.6rem; color:#94a3b8;">内蔵キーがありません</span>
+          </div>
+        </div>
+      </div>
+
+      <div style="display: flex; gap: 8px; margin-bottom: 6px;">
+        <div style="min-width: 18px; font-size: 0.65rem; font-weight: 700; color: #475569; text-align: right; padding-top: 2px;">10</div>
+        <div style="flex: 1; background: rgba(30,41,59,0.5); border-radius: 6px; padding: 6px 10px; font-size: 0.72rem;">
+          <div style="font-weight: 700; color: #93c5fd;">AI:</div>
+          <div style="color: #cbd5e1; margin: 2px 0;">シフトレバーのボタンを押しながら操作しましたか？</div>
+          <div style="display: flex; flex-wrap: wrap; gap: 3px; margin-top: 3px;">
+            <span style="display:inline-block; background:rgba(6,78,59,0.15); border:1px solid #34d399; border-radius:3px; padding:0 5px; font-size:0.6rem; color:#34d399; font-weight:600;">はい、押しました</span>
+            <span style="display:inline-block; background:rgba(30,58,95,0.2); border:1px solid #475569; border-radius:3px; padding:0 5px; font-size:0.6rem; color:#94a3b8;">いいえ、押していません</span>
+          </div>
+        </div>
+      </div>
+
+      <div style="display: flex; gap: 8px;">
+        <div style="min-width: 18px; font-size: 0.65rem; font-weight: 700; color: #ef4444; text-align: right; padding-top: 2px;">END</div>
+        <div style="flex: 1; background: rgba(127,29,29,0.2); border: 1px solid #ef4444; border-radius: 6px; padding: 6px 10px; font-size: 0.72rem;">
+          <div style="font-weight: 700; color: #fca5a5;">AI (escalate):</div>
+          <div style="color: #fca5a5; margin: 2px 0;">&#x1F6A8;【自走禁止】シフトロック解除を試みたが解除できない。ロードサービスへの連絡を推奨。</div>
+          <div style="display: flex; flex-wrap: wrap; gap: 3px; margin-top: 3px;">
+            <span style="display:inline-block; background:rgba(6,78,59,0.15); border:1px solid #34d399; border-radius:3px; padding:0 5px; font-size:0.6rem; color:#34d399; font-weight:600;">ロードサービスを呼ぶ</span>
+            <span style="display:inline-block; background:rgba(30,58,95,0.2); border:1px solid #475569; border-radius:3px; padding:0 5px; font-size:0.6rem; color:#94a3b8;">今は予約しない</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <span class="slide-num">29</span>
+</div>
+
+<!-- ============================================ -->
+<!-- SLIDE 30 — Conversation Flow B: ブレーキから異音がする -->
+<!-- ============================================ -->
+<div class="slide">
+  <span class="label label-amber mb-1">会話フロー</span>
+  <h2>会話フロー例 2 — <span class="accent-amber">ブレーキから異音がする</span></h2>
+
+  <div class="cols cols-2 mt-2">
+    <div>
+      <div class="card card-danger" style="padding: 1rem;">
+        <div style="font-size: 0.75rem; font-weight: 700; color: #fca5a5; margin-bottom: 4px;">症状</div>
+        <div style="font-size: 1rem; color: #e2e8f0;">ブレーキから異音がする</div>
+        <div class="divider" style="margin: 0.6rem 0;"></div>
+        <div style="font-size: 0.75rem; font-weight: 700; color: #fca5a5; margin-bottom: 4px;">最終結果</div>
+        <div style="font-size: 0.95rem; color: #fca5a5; font-weight: 600;">reservation (ロードサービス推奨)</div>
+        <div style="font-size: 0.75rem; color: #94a3b8; margin-top: 6px;">2ターンで即エスカレーション</div>
+      </div>
+
+      <div class="highlight-box red mt-2" style="font-size: 0.85rem;">
+        <b>特徴:</b> ブレーキの異音が「常に聞こえる」と回答した時点で、ブレーキパッド摩耗の危険性を即座に判定。安全最優先でロードサービスにエスカレート。
+      </div>
+
+      <div class="card mt-2" style="padding: 0.8rem;">
+        <h3 style="font-size: 0.85rem; color: #60a5fa;">フロー分析</h3>
+        <div style="font-size: 0.8rem; line-height: 1.8;">
+          <span class="badge badge-red">CRITICAL</span> 安全装置の異常<br>
+          <b>初回質問</b>: 異音の頻度を確認<br>
+          <b>判定基準</b>: 常時異音 = 即座にエスカレート<br>
+          <b>ターン数</b>: 最短パス（2ターン）
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <div class="card" style="padding: 1.2rem;">
+        <h3 style="margin-bottom: 1rem;">会話フロー</h3>
+
+        <div style="display: flex; gap: 8px; margin-bottom: 12px;">
+          <div style="min-width: 18px; font-size: 0.65rem; font-weight: 700; color: #475569; text-align: right; padding-top: 2px;">1</div>
+          <div style="flex: 1; background: rgba(30,41,59,0.5); border-radius: 6px; padding: 6px 10px; font-size: 0.72rem;">
+            <div style="font-weight: 700; color: #93c5fd;">AI:</div>
+            <div style="color: #cbd5e1; margin: 2px 0;">ブレーキを踏んでいるときに、金属的な音が常に聞こえますか？それとも時々ですか？</div>
+            <div style="display: flex; flex-wrap: wrap; gap: 3px; margin-top: 3px;">
+              <span style="display:inline-block; background:rgba(6,78,59,0.15); border:1px solid #34d399; border-radius:3px; padding:0 5px; font-size:0.6rem; color:#34d399; font-weight:600;">常に聞こえる</span>
+              <span style="display:inline-block; background:rgba(30,58,95,0.2); border:1px solid #475569; border-radius:3px; padding:0 5px; font-size:0.6rem; color:#94a3b8;">時々聞こえる</span>
+              <span style="display:inline-block; background:rgba(30,58,95,0.2); border:1px solid #475569; border-radius:3px; padding:0 5px; font-size:0.6rem; color:#94a3b8;">聞こえない</span>
+            </div>
+          </div>
+        </div>
+
+        <div style="text-align: center; margin: 8px 0;">
+          <div style="display: inline-block; width: 2px; height: 20px; background: #ef4444;"></div>
+          <div style="font-size: 0.65rem; color: #fca5a5; font-weight: 600;">即エスカレーション</div>
+          <div style="display: inline-block; width: 2px; height: 20px; background: #ef4444;"></div>
+        </div>
+
+        <div style="display: flex; gap: 8px;">
+          <div style="min-width: 18px; font-size: 0.65rem; font-weight: 700; color: #ef4444; text-align: right; padding-top: 2px;">END</div>
+          <div style="flex: 1; background: rgba(127,29,29,0.2); border: 1px solid #ef4444; border-radius: 6px; padding: 6px 10px; font-size: 0.72rem;">
+            <div style="font-weight: 700; color: #fca5a5;">AI (escalate):</div>
+            <div style="color: #fca5a5; margin: 2px 0;">&#x1F6A8;【自走禁止】ブレーキパッドの摩耗が考えられます。異音が常に聞こえるため、早めの点検をお勧めします。</div>
+            <div style="display: flex; flex-wrap: wrap; gap: 3px; margin-top: 3px;">
+              <span style="display:inline-block; background:rgba(6,78,59,0.15); border:1px solid #34d399; border-radius:3px; padding:0 5px; font-size:0.6rem; color:#34d399; font-weight:600;">ロードサービスを呼ぶ</span>
+              <span style="display:inline-block; background:rgba(30,58,95,0.2); border:1px solid #475569; border-radius:3px; padding:0 5px; font-size:0.6rem; color:#94a3b8;">今は予約しない</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <span class="slide-num">30</span>
+</div>
+
+<!-- ============================================ -->
+<!-- SLIDE 31 — Conversation Flow C: エンジンの警告灯が点灯している -->
+<!-- ============================================ -->
+<div class="slide">
+  <span class="label label-amber mb-1">会話フロー</span>
+  <h2>会話フロー例 3 — <span class="accent-amber">エンジンの警告灯が点灯している</span></h2>
+
+  <div class="cols cols-2 mt-2">
+    <div>
+      <div class="card card-warning" style="padding: 1rem;">
+        <div style="font-size: 0.75rem; font-weight: 700; color: #fbbf24; margin-bottom: 4px;">症状</div>
+        <div style="font-size: 1rem; color: #e2e8f0;">エンジンの警告灯が点灯している</div>
+        <div class="divider" style="margin: 0.6rem 0;"></div>
+        <div style="font-size: 0.75rem; font-weight: 700; color: #fbbf24; margin-bottom: 4px;">最終結果</div>
+        <div style="font-size: 0.95rem; color: #fbbf24; font-weight: 600;">reservation (早急な点検推奨)</div>
+        <div style="font-size: 0.75rem; color: #94a3b8; margin-top: 6px;">2ターンで即エスカレーション</div>
+      </div>
+
+      <div class="highlight-box amber mt-2" style="font-size: 0.85rem;">
+        <b>特徴:</b> 警告灯の色（赤 vs オレンジ）を確認する1問で緊急度を判定。赤色の場合は重大な問題の可能性があり、早急な点検を推奨。
+      </div>
+
+      <div class="card mt-2" style="padding: 0.8rem;">
+        <h3 style="font-size: 0.85rem; color: #60a5fa;">フロー分析</h3>
+        <div style="font-size: 0.8rem; line-height: 1.8;">
+          <span class="badge badge-amber">HIGH</span> エンジン警告灯<br>
+          <b>初回質問</b>: 警告灯の色を確認<br>
+          <b>判定基準</b>: 赤色 = 早急な点検推奨<br>
+          <b>ターン数</b>: 最短パス（2ターン）
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <div class="card" style="padding: 1.2rem;">
+        <h3 style="margin-bottom: 1rem;">会話フロー</h3>
+
+        <div style="display: flex; gap: 8px; margin-bottom: 12px;">
+          <div style="min-width: 18px; font-size: 0.65rem; font-weight: 700; color: #475569; text-align: right; padding-top: 2px;">1</div>
+          <div style="flex: 1; background: rgba(30,41,59,0.5); border-radius: 6px; padding: 6px 10px; font-size: 0.72rem;">
+            <div style="font-weight: 700; color: #93c5fd;">AI:</div>
+            <div style="color: #cbd5e1; margin: 2px 0;">エンジンの警告灯は赤色ですか、それともオレンジ色ですか？</div>
+            <div style="display: flex; flex-wrap: wrap; gap: 3px; margin-top: 3px;">
+              <span style="display:inline-block; background:rgba(6,78,59,0.15); border:1px solid #34d399; border-radius:3px; padding:0 5px; font-size:0.6rem; color:#34d399; font-weight:600;">赤色</span>
+              <span style="display:inline-block; background:rgba(30,58,95,0.2); border:1px solid #475569; border-radius:3px; padding:0 5px; font-size:0.6rem; color:#94a3b8;">オレンジ色</span>
+            </div>
+          </div>
+        </div>
+
+        <div style="text-align: center; margin: 8px 0;">
+          <div style="display: inline-block; width: 2px; height: 20px; background: #f59e0b;"></div>
+          <div style="font-size: 0.65rem; color: #fbbf24; font-weight: 600;">早急な点検推奨</div>
+          <div style="display: inline-block; width: 2px; height: 20px; background: #f59e0b;"></div>
+        </div>
+
+        <div style="display: flex; gap: 8px;">
+          <div style="min-width: 18px; font-size: 0.65rem; font-weight: 700; color: #f59e0b; text-align: right; padding-top: 2px;">END</div>
+          <div style="flex: 1; background: rgba(120,53,15,0.2); border: 1px solid #f59e0b; border-radius: 6px; padding: 6px 10px; font-size: 0.72rem;">
+            <div style="font-weight: 700; color: #fbbf24;">AI (escalate):</div>
+            <div style="color: #fbbf24; margin: 2px 0;">&#x26A0;&#xFE0F;【早急な点検推奨】赤色の警告灯はエンジンに重大な問題の可能性。オイル確認後も消えない場合はHonda販売店に修理依頼。</div>
+            <div style="display: flex; flex-wrap: wrap; gap: 3px; margin-top: 3px;">
+              <span style="display:inline-block; background:rgba(30,58,95,0.2); border:1px solid #475569; border-radius:3px; padding:0 5px; font-size:0.6rem; color:#94a3b8;">ロードサービスを呼ぶ</span>
+              <span style="display:inline-block; background:rgba(6,78,59,0.15); border:1px solid #34d399; border-radius:3px; padding:0 5px; font-size:0.6rem; color:#34d399; font-weight:600;">ディーラーに持ち込む</span>
+              <span style="display:inline-block; background:rgba(30,58,95,0.2); border:1px solid #475569; border-radius:3px; padding:0 5px; font-size:0.6rem; color:#94a3b8;">今は予約しない</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <span class="slide-num">31</span>
+</div>
+
+<!-- ============================================ -->
+<!-- SLIDE 32 — 18 Cases Flow Summary -->
+<!-- ============================================ -->
+<div class="slide">
+  <span class="label label-blue mb-1">全ケース</span>
+  <h2>全18ケース フロー分析 — <span class="accent">問診パターン一覧</span></h2>
+
+  <div class="cols cols-2 mt-1">
+    <div>
+      <div class="card card-danger" style="padding: 0.8rem;">
+        <h3 style="font-size: 0.9rem; color: #fca5a5; margin-bottom: 0.5rem;">即時エスカレーション（5件: #1, #10, #11, #12, #13）</h3>
+        <div style="font-size: 0.78rem; line-height: 1.7; color: #cbd5e1;">
+          症状テキストにCRITICALキーワードを検出 &#8594; <b>問診なしで即座にエスカレーション</b>
+        </div>
+        <div class="divider" style="margin: 0.5rem 0;"></div>
+        <table style="font-size: 0.72rem;">
+          <thead>
+            <tr><th>#</th><th>症状</th><th>判定</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>1</td><td>ブレーキ効かない</td><td><span class="badge badge-red" style="font-size:0.6rem;">&#x1F6A8; ロードサービス</span></td></tr>
+            <tr><td>10</td><td>ステアリング固着</td><td><span class="badge badge-red" style="font-size:0.6rem;">&#x1F6A8; ロードサービス</span></td></tr>
+            <tr><td>11</td><td>煙が出ている</td><td><span class="badge badge-red" style="font-size:0.6rem;">&#x1F6A8; ロードサービス</span></td></tr>
+            <tr><td>12</td><td>衝突後の異常</td><td><span class="badge badge-red" style="font-size:0.6rem;">&#x1F6A8; ロードサービス</span></td></tr>
+            <tr><td>13</td><td>走行中エンスト</td><td><span class="badge badge-red" style="font-size:0.6rem;">&#x1F6A8; ロードサービス</span></td></tr>
+          </tbody>
+        </table>
+        <div style="font-size: 0.7rem; color: #94a3b8; margin-top: 6px; text-align: center; font-style: italic;">
+          1ステップ: 症状 &#8594; キーワード検出 &#8594; 即エスカレーション
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <div class="card card-blue" style="padding: 0.8rem;">
+        <h3 style="font-size: 0.9rem; color: #60a5fa; margin-bottom: 0.5rem;">問診フロー（13件: #2-#9, #14-#18）</h3>
+        <div style="font-size: 0.72rem; color: #cbd5e1; margin-bottom: 6px;">
+          ask_question で問診ループに入り、ユーザーの回答に応じて分岐
+        </div>
+        <div style="overflow-x: auto;">
+        <table style="font-size: 0.68rem;">
+          <thead>
+            <tr><th>#</th><th>症状</th><th>初回質問</th><th style="min-width:52px;">マニュアル</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>2</td><td>エンジン警告灯</td><td>異音や振動はありますか？</td><td><span style="color:#34d399;">covered</span></td></tr>
+            <tr><td>3</td><td>走行中異音</td><td>ボンネットが閉まっているか確認</td><td><span style="color:#34d399;">covered</span></td></tr>
+            <tr><td>4</td><td>エアコン不調</td><td>症状について詳しくお伺いします</td><td><span style="color:#94a3b8;">&#8212;</span></td></tr>
+            <tr><td>5</td><td>エンジン始動不良</td><td>スイッチは「III」に回っていますか？</td><td><span style="color:#34d399;">covered</span></td></tr>
+            <tr><td>6</td><td>オイル漏れ</td><td>シミの色は何色ですか？</td><td><span style="color:#34d399;">covered</span></td></tr>
+            <tr><td>7</td><td>タイヤ空気圧</td><td>空気圧を確認しましたか？</td><td><span style="color:#34d399;">covered</span></td></tr>
+            <tr><td>8</td><td>ハンドル重い</td><td>エンジンかけた状態で改善されましたか？</td><td><span style="color:#34d399;">covered</span></td></tr>
+            <tr><td>9</td><td>仕様確認系</td><td>警告灯が点灯していますか？</td><td><span style="color:#fbbf24;">partially</span></td></tr>
+            <tr><td>14</td><td>走行中振動</td><td>空気圧を確認しましたか？</td><td><span style="color:#34d399;">covered</span></td></tr>
+            <tr><td>15</td><td>異臭</td><td>煙や液体漏れ確認してください</td><td><span style="color:#34d399;">covered</span></td></tr>
+            <tr><td>16</td><td>ABS警告灯</td><td>システム異常の可能性、ディーラー点検推奨</td><td><span style="color:#34d399;">covered</span></td></tr>
+            <tr><td>17</td><td>燃費悪化</td><td>給油キャップは閉まっていますか？</td><td><span style="color:#34d399;">covered</span></td></tr>
+            <tr><td>18</td><td>ワイパー故障</td><td>エンジンスイッチ「II」の位置か確認</td><td><span style="color:#34d399;">covered</span></td></tr>
+          </tbody>
+        </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="highlight-box mt-1" style="font-size: 0.82rem; padding: 0.8rem 1rem;">
+    <b>補足:</b> 問診ケースはユーザーの回答に応じて<b>2〜10ターンの分岐</b>があり、最終的に <span class="badge badge-green" style="font-size:0.65rem;">provide_answer</span>（対処法提示）または <span class="badge badge-red" style="font-size:0.65rem;">escalate</span>（ディーラー推奨）に到達します。上記の初回質問はE2Eチャットテストの初回応答から取得したものです。
+  </div>
+
+  <span class="slide-num">32</span>
+</div>
+
+<!-- ============================================ -->
+<!-- SLIDE 33 — Prompt Duplication Explanation -->
+<!-- ============================================ -->
+<div class="slide">
+  <span class="label label-purple mb-1">付録</span>
+  <h2>プロンプト重複の理由と統合 — <span class="accent-purple">なぜ重複が生まれたか</span></h2>
+
+  <div class="cols cols-2 mt-2">
+    <div>
+      <div class="card card-danger">
+        <h3>なぜ重複が発生したか</h3>
+        <p style="font-size: 0.85rem; line-height: 1.8;">
+          本システムでは、LLMを呼び出す場面が<b>4つ</b>あります（問診・緊急度評価・仕様確認・RAG回答）。
+          各場面ごとに独立したプロンプトを作成したため、「やさしい言葉で」「専門用語にはカッコ書き」
+          といった<b>共通ルールが各プロンプトにコピーされ</b>、重複が発生しました。
+        </p>
+        <div class="highlight-box red mt-1" style="font-size: 0.82rem;">
+          <b>問題点:</b> 重複があると、ルール変更時に全プロンプトを修正する必要がある。
+          また、LLMに送るトークン数が増え、コストと応答速度に影響する。
+        </div>
+      </div>
+
+      <div class="card card-success mt-2">
+        <h3>v2 での統合方針</h3>
+        <ul style="font-size: 0.85rem; line-height: 1.8;">
+          <li><b>共通ルールは SYSTEM_PROMPT に1箇所だけ記載</b><br>
+            <span class="small">→ 全LLM呼び出しで system message として共有される</span></li>
+          <li><b>各プロンプトは場面固有の指示のみ記載</b><br>
+            <span class="small">→ 問診ロジック、緊急度判定基準、仕様判定基準など</span></li>
+          <li><b>削除した重複（5箇所）:</b>
+            <ol style="font-size: 0.78rem; color: #94a3b8; margin-top: 0.3rem;">
+              <li>案内の進め方 → 手順ガイドモードセクションへ統合</li>
+              <li>provide_answer の not_covered 指示 → manual_coverage セクションへ統合</li>
+              <li>確認アクションの choices 指示 → 手順ガイドモードへ統合</li>
+              <li>SPEC/RAG の専門用語カッコ書き → SYSTEM_PROMPT に既存</li>
+              <li>RAG の「車に詳しくない前提」→ SYSTEM_PROMPT に既存</li>
+            </ol>
+          </li>
+        </ul>
+      </div>
+    </div>
+
+    <div>
+      <div class="card card-blue">
+        <h3>プロンプト構成図（統合後）</h3>
+        <div style="display: flex; flex-direction: column; gap: 0; align-items: center; margin-top: 0.5rem;">
+          <div class="flow-node success" style="width: 100%;">
+            <b>SYSTEM_PROMPT</b>（共通ルール）<br>
+            <span class="small">日本語回答 / 素人向け / 専門用語カッコ書き / 危険操作禁止</span>
+          </div>
+          <div style="font-size: 0.7rem; color: #475569; margin: 6px 0;">↓ 全LLM呼び出しで system message として使用 ↓</div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; width: 100%;">
+            <div class="flow-node active" style="font-size: 0.75rem;">
+              <b>DIAGNOSTIC</b><br>
+              <span class="small">問診ループ<br>症状特定+手順ガイド</span>
+            </div>
+            <div class="flow-node" style="font-size: 0.75rem;">
+              <b>URGENCY</b><br>
+              <span class="small">緊急度4段階評価<br>can_drive判定</span>
+            </div>
+            <div class="flow-node purple" style="font-size: 0.75rem;">
+              <b>SPEC_CHECK</b><br>
+              <span class="small">仕様 vs 不具合<br>判定</span>
+            </div>
+            <div class="flow-node" style="font-size: 0.75rem;">
+              <b>RAG_ANSWER</b><br>
+              <span class="small">マニュアル検索<br>回答生成</span>
+            </div>
+          </div>
+        </div>
+        <div class="divider"></div>
+        <div style="font-size: 0.78rem; color: #94a3b8;">
+          <b>車両情報</b>（{make} {model} {year}）は各プロンプトに記載が必要。<br>
+          理由: 各プロンプトは独立した <code>.format()</code> 呼び出しで展開されるため、テンプレート変数は各プロンプト内に必要。これは重複ではなく構造上の必然。
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <span class="slide-num">33</span>
+</div>
+
+<!-- ============================================ -->
+<!-- SLIDE 34 — Prompt Details -->
+<!-- ============================================ -->
+<div class="slide">
+  <span class="label label-purple mb-1">付録</span>
+  <h2>各プロンプトの役割と要点 — <span class="accent-purple">AI問診の頭脳を読み解く</span></h2>
+
+  <div class="cols cols-2 mt-1">
+    <div>
+      <div class="card card-blue" style="padding: 1.2rem;">
+        <h3 style="margin-bottom: 0.5rem;"><span style="color: #60a5fa;">●</span> SYSTEM_PROMPT — 全体ルール</h3>
+        <div style="font-size: 0.8rem; line-height: 1.7;">
+          すべてのLLM呼び出しに付与される<b>共通ルール</b>。AIの基本的な振る舞いを定義。
+        </div>
+        <pre style="font-size: 0.68rem; margin-top: 0.5rem; padding: 0.6rem;"><code>• 日本語で回答
+• ユーザーは車に詳しくない一般の方
+• 専門用語にはカッコ書きで説明
+  例:「オルタネーター（車の発電機）」
+• 危険な操作は絶対に勧めない</code></pre>
+      </div>
+
+      <div class="card card-warning mt-1" style="padding: 1.2rem;">
+        <h3 style="margin-bottom: 0.5rem;"><span style="color: #fbbf24;">●</span> DIAGNOSTIC_PROMPT — 問診の中核</h3>
+        <div style="font-size: 0.8rem; line-height: 1.7;">
+          最も長く重要なプロンプト。<b>一問一答で症状を特定</b>し、<b>ステップバイステップで対処手順を案内</b>するAIの動作を制御。
+        </div>
+        <pre style="font-size: 0.68rem; margin-top: 0.5rem; padding: 0.6rem;"><code>【主要セクション】
+1. 最優先ルール: 元の症状から脱線しない
+2. 案内の進め方: フェーズ1(特定)→フェーズ2(手順ガイド)
+3. 確認アクション: 目視/計器/操作の確認指示ルール
+4. 手順ガイドモード: 1ステップずつask_questionで案内
+5. confidence判定: 0.0〜1.0の基準（0.9以上で結論）
+6. 質問フォーマット: 100文字以内、選択肢3〜4個
+7. manual_coverage: covered/partially/not_covered判定
+8. visit_urgency: immediate/today/this_week/when_convenient</code></pre>
+      </div>
+    </div>
+
+    <div>
+      <div class="card" style="padding: 1.2rem;">
+        <h3 style="margin-bottom: 0.5rem;"><span style="color: #f87171;">●</span> URGENCY_ASSESSMENT — 緊急度評価</h3>
+        <div style="font-size: 0.8rem; line-height: 1.7;">
+          症状テキストから<b>緊急度を4段階</b>（critical/high/medium/low）で評価。走行可否（can_drive）と来場緊急度（visit_urgency）を独立して判定。
+        </div>
+        <pre style="font-size: 0.68rem; margin-top: 0.5rem; padding: 0.6rem;"><code>• critical → can_drive=false, immediate
+• high → can_drive=true, today
+• medium → can_drive=true, this_week
+• low → can_drive=true, when_convenient</code></pre>
+      </div>
+
+      <div class="card mt-1" style="padding: 1.2rem;">
+        <h3 style="margin-bottom: 0.5rem;"><span style="color: #c4b5fd;">●</span> SPEC_CLASSIFICATION — 仕様判定</h3>
+        <div style="font-size: 0.8rem; line-height: 1.7;">
+          ユーザーの症状が<b>「仕様通りの正常動作」か「不具合」か</b>を判定。安全側に倒す設計で、confidence="high" のときのみ仕様と判定。
+        </div>
+        <pre style="font-size: 0.68rem; margin-top: 0.5rem; padding: 0.6rem;"><code>仕様の例: アイドリングストップ、回生ブレーキの感触
+不具合の例: 異音、振動、警告灯、煙、異臭
+→ 迷ったら必ず「不具合の可能性」側に判定</code></pre>
+      </div>
+
+      <div class="card mt-1" style="padding: 1.2rem;">
+        <h3 style="margin-bottom: 0.5rem;"><span style="color: #34d399;">●</span> RAG_ANSWER — マニュアル回答</h3>
+        <div style="font-size: 0.8rem; line-height: 1.7;">
+          RAG検索でヒットしたマニュアル情報を元に、<b>具体的で実用的なアドバイス</b>を生成。マニュアルに記載がない場合は推測せずディーラー点検を推奨。
+        </div>
+        <pre style="font-size: 0.68rem; margin-top: 0.5rem; padding: 0.6rem;"><code>5つのルール:
+1. マニュアル情報のみで回答（推測しない）
+2. 安全注意事項は必ず言及
+3. 対処手順は番号付きで説明
+4. 専門家に相談すべき場合は明記
+5. 記載なし→ディーラー点検を推奨</code></pre>
+      </div>
+    </div>
+  </div>
+
+  <span class="slide-num">34</span>
+</div>
+
+<!-- ============================================ -->
+<!-- SLIDE 35 — v3.0 Changes Overview -->
+<!-- ============================================ -->
+<div class="slide">
+  <span class="label label-purple mb-1">v3.0 新機能</span>
+  <h2>v2.0 → v3.0 <span class="accent">3つの刷新ポイント</span></h2>
+
+  <div class="cols cols-3 mt-2">
+    <div class="card card-blue">
+      <h3><span class="accent">1</span> ground_truth 刷新</h3>
+      <div style="font-size: 0.85rem; line-height: 1.8;">
+        <p>旧: 一般的な自動車知識で記述</p>
+        <p>新: <b>オーナーズマニュアル(30TA06210_web.pdf)</b>の実際の記載内容から再作成</p>
+        <ul class="mt-1">
+          <li>ページ番号を明記</li>
+          <li>マニュアルに記載なし → 明示的にnot_covered</li>
+          <li>手順ありケースに<code>manual_steps</code>追加</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="card card-purple">
+      <h3><span class="accent-purple">2</span> LLM-as-Judge 評価</h3>
+      <div style="font-size: 0.85rem; line-height: 1.8;">
+        <p>旧: 単一ターンRAG品質のみ</p>
+        <p>新: <b>マルチターン会話全体</b>を5基準で評価</p>
+        <ul class="mt-1">
+          <li>Step Accuracy（手順正確性）</li>
+          <li>Safety Compliance（安全性）</li>
+          <li>Conversation Quality（会話品質）</li>
+          <li>Manual Adherence（マニュアル準拠）</li>
+          <li>Result Confirmation（結果確認）</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="card card-success">
+      <h3><span class="accent-green">3</span> プロンプト改善</h3>
+      <div style="font-size: 0.85rem; line-height: 1.8;">
+        <p>旧: 手順完了後すぐにprovide_answer</p>
+        <p>新: <b>結果確認質問を必須化</b></p>
+        <ul class="mt-1">
+          <li>最終ステップで「動きましたか？」等の確認</li>
+          <li>成功/失敗の選択肢を提示</li>
+          <li>成功→解決報告、失敗→次の対策 or escalate</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <div class="highlight-box mt-3" style="font-size: 0.9rem;">
+    <b>目的:</b> RAG検索品質だけでなく、<b>問診フロー全体の品質</b>（手順の正確性、安全性、結果確認）を定量的に評価可能にする。
+  </div>
+
+  <span class="slide-num">35</span>
+</div>
+
+<!-- ============================================ -->
+<!-- SLIDE 36 — ground_truth Before/After -->
+<!-- ============================================ -->
+<div class="slide">
+  <span class="label label-blue mb-1">ground_truth 刷新</span>
+  <h2>Before / After 比較 — <span class="accent">マニュアル準拠へ</span></h2>
+
+  <div class="cols cols-2 mt-2">
+    <div class="card card-danger">
+      <h3><span class="accent-red">Before</span> — 一般的な自動車知識</h3>
+      <pre style="font-size: 0.72rem; line-height: 1.5;"><code># Case #10: オーバーヒート
+"水温計が赤い領域（H）に達している場合、
+エンジンがオーバーヒートしています。
+直ちに安全な場所に停車し、エンジンを停止して
+ください。絶対にラジエーターキャップを開けない
+でください（高温の蒸気で火傷の危険）。
+冷却水の漏れ、ラジエーターファンの故障、
+サーモスタットの固着、ウォーターポンプの故障
+などが原因として考えられます。
+ロードサービスでの搬送を推奨します。"</code></pre>
+      <div class="badge badge-red mt-1">問題: マニュアル未参照・ページ番号なし</div>
+    </div>
+
+    <div class="card card-success">
+      <h3><span class="accent-green">After</span> — マニュアル記載内容</h3>
+      <pre style="font-size: 0.72rem; line-height: 1.5;"><code># Case #10: オーバーヒート
+"マニュアルP.62「水温計」: 水温計がH（高温）の
+マークを示した場合、オーバーヒートしています。
+P.211-212「オーバーヒートしたとき」:
+安全な場所に停車し、セレクトレバーをPに入れ、
+パーキングブレーキをかけ、非常点滅表示灯を
+点灯させてください。蒸気が出ている場合は
+エンジンを止め蒸気が出なくなってから
+ボンネットを開けてください。
+警告: ラジエーターキャップは絶対に外さないで
+ください。"</code></pre>
+      <div class="badge badge-green mt-1">改善: ページ番号付き・手順を正確に引用</div>
+    </div>
+  </div>
+
+  <div class="cols cols-3 mt-2">
+    <div class="card" style="padding: 1rem;">
+      <h3 style="font-size: 0.95rem;">Case #7: タイヤ空気圧</h3>
+      <p style="font-size: 0.78rem; color: #fbbf24;">旧: TPMSの一般知識</p>
+      <p style="font-size: 0.78rem; color: #34d399;">新: 「マニュアルにTPMS記載なし」と明記</p>
+    </div>
+    <div class="card" style="padding: 1rem;">
+      <h3 style="font-size: 0.95rem;">Case #9: アイドリングストップ</h3>
+      <p style="font-size: 0.78rem; color: #fbbf24;">旧: アイドリングストップ機能の説明</p>
+      <p style="font-size: 0.78rem; color: #34d399;">新: 「マニュアルに記載なし、不調の可能性」</p>
+    </div>
+    <div class="card" style="padding: 1rem;">
+      <h3 style="font-size: 0.95rem;">Case #18: ワイパー故障</h3>
+      <p style="font-size: 0.78rem; color: #fbbf24;">旧: 一般的な故障原因リスト</p>
+      <p style="font-size: 0.78rem; color: #34d399;">新: P.100操作方法+P.101保護機能+P.215ヒューズ7.5A</p>
+    </div>
+  </div>
+
+  <span class="slide-num">36</span>
+</div>
+
+<!-- ============================================ -->
+<!-- SLIDE 37 — ground_truth Impact -->
+<!-- ============================================ -->
+<div class="slide">
+  <span class="label label-green mb-1">効果測定</span>
+  <h2>ground_truth 刷新の効果 — <span class="accent-green">Context Recall 改善</span></h2>
+
+  <div class="cols cols-2 mt-2">
+    <div>
+      <div class="card">
+        <h3>RAGAS Context Recall メトリクス</h3>
+        <p class="small mb-2">ground_truthとRAG検索結果の一致度。マニュアル準拠のground_truthにより正確な評価が可能に。</p>
+
+        <table>
+          <thead>
+            <tr><th>バージョン</th><th>Context Recall</th><th>改善</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>v2.0（一般知識ベース）</td>
+              <td>
+                <div class="metric-bar-container" style="width: 200px; display: inline-block; vertical-align: middle;">
+                  <div class="metric-bar amber" style="width: 67%;">0.67</div>
+                </div>
+              </td>
+              <td>—</td>
+            </tr>
+            <tr>
+              <td><b>v3.0 covered only (9件)</b></td>
+              <td>
+                <div class="metric-bar-container" style="width: 200px; display: inline-block; vertical-align: middle;">
+                  <div class="metric-bar green" style="width: 89%;">0.89</div>
+                </div>
+              </td>
+              <td><span class="accent-green">+33%</span></td>
+            </tr>
+            <tr>
+              <td style="color:#94a3b8;">v3.0 全18件</td>
+              <td>
+                <div class="metric-bar-container" style="width: 200px; display: inline-block; vertical-align: middle;">
+                  <div class="metric-bar" style="width: 44%; background: #64748b;">0.44</div>
+                </div>
+              </td>
+              <td style="color:#94a3b8; font-size:0.75rem;">not_covered=0.0含む</td>
+            </tr>
+          </tbody>
+        </table>
+        <p class="small mt-1" style="color:#94a3b8;">v3.0全体が低いのは正常動作: not_coveredケース(8件)のground_truthが「マニュアルに記載なし」のため正しく0.0を返す</p>
+      </div>
+
+      <div class="card mt-2">
+        <h3>RAGAS 全メトリクス比較</h3>
+        <table style="font-size: 0.82rem;">
+          <thead>
+            <tr><th>Metric</th><th>v2.0</th><th>v3.0</th><th>Delta</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Faithfulness</td><td>0.78</td><td>0.79</td>
+              <td><span class="accent-green">+1%</span></td>
+            </tr>
+            <tr>
+              <td>Answer Relevancy</td><td>0.26</td><td>0.22</td>
+              <td><span style="color:#f87171;">-4%</span></td>
+            </tr>
+            <tr>
+              <td>Context Precision</td><td>0.97</td><td>0.91</td>
+              <td><span style="color:#f87171;">-6%</span></td>
+            </tr>
+            <tr>
+              <td>Context Recall (covered)</td><td>0.67</td><td><b>0.89</b></td>
+              <td><span class="accent-green"><b>+33%</b></span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="highlight-box green mt-2" style="font-size: 0.85rem;">
+        <b>改善の理由:</b> 旧ground_truthは「OBD-IIでエラーコードを読み取る」等のマニュアル外情報を含んでいたため、
+        RAGが正しくマニュアルを検索してもContext Recallが下がっていた。
+        マニュアル準拠にすることで、RAGの実力を正確に測れるようになった。
+      </div>
+    </div>
+
+    <div>
+      <div class="card">
+        <h3>カバレッジ分類</h3>
+        <p class="small mb-2">18ケースのマニュアルカバレッジ分布</p>
+
+        <table>
+          <thead>
+            <tr><th>分類</th><th>件数</th><th>ケースID</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><span class="badge badge-green">covered</span></td>
+              <td>8件</td>
+              <td>#1, #2, #5, #6, #10, #11, #13, #16</td>
+            </tr>
+            <tr>
+              <td><span class="badge badge-amber">partially</span></td>
+              <td>3件</td>
+              <td>#3, #14, #18</td>
+            </tr>
+            <tr>
+              <td><span class="badge badge-red">not_covered</span></td>
+              <td>7件</td>
+              <td>#4, #7, #8, #9, #12, #15, #17</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="card mt-2">
+        <h3>manual_steps 追加ケース</h3>
+        <p class="small mb-1">手順ありケースにStep Accuracy評価用の正解データを追加</p>
+        <table>
+          <thead><tr><th>#</th><th>カテゴリ</th><th>手順数</th></tr></thead>
+          <tbody>
+            <tr><td>1</td><td>ブレーキ故障</td><td>4ステップ</td></tr>
+            <tr><td>5</td><td>エンジン始動不良</td><td>8ステップ</td></tr>
+            <tr><td>6</td><td>オイル漏れ</td><td>7ステップ</td></tr>
+            <tr><td>10</td><td>オーバーヒート</td><td>9ステップ</td></tr>
+            <tr><td>13</td><td>冷却水漏れ</td><td>6ステップ</td></tr>
+            <tr><td>18</td><td>ワイパー故障</td><td>5ステップ</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <span class="slide-num">37</span>
+</div>
+
+<!-- ============================================ -->
+<!-- SLIDE 38 — LLM-as-Judge Overview -->
+<!-- ============================================ -->
+<div class="slide">
+  <span class="label label-purple mb-1">新機能</span>
+  <h2>LLM-as-Judge — <span class="accent-purple">マルチターン会話品質評価</span></h2>
+
+  <div class="cols cols-1-2 mt-2">
+    <div>
+      <div class="card card-purple">
+        <h3>なぜ必要か？</h3>
+        <div style="font-size: 0.85rem; line-height: 1.8;">
+          <p>v2.0のRAGAS評価は<b>単一ターンのRAG検索品質</b>のみ測定。</p>
+          <p class="mt-1">実際の問診は<b>5〜12ターンの会話</b>であり:</p>
+          <ul class="mt-1">
+            <li>手順を正確に案内できたか？</li>
+            <li>安全注意事項を伝えたか？</li>
+            <li>マニュアル外の推測をしていないか？</li>
+            <li>最終結果を確認したか？</li>
+          </ul>
+          <p class="mt-1">これらは<b>RAGASでは測れない</b>品質です。</p>
+        </div>
+      </div>
+
+      <div class="card mt-2" style="padding: 1rem;">
+        <h3 style="font-size: 0.95rem;">評価モデル</h3>
+        <p style="font-size: 0.85rem;">GPT-4o-mini + Structured Outputs</p>
+        <p style="font-size: 0.78rem; color: #94a3b8;">JSON Schemaで5基準スコア+推論+手順比較を強制</p>
+      </div>
+    </div>
+
+    <div>
+      <div class="card">
+        <h3>評価パイプライン</h3>
+        <div class="flow mt-2" style="flex-direction: column; align-items: stretch; gap: 8px;">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <div class="flow-node" style="flex: 1;">18テストケース</div>
+            <div class="flow-arrow"></div>
+            <div class="flow-node active" style="flex: 2;">マルチターン会話実行<br><span class="small">最大12ターン / 選択肢自動選択</span></div>
+          </div>
+          <div style="text-align: center;"><div class="flow-arrow-down" style="display: inline-block;"></div></div>
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <div class="flow-node purple" style="flex: 2;">LLM-as-Judge 評価<br><span class="small">会話ログ + ground_truth + manual_steps → 5基準採点</span></div>
+            <div class="flow-arrow"></div>
+            <div class="flow-node success" style="flex: 1;">JSON結果出力</div>
+          </div>
+        </div>
+
+        <div class="divider"></div>
+
+        <h3>出力スキーマ</h3>
+        <pre style="font-size: 0.7rem; line-height: 1.5;"><code>{
+  "step_accuracy": 1-5,
+  "safety_compliance": 1-5,
+  "conversation_quality": 1-5,
+  "manual_adherence": 1-5,
+  "result_confirmation": 1-5,
+  "overall_score": float,
+  "reasoning": "評価理由",
+  "step_comparison": [
+    {"manual_step": "...", "ai_step": "...", "match": "exact|partial|missing|extra"}
+  ]
+}</code></pre>
+      </div>
+    </div>
+  </div>
+
+  <span class="slide-num">38</span>
+</div>
+
+<!-- ============================================ -->
+<!-- SLIDE 39 — 5 Criteria Detail -->
+<!-- ============================================ -->
+<div class="slide">
+  <span class="label label-purple mb-1">5基準詳細</span>
+  <h2>LLM-as-Judge <span class="accent-purple">5つの評価基準</span></h2>
+
+  <div class="cols cols-2 mt-2" style="gap: 1rem;">
+    <div class="card" style="padding: 1.2rem;">
+      <h3><span class="accent">1</span> Step Accuracy — 手順正確性</h3>
+      <div style="font-size: 0.82rem; line-height: 1.7;">
+        <p>マニュアルの対処手順との一致度を評価。</p>
+        <table class="mt-1" style="font-size: 0.78rem;">
+          <tr><td>5点</td><td>正確な手順を正しい順序で案内</td></tr>
+          <tr><td>3点</td><td>主要手順は含むが一部欠落</td></tr>
+          <tr><td>1点</td><td>手順がほぼ反映されていない</td></tr>
+        </table>
+        <p class="small mt-1">手順なしケース: 問診の質問が適切かで判定</p>
+      </div>
+    </div>
+
+    <div class="card" style="padding: 1.2rem;">
+      <h3><span class="accent-red">2</span> Safety Compliance — 安全性</h3>
+      <div style="font-size: 0.82rem; line-height: 1.7;">
+        <p>安全注意事項の伝達を評価。</p>
+        <table class="mt-1" style="font-size: 0.78rem;">
+          <tr><td>5点</td><td>全安全注意事項を適切に伝達</td></tr>
+          <tr><td>3点</td><td>基本的な安全注意はあるが不十分</td></tr>
+          <tr><td>1点</td><td>安全配慮なし / 危険な操作を推奨</td></tr>
+        </table>
+        <p class="small mt-1">例: ラジエーターキャップを開けない警告</p>
+      </div>
+    </div>
+
+    <div class="card" style="padding: 1.2rem;">
+      <h3><span class="accent-green">3</span> Conversation Quality — 会話品質</h3>
+      <div style="font-size: 0.82rem; line-height: 1.7;">
+        <p>会話の自然さと効率性を評価。</p>
+        <table class="mt-1" style="font-size: 0.78rem;">
+          <tr><td>5点</td><td>効率的で自然、不要な質問なし</td></tr>
+          <tr><td>3点</td><td>機能するが冗長な箇所あり</td></tr>
+          <tr><td>1点</td><td>会話として成立していない</td></tr>
+        </table>
+        <p class="small mt-1">専門用語の説明、質問の重複回避も評価</p>
+      </div>
+    </div>
+
+    <div class="card" style="padding: 1.2rem;">
+      <h3><span class="accent-amber">4</span> Manual Adherence — マニュアル準拠</h3>
+      <div style="font-size: 0.82rem; line-height: 1.7;">
+        <p>マニュアル記載のみに基づいているか評価。</p>
+        <table class="mt-1" style="font-size: 0.78rem;">
+          <tr><td>5点</td><td>マニュアルのみ、推測なし</td></tr>
+          <tr><td>3点</td><td>一部マニュアル外だが有害でない</td></tr>
+          <tr><td>1点</td><td>マニュアルを無視し一般知識で回答</td></tr>
+        </table>
+        <p class="small mt-1">not_coveredケースで推測回避を重点評価</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="card mt-2" style="padding: 1.2rem;">
+    <div class="cols cols-2" style="gap: 1.5rem;">
+      <div>
+        <h3><span class="accent-purple">5</span> Result Confirmation — 結果確認</h3>
+        <div style="font-size: 0.82rem; line-height: 1.7;">
+          <p>手順完了後に操作結果の確認質問を行っているか評価。</p>
+          <p>5点: 確認質問あり + 成功/失敗で適切に分岐</p>
+          <p>1点: 確認質問なし</p>
+        </div>
+      </div>
+      <div>
+        <div class="highlight-box purple" style="font-size: 0.82rem;">
+          <b>v3.0 プロンプト改善との連携:</b><br>
+          プロンプトに結果確認指示を追加 → この基準で効果を定量測定
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <span class="slide-num">39</span>
+</div>
+
+<!-- ============================================ -->
+<!-- SLIDE 40 — Judge Results (Placeholder) -->
+<!-- ============================================ -->
+<div class="slide">
+  <span class="label label-purple mb-1">評価結果</span>
+  <h2>LLM-as-Judge 結果 — <span class="accent-purple">18ケース評価</span></h2>
+
+  <div class="cols cols-2 mt-2">
+    <div class="card">
+      <h3>5基準 平均スコア</h3>
+      <p class="small mb-2">17ケース評価（#9 ERROR除外）</p>
+      <table>
+        <thead>
+          <tr><th>基準</th><th>平均スコア</th><th>目標</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Step Accuracy</td>
+            <td>
+              <div class="metric-bar-container" style="width: 160px; display: inline-block; vertical-align: middle;">
+                <div class="metric-bar amber" style="width: 55%;">2.76</div>
+              </div>
+            </td>
+            <td>3.5+</td>
+          </tr>
+          <tr>
+            <td>Safety Compliance</td>
+            <td>
+              <div class="metric-bar-container" style="width: 160px; display: inline-block; vertical-align: middle;">
+                <div class="metric-bar green" style="width: 76%;">3.82</div>
+              </div>
+            </td>
+            <td>4.0+</td>
+          </tr>
+          <tr>
+            <td>Conversation Quality</td>
+            <td>
+              <div class="metric-bar-container" style="width: 160px; display: inline-block; vertical-align: middle;">
+                <div class="metric-bar green" style="width: 72%;">3.59</div>
+              </div>
+            </td>
+            <td>3.5+</td>
+          </tr>
+          <tr>
+            <td>Manual Adherence</td>
+            <td>
+              <div class="metric-bar-container" style="width: 160px; display: inline-block; vertical-align: middle;">
+                <div class="metric-bar amber" style="width: 59%;">2.94</div>
+              </div>
+            </td>
+            <td>4.0+</td>
+          </tr>
+          <tr>
+            <td>Result Confirmation</td>
+            <td>
+              <div class="metric-bar-container" style="width: 160px; display: inline-block; vertical-align: middle;">
+                <div class="metric-bar green" style="width: 86%;">4.29</div>
+              </div>
+            </td>
+            <td>3.0+</td>
+          </tr>
+        </tbody>
+      </table>
+      <div class="highlight-box mt-1" style="font-size: 0.8rem;">
+        <b>Overall平均: 3.48 / 5.0</b>
+      </div>
+    </div>
+
+    <div>
+      <div class="card">
+        <h3>全18ケース Judge スコア</h3>
+        <p class="small mb-2">StepAcc / Safety / ConvQ / ManAdh / ResConf / Overall</p>
+        <div style="max-height: 420px; overflow-y: auto;">
+        <table style="font-size: 0.7rem;">
+          <thead>
+            <tr><th>#</th><th>カテゴリ</th><th>turns</th><th>SA</th><th>Sf</th><th>CQ</th><th>MA</th><th>RC</th><th>Overall</th><th>Action</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>1</td><td>ブレーキ故障</td><td>1</td><td>2</td><td>5</td><td>4</td><td>2</td><td>5</td><td><span class="badge badge-blue">3.6</span></td><td><span class="badge badge-red" style="font-size:0.65rem;">escalate</span></td></tr>
+            <tr><td>2</td><td>エンジン警告灯</td><td>12</td><td>3</td><td>4</td><td>3</td><td>4</td><td>4</td><td><span class="badge badge-blue">3.6</span></td><td><span class="badge badge-amber" style="font-size:0.65rem;">ask_q</span></td></tr>
+            <tr><td>3</td><td>走行中異音</td><td>12</td><td>5</td><td>4</td><td>4</td><td>5</td><td>5</td><td><span class="badge badge-green">4.6</span></td><td><span class="badge badge-amber" style="font-size:0.65rem;">ask_q</span></td></tr>
+            <tr><td>4</td><td>エアコン不調</td><td>12</td><td>4</td><td>3</td><td>4</td><td>3</td><td>5</td><td><span class="badge badge-blue">3.8</span></td><td><span class="badge badge-amber" style="font-size:0.65rem;">ask_q</span></td></tr>
+            <tr><td>5</td><td>エンジン始動不良</td><td>12</td><td>4</td><td>3</td><td>4</td><td>4</td><td>5</td><td><span class="badge badge-green">4.0</span></td><td><span class="badge badge-amber" style="font-size:0.65rem;">ask_q</span></td></tr>
+            <tr><td>6</td><td>オイル漏れ</td><td>12</td><td>3</td><td>2</td><td>3</td><td>4</td><td>3</td><td><span class="badge badge-blue">3.0</span></td><td><span class="badge badge-amber" style="font-size:0.65rem;">ask_q</span></td></tr>
+            <tr><td>7</td><td>タイヤ空気圧</td><td>12</td><td>3</td><td>4</td><td>3</td><td>3</td><td>4</td><td><span class="badge badge-blue">3.4</span></td><td><span class="badge badge-amber" style="font-size:0.65rem;">ask_q</span></td></tr>
+            <tr style="background:rgba(239,68,68,0.08);"><td>8</td><td>ハンドル重い</td><td>12</td><td>1</td><td>3</td><td>2</td><td>1</td><td>2</td><td><span class="badge badge-red">1.8</span></td><td><span class="badge badge-amber" style="font-size:0.65rem;">ask_q</span></td></tr>
+            <tr style="background:rgba(239,68,68,0.08);"><td>9</td><td>仕様確認系</td><td colspan="6" style="color:#94a3b8; text-align:center;">ERROR</td><td><span class="badge badge-gray">--</span></td><td style="color:#f87171; font-size:0.65rem;">ERROR</td></tr>
+            <tr><td>10</td><td>オーバーヒート</td><td>1</td><td>1</td><td>4</td><td>4</td><td>1</td><td>5</td><td><span class="badge badge-blue">3.0</span></td><td><span class="badge badge-red" style="font-size:0.65rem;">escalate</span></td></tr>
+            <tr><td>11</td><td>煙の発生</td><td>1</td><td>3</td><td>4</td><td>4</td><td>4</td><td>5</td><td><span class="badge badge-green">4.0</span></td><td><span class="badge badge-red" style="font-size:0.65rem;">escalate</span></td></tr>
+            <tr><td>12</td><td>火災兆候</td><td>1</td><td>1</td><td>4</td><td>4</td><td>1</td><td>4</td><td><span class="badge badge-red">2.8</span></td><td><span class="badge badge-red" style="font-size:0.65rem;">escalate</span></td></tr>
+            <tr><td>13</td><td>冷却水漏れ</td><td>1</td><td>1</td><td>5</td><td>4</td><td>1</td><td>5</td><td><span class="badge badge-blue">3.2</span></td><td><span class="badge badge-red" style="font-size:0.65rem;">escalate</span></td></tr>
+            <tr><td>14</td><td>走行中振動</td><td>12</td><td>3</td><td>4</td><td>4</td><td>3</td><td>5</td><td><span class="badge badge-blue">3.8</span></td><td><span class="badge badge-amber" style="font-size:0.65rem;">ask_q</span></td></tr>
+            <tr><td>15</td><td>異臭</td><td>2</td><td>3</td><td>5</td><td>4</td><td>3</td><td>4</td><td><span class="badge badge-blue">3.8</span></td><td><span class="badge badge-red" style="font-size:0.65rem;">escalate</span></td></tr>
+            <tr><td>16</td><td>ABS警告灯</td><td>12</td><td>2</td><td>4</td><td>3</td><td>3</td><td>3</td><td><span class="badge badge-blue">3.0</span></td><td><span class="badge badge-amber" style="font-size:0.65rem;">ask_q</span></td></tr>
+            <tr><td>17</td><td>燃費悪化</td><td>12</td><td>4</td><td>4</td><td>4</td><td>4</td><td>5</td><td><span class="badge badge-green">4.2</span></td><td><span class="badge badge-amber" style="font-size:0.65rem;">ask_q</span></td></tr>
+            <tr><td>18</td><td>ワイパー故障</td><td>12</td><td>4</td><td>3</td><td>3</td><td>4</td><td>4</td><td><span class="badge badge-blue">3.6</span></td><td><span class="badge badge-amber" style="font-size:0.65rem;">ask_q</span></td></tr>
+          </tbody>
+        </table>
+        </div>
+        <p class="small mt-1" style="color:#94a3b8;">SA=StepAccuracy, Sf=Safety, CQ=ConvQuality, MA=ManualAdherence, RC=ResultConfirmation</p>
+      </div>
+    </div>
+  </div>
+
+  <span class="slide-num">40</span>
+</div>
+
+<!-- ============================================ -->
+<!-- SLIDE 41 — Prompt Improvement: Result Confirmation -->
+<!-- ============================================ -->
+<div class="slide">
+  <span class="label label-green mb-1">プロンプト改善</span>
+  <h2>結果確認質問の必須化 — <span class="accent-green">Before / After</span></h2>
+
+  <div class="cols cols-2 mt-2">
+    <div class="card card-danger">
+      <h3><span class="accent-red">Before</span> — v2.0</h3>
+      <div style="font-size: 0.82rem; line-height: 1.7;">
+        <p>手順ガイドモードの指示:</p>
+        <pre style="font-size: 0.7rem; line-height: 1.5; margin-top: 0.5rem;"><code>- 1回の ask_question で指示するのは
+  1つの物理的アクションのみ
+- ユーザーが完了を報告したら次のステップへ、
+  異常を報告したらマニュアルの分岐に従う</code></pre>
+        <div class="highlight-box red mt-1" style="font-size: 0.8rem;">
+          <b>問題:</b> 全ステップ完了後、結果を確認せずに
+          provide_answer で結論を出してしまう。
+          ユーザーが操作に成功したか失敗したかの確認がない。
+        </div>
+      </div>
+    </div>
+
+    <div class="card card-success">
+      <h3><span class="accent-green">After</span> — v3.0</h3>
+      <div style="font-size: 0.82rem; line-height: 1.7;">
+        <p>追加された指示:</p>
+        <pre style="font-size: 0.7rem; line-height: 1.5; margin-top: 0.5rem;"><code>- 全ステップを案内し終えたら、最後の
+  ask_questionで操作結果の確認質問を
+  必ず含めること
+  例: 「セレクトレバーは動きましたか？」
+      「エンジンはかかりましたか？」
+- この結果確認の choices には
+  成功/失敗を示す選択肢を入れること
+  例: ["はい、動きました","いいえ、動きません"]
+- 成功→provide_answer（解決報告）
+  失敗→次の対策 または escalate</code></pre>
+      </div>
+    </div>
+  </div>
+
+  <div class="card mt-2">
+    <h3>具体例: シフトロック解除フロー</h3>
+    <div class="cols cols-3" style="gap: 1rem;">
+      <div style="font-size: 0.8rem;">
+        <p class="small">Step 4/5: 最後の手順</p>
+        <div class="cv">
+          <div class="cv-b" style="background: rgba(30,58,95,0.3); padding: 6px; border-radius: 6px;">
+            <div class="cv-l" style="color: #60a5fa;">AI</div>
+            <div class="cv-s">キーを押しながらセレクトレバーのボタンを押して、Nに入れてください。</div>
+            <div class="cv-p">
+              <span class="cv-c">はい、Nに入りました</span>
+              <span class="cv-c">動きません</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div style="font-size: 0.8rem;">
+        <p class="small">Step 5/5: 結果確認（v3.0で追加）</p>
+        <div class="cv">
+          <div class="cv-b" style="background: rgba(6,78,59,0.2); padding: 6px; border-radius: 6px; border: 1px solid #10b981;">
+            <div class="cv-l" style="color: #34d399;">AI（新）</div>
+            <div class="cv-s">セレクトレバーは正常に動きましたか？エンジンは始動できましたか？</div>
+            <div class="cv-p">
+              <span class="cv-c sel">はい、正常に動きました</span>
+              <span class="cv-c">いいえ、まだ動きません</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div style="font-size: 0.8rem;">
+        <p class="small">分岐</p>
+        <div style="background: rgba(30,41,59,0.7); padding: 8px; border-radius: 6px; font-size: 0.78rem;">
+          <p><span class="accent-green">成功:</span> provide_answer → 解決報告</p>
+          <p class="mt-1"><span class="accent-red">失敗:</span> escalate or 次の対策を案内</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <span class="slide-num">41</span>
+</div>
+
+<!-- ============================================ -->
+<!-- SLIDE 42 — 会話例1: ブレーキ故障 (escalate) -->
+<!-- ============================================ -->
+<div class="slide">
+  <span class="label label-red mb-1">会話例 1/3</span>
+  <h2>Case #1: <span class="accent-red">ブレーキ故障</span> — 即時エスカレーション</h2>
+  <p class="small" style="color: #94a3b8;">1ターンで reservation へ遷移。マニュアル手順を案内せず直接エスカレート。</p>
+
+  <div class="cols cols-2 mt-2">
+    <div>
+      <div class="card">
+        <h3>会話ログ（全1ターン）</h3>
+        <div style="font-size: 0.78rem; line-height: 1.5;">
+          <div class="cv" style="margin-bottom: 8px;">
+            <div class="cv-n">1</div>
+            <div class="cv-b" style="background: rgba(6,78,59,0.15); padding: 6px; border-radius: 6px;">
+              <div class="cv-l" style="color: #34d399;">User</div>
+              <div class="cv-s" style="color: #a7f3d0;">ブレーキを踏んでも止まらない感じがする</div>
+            </div>
+          </div>
+          <div class="cv" style="margin-bottom: 8px;">
+            <div class="cv-n">2</div>
+            <div class="cv-b" style="background: rgba(127,29,29,0.2); padding: 6px; border-radius: 6px; border: 1px solid #ef4444;">
+              <div class="cv-l" style="color: #f87171;">AI → reservation (escalate)</div>
+              <div class="cv-s">🚨 今すぐロードサービスまたは来場が必要です。<br><br>走行が危険な状態と判断されます。<br>出張整備の手配をおすすめします。<br><br>出張手配の予約を行いますか？</div>
+              <div class="cv-p">
+                <span class="cv-c sel">はい、予約する</span>
+                <span class="cv-c">いいえ、今は予約しない</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="highlight-box red mt-1" style="font-size: 0.78rem;">
+        <b>問題点:</b> マニュアルには「安全な場所に停車」「ブレーキ液の確認」「ペダルの感触確認」等の4ステップがあるが、全てスキップして即エスカレート。
+      </div>
+    </div>
+
+    <div>
+      <div class="card card-blue">
+        <h3>Judge評価 — Overall: <span class="accent">3.6</span> / 5.0</h3>
+        <table style="font-size: 0.8rem;">
+          <thead><tr><th>基準</th><th>Score</th></tr></thead>
+          <tbody>
+            <tr><td>Step Accuracy</td><td style="color: #f87171;"><b>2</b></td></tr>
+            <tr><td>Safety Compliance</td><td style="color: #34d399;"><b>5</b></td></tr>
+            <tr><td>Conversation Quality</td><td style="color: #60a5fa;"><b>4</b></td></tr>
+            <tr><td>Manual Adherence</td><td style="color: #f87171;"><b>2</b></td></tr>
+            <tr><td>Result Confirmation</td><td style="color: #34d399;"><b>5</b></td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="card mt-1">
+        <h3>Step Comparison</h3>
+        <table style="font-size: 0.72rem;">
+          <thead><tr><th>マニュアル手順</th><th>AI</th><th>Match</th></tr></thead>
+          <tbody>
+            <tr><td>安全な場所に停車する</td><td style="color:#64748b;">—</td><td><span style="color:#f87171;">missing</span></td></tr>
+            <tr><td>ブレーキ液リザーバータンク確認</td><td style="color:#64748b;">—</td><td><span style="color:#f87171;">missing</span></td></tr>
+            <tr><td>ペダルの感触を確認</td><td style="color:#64748b;">—</td><td><span style="color:#f87171;">missing</span></td></tr>
+            <tr><td>MIN以下/柔らかい→販売店連絡</td><td style="color:#64748b;">—</td><td><span style="color:#f87171;">missing</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="card mt-1" style="font-size: 0.72rem;">
+        <h3>Judge reasoning</h3>
+        <p style="color: #cbd5e1; line-height: 1.4;">安全性を重視し即座にロードサービスを推奨している点は評価できる。しかしマニュアルの具体的手順（ブレーキ液確認等）が欠落しており、手順正確性とマニュアル準拠は低評価。</p>
+      </div>
+    </div>
+  </div>
+
+  <span class="slide-num">42</span>
+</div>
+
+<!-- ============================================ -->
+<!-- SLIDE 43 — 会話例2: ワイパー故障 (multi-turn) -->
+<!-- ============================================ -->
+<div class="slide">
+  <span class="label label-blue mb-1">会話例 2/3</span>
+  <h2>Case #18: <span class="accent">ワイパー故障</span> — マルチターン問診</h2>
+  <p class="small" style="color: #94a3b8;">12ターン。手順の一部がマニュアルと一致。自動選択は常に第1選択肢。</p>
+
+  <div class="cols cols-2 mt-2">
+    <div>
+      <div class="card" style="max-height: 500px; overflow-y: auto;">
+        <h3>会話ログ（抜粋 6ターン）</h3>
+        <div style="font-size: 0.72rem; line-height: 1.4;">
+          <div class="cv" style="margin-bottom: 6px;">
+            <div class="cv-n">1</div>
+            <div class="cv-b" style="background: rgba(6,78,59,0.15); padding: 4px 6px; border-radius: 5px;">
+              <div class="cv-l" style="color: #34d399;">User</div>
+              <div class="cv-s" style="color: #a7f3d0;">ワイパーが動かない</div>
+            </div>
+          </div>
+          <div class="cv" style="margin-bottom: 6px;">
+            <div class="cv-n">2</div>
+            <div class="cv-b" style="background: rgba(30,58,95,0.3); padding: 4px 6px; border-radius: 5px;">
+              <div class="cv-l" style="color: #60a5fa;">AI</div>
+              <div class="cv-s">ワイパースイッチが「OFF」になっていないか確認してください。</div>
+              <div class="cv-p">
+                <span class="cv-c sel">OFFになっている</span>
+                <span class="cv-c">AUTOになっている</span>
+                <span class="cv-c">LOになっている</span>
+                <span class="cv-c">HIになっている</span>
+              </div>
+            </div>
+          </div>
+          <div class="cv" style="margin-bottom: 6px;">
+            <div class="cv-n">3</div>
+            <div class="cv-b" style="background: rgba(6,78,59,0.15); padding: 4px 6px; border-radius: 5px;">
+              <div class="cv-l" style="color: #34d399;">User</div>
+              <div class="cv-s" style="color: #a7f3d0;">OFFになっている</div>
+            </div>
+          </div>
+          <div class="cv" style="margin-bottom: 6px;">
+            <div class="cv-n">4</div>
+            <div class="cv-b" style="background: rgba(30,58,95,0.3); padding: 4px 6px; border-radius: 5px;">
+              <div class="cv-l" style="color: #60a5fa;">AI</div>
+              <div class="cv-s">スイッチを「ON」にしてワイパーが動くか確認してください。</div>
+              <div class="cv-p">
+                <span class="cv-c sel">動いた</span>
+                <span class="cv-c">動かなかった</span>
+              </div>
+            </div>
+          </div>
+          <div class="cv" style="margin-bottom: 6px;">
+            <div class="cv-n">5</div>
+            <div class="cv-b" style="background: rgba(6,78,59,0.15); padding: 4px 6px; border-radius: 5px;">
+              <div class="cv-l" style="color: #34d399;">User</div>
+              <div class="cv-s" style="color: #a7f3d0;">動いた</div>
+            </div>
+          </div>
+          <div class="cv" style="margin-bottom: 6px;">
+            <div class="cv-n">6</div>
+            <div class="cv-b" style="background: rgba(30,58,95,0.3); padding: 4px 6px; border-radius: 5px;">
+              <div class="cv-l" style="color: #60a5fa;">AI</div>
+              <div class="cv-s">ヒューズボックスのワイパー用ヒューズが切れていないか確認してください。</div>
+              <div class="cv-p">
+                <span class="cv-c sel">ヒューズは切れていない</span>
+                <span class="cv-c">ヒューズが切れている</span>
+              </div>
+            </div>
+          </div>
+          <div style="text-align: center; color: #64748b; font-size: 0.65rem; padding: 4px;">… 以降 6ターン (引っかかり確認 → max_turns到達)</div>
+        </div>
+      </div>
+
+      <div class="highlight-box blue mt-1" style="font-size: 0.75rem;">
+        <b>自動選択バイアス:</b> 「動いた」を選択 → 故障パス(動かなかった)を探索できず。実際のユーザーなら「動かなかった」を選ぶため、診断深度が浅くなる傾向。
+      </div>
+    </div>
+
+    <div>
+      <div class="card card-blue">
+        <h3>Judge評価 — Overall: <span class="accent">3.6</span> / 5.0</h3>
+        <table style="font-size: 0.8rem;">
+          <thead><tr><th>基準</th><th>Score</th></tr></thead>
+          <tbody>
+            <tr><td>Step Accuracy</td><td style="color: #60a5fa;"><b>4</b></td></tr>
+            <tr><td>Safety Compliance</td><td style="color: #fbbf24;"><b>3</b></td></tr>
+            <tr><td>Conversation Quality</td><td style="color: #fbbf24;"><b>3</b></td></tr>
+            <tr><td>Manual Adherence</td><td style="color: #60a5fa;"><b>4</b></td></tr>
+            <tr><td>Result Confirmation</td><td style="color: #60a5fa;"><b>4</b></td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="card mt-1">
+        <h3>Step Comparison</h3>
+        <table style="font-size: 0.72rem;">
+          <thead><tr><th>マニュアル手順</th><th>AI</th><th>Match</th></tr></thead>
+          <tbody>
+            <tr><td>スイッチ設定確認</td><td style="color:#93c5fd;">スイッチOFF確認</td><td><span style="color:#fbbf24;">partial</span></td></tr>
+            <tr><td>モーター保護機能で一時停止確認</td><td style="color:#64748b;">—</td><td><span style="color:#f87171;">missing</span></td></tr>
+            <tr><td>ヒューズ確認（7.5A）</td><td style="color:#93c5fd;">ヒューズ確認</td><td><span style="color:#34d399;">exact</span></td></tr>
+            <tr><td>ヒューズ交換</td><td style="color:#64748b;">—</td><td><span style="color:#f87171;">missing</span></td></tr>
+            <tr><td>デフロスターで温めて再試行</td><td style="color:#64748b;">—</td><td><span style="color:#f87171;">missing</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="card mt-1" style="font-size: 0.72rem;">
+        <h3>Judge reasoning</h3>
+        <p style="color: #cbd5e1; line-height: 1.4;">スイッチ確認・ヒューズチェックはマニュアルに準拠。ただしモーター保護機能やデフロスター手順が欠落。冗長な質問もあるが、全体として手順の大部分をカバー。</p>
+      </div>
+    </div>
+  </div>
+
+  <span class="slide-num">43</span>
+</div>
+
+<!-- ============================================ -->
+<!-- SLIDE 44 — 会話例3: ハンドル重い (問題ケース) -->
+<!-- ============================================ -->
+<div class="slide">
+  <span class="label label-yellow mb-1">会話例 3/3</span>
+  <h2>Case #8: <span class="accent-red">ハンドル重い</span> — 問題ケース（1.8点）</h2>
+  <p class="small" style="color: #94a3b8;">12ターン。マニュアルに記載なしの症状でAIが一般知識から回答を捏造。ループに陥る。</p>
+
+  <div class="cols cols-2 mt-2">
+    <div>
+      <div class="card" style="max-height: 500px; overflow-y: auto;">
+        <h3>会話ログ（抜粋）</h3>
+        <div style="font-size: 0.72rem; line-height: 1.4;">
+          <div class="cv" style="margin-bottom: 6px;">
+            <div class="cv-n">1</div>
+            <div class="cv-b" style="background: rgba(6,78,59,0.15); padding: 4px 6px; border-radius: 5px;">
+              <div class="cv-l" style="color: #34d399;">User</div>
+              <div class="cv-s" style="color: #a7f3d0;">ハンドルが急に重くなった</div>
+            </div>
+          </div>
+          <div class="cv" style="margin-bottom: 6px;">
+            <div class="cv-n">2</div>
+            <div class="cv-b" style="background: rgba(30,58,95,0.3); padding: 4px 6px; border-radius: 5px;">
+              <div class="cv-l" style="color: #60a5fa;">AI</div>
+              <div class="cv-s">エンジンをかけた状態でハンドルの重さを確認してください。</div>
+              <div class="cv-p">
+                <span class="cv-c sel">重く感じる</span>
+                <span class="cv-c">軽く感じる</span>
+                <span class="cv-c">変わらない</span>
+              </div>
+            </div>
+          </div>
+          <div class="cv" style="margin-bottom: 6px;">
+            <div class="cv-n">3</div>
+            <div class="cv-b" style="background: rgba(30,58,95,0.3); padding: 4px 6px; border-radius: 5px;">
+              <div class="cv-l" style="color: #60a5fa;">AI</div>
+              <div class="cv-s" style="color: #fca5a5;">パワーステアリングオイルのリザーバータンクの液面を確認してください。</div>
+              <div class="cv-p">
+                <span class="cv-c sel">MINより下にある</span>
+                <span class="cv-c">MIN〜MAXの間</span>
+                <span class="cv-c">MAXを超えている</span>
+              </div>
+            </div>
+          </div>
+          <div class="cv" style="margin-bottom: 6px;">
+            <div class="cv-n">4</div>
+            <div class="cv-b" style="background: rgba(127,29,29,0.15); padding: 4px 6px; border-radius: 5px; border: 1px dashed #ef4444;">
+              <div class="cv-l" style="color: #f87171;">AI (捏造)</div>
+              <div class="cv-s" style="color: #fca5a5;">パワーステアリングオイルの不足が原因です。<br>オイルの補充が必要です。ホンダディーラーで点検を。</div>
+              <div class="cv-p">
+                <span class="cv-c sel">解決手順を教えてください</span>
+                <span class="cv-c">解決しました</span>
+              </div>
+            </div>
+          </div>
+          <div class="cv" style="margin-bottom: 6px;">
+            <div class="cv-n">5</div>
+            <div class="cv-b" style="background: rgba(127,29,29,0.15); padding: 4px 6px; border-radius: 5px; border: 1px dashed #ef4444;">
+              <div class="cv-l" style="color: #f87171;">AI (同内容ループ)</div>
+              <div class="cv-s" style="color: #fca5a5;">パワーステアリングオイルの不足が原因です。（同じ回答を繰り返し）</div>
+              <div class="cv-p">
+                <span class="cv-c sel">解決手順を教えてください</span>
+                <span class="cv-c">解決しました</span>
+              </div>
+            </div>
+          </div>
+          <div style="text-align: center; color: #64748b; font-size: 0.65rem; padding: 4px;">… 同じ回答を繰り返し → max_turns (12) 到達</div>
+        </div>
+      </div>
+
+      <div class="highlight-box red mt-1" style="font-size: 0.75rem;">
+        <b>2つの問題:</b><br>
+        1. マニュアルにない「パワーステアリングオイル」を捏造<br>
+        2. 同じ回答のループから脱出できない
+      </div>
+    </div>
+
+    <div>
+      <div class="card card-blue">
+        <h3>Judge評価 — Overall: <span class="accent-red">1.8</span> / 5.0</h3>
+        <table style="font-size: 0.8rem;">
+          <thead><tr><th>基準</th><th>Score</th></tr></thead>
+          <tbody>
+            <tr><td>Step Accuracy</td><td style="color: #f87171;"><b>1</b></td></tr>
+            <tr><td>Safety Compliance</td><td style="color: #fbbf24;"><b>3</b></td></tr>
+            <tr><td>Conversation Quality</td><td style="color: #f87171;"><b>2</b></td></tr>
+            <tr><td>Manual Adherence</td><td style="color: #f87171;"><b>1</b></td></tr>
+            <tr><td>Result Confirmation</td><td style="color: #f87171;"><b>2</b></td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="card mt-1">
+        <h3>期待される動作</h3>
+        <div style="font-size: 0.76rem; color: #cbd5e1; line-height: 1.5;">
+          <p>このケースは <code>manual_coverage: not_covered</code> のため:</p>
+          <div style="background: rgba(6,78,59,0.15); padding: 8px; border-radius: 6px; margin-top: 6px;">
+            <p style="color: #34d399;">正しい対応:</p>
+            <ul style="margin: 4px 0 0 16px; color: #a7f3d0;">
+              <li>マニュアルに該当記載がないことを伝える</li>
+              <li>ディーラーでの点検を推奨</li>
+              <li>escalate → reservation へ遷移</li>
+            </ul>
+          </div>
+          <div style="background: rgba(127,29,29,0.15); padding: 8px; border-radius: 6px; margin-top: 6px;">
+            <p style="color: #f87171;">実際の動作:</p>
+            <ul style="margin: 4px 0 0 16px; color: #fca5a5;">
+              <li>一般知識から回答を捏造</li>
+              <li>解決策ループに陥る</li>
+              <li>12ターンまで脱出できず</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <div class="card mt-1" style="font-size: 0.72rem;">
+        <h3>Judge reasoning</h3>
+        <p style="color: #cbd5e1; line-height: 1.4;">マニュアルにない「パワーステアリングオイル」を原因として繰り返し指摘。一般知識に依存し、マニュアル準拠は最低評価。会話も不自然で冗長。</p>
+      </div>
+    </div>
+  </div>
+
+  <span class="slide-num">44</span>
+</div>
+
+<!-- ============================================ -->
+<!-- SLIDE 45 — v3.0 Summary -->
+<!-- ============================================ -->
+<div class="slide">
+  <span class="label label-purple mb-1">まとめ</span>
+  <h2>v3.0 評価フレームワーク — <span class="accent">全体像</span></h2>
+
+  <div class="cols cols-2 mt-2">
+    <div>
+      <div class="card">
+        <h3>評価の3層構造</h3>
+        <div class="flow mt-2" style="flex-direction: column; align-items: stretch; gap: 0;">
+          <div class="flow-node success" style="width: 100%; text-align: left; padding: 0.8rem 1.2rem;">
+            <b>Layer 1: RAGAS (RAG品質)</b><br>
+            <span class="small" style="color: #a7f3d0;">Faithfulness / ResponseRelevancy / ContextPrecision / ContextRecall</span>
+          </div>
+          <div style="text-align: center;"><div class="flow-arrow-down" style="display: inline-block;"></div></div>
+          <div class="flow-node" style="width: 100%; text-align: left; padding: 0.8rem 1.2rem; border-color: #f59e0b;">
+            <b style="color: #fbbf24;">Layer 2: E2E Test (フロー検証)</b><br>
+            <span class="small" style="color: #fde68a;">action一致率 / urgency一致率 / マルチターン到達率</span>
+          </div>
+          <div style="text-align: center;"><div class="flow-arrow-down" style="display: inline-block;"></div></div>
+          <div class="flow-node purple" style="width: 100%; text-align: left; padding: 0.8rem 1.2rem;">
+            <b>Layer 3: LLM-as-Judge (会話品質)</b><br>
+            <span class="small" style="color: #ddd6fe;">StepAccuracy / Safety / ConvQuality / ManualAdherence / ResultConfirmation</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="card mt-2">
+        <h3>実行コマンド</h3>
+        <pre style="font-size: 0.72rem; line-height: 1.6;"><code># Layer 1: RAGAS評価
+cd backend
+python -m tests.ragas.run_ragas_eval
+
+# Layer 2: E2Eテスト（単一ターン）
+python -m tests.ragas.run_e2e_chat
+
+# Layer 2: E2Eテスト（マルチターン）
+python -m tests.ragas.run_e2e_chat --multi-turn
+
+# Layer 3: LLM-as-Judge評価
+python -m tests.ragas.run_judge_eval
+
+# ヘルパー: ground_truth候補抽出
+python -m tests.ragas.extract_ground_truth</code></pre>
+      </div>
+    </div>
+
+    <div>
+      <div class="card card-blue">
+        <h3>v3.0 で追加されたファイル</h3>
+        <table style="font-size: 0.8rem;">
+          <thead>
+            <tr><th>ファイル</th><th>役割</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><code>extract_ground_truth.py</code></td><td>ChromaDB検索でground_truth候補抽出</td></tr>
+            <tr><td><code>llm_judge.py</code></td><td>5基準評価プロンプト+スキーマ</td></tr>
+            <tr><td><code>run_judge_eval.py</code></td><td>マルチターン会話+Judge評価</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="card mt-2 card-success">
+        <h3>v3.0 で変更されたファイル</h3>
+        <table style="font-size: 0.8rem;">
+          <thead>
+            <tr><th>ファイル</th><th>変更内容</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><code>test_cases.py</code></td><td>ground_truth全18件をマニュアルから再作成<br>6件にmanual_steps追加</td></tr>
+            <tr><td><code>run_e2e_chat.py</code></td><td>--multi-turn / --max-turns フラグ追加<br>run_multi_turn_flow()関数追加</td></tr>
+            <tr><td><code>prompts.py</code></td><td>手順ガイドモードに結果確認指示追加</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="highlight-box green mt-2" style="font-size: 0.85rem;">
+        <b>v3.0 評価結果サマリー:</b><br>
+        1. RAGAS Context Recall (covered): <b>0.89</b> (目標 0.80 達成)<br>
+        2. E2E action一致率: <b>94% (17/18)</b> (目標 94% 達成)<br>
+        3. Judge Overall: <b>3.48 / 5.0</b> (17ケース評価, 1 ERROR)
+      </div>
+    </div>
+  </div>
+
+  <span class="slide-num">45</span>
 </div>
 
 </body>

@@ -1,0 +1,4505 @@
+{
+  "timestamp": "2026-03-12T17:21:47.144727",
+  "base_url": "http://localhost:8000/api",
+  "evaluator": "LLM-as-Judge (gpt-4o-mini)",
+  "results": [
+    {
+      "id": 1,
+      "category": "ブレーキ故障",
+      "symptom": "ブレーキを踏んでも止まらない感じがする",
+      "turns": 1,
+      "final_step": "reservation",
+      "final_action": "escalate",
+      "urgency_flag": "critical",
+      "error": null,
+      "judge": {
+        "step_accuracy": 2,
+        "safety_compliance": 5,
+        "conversation_quality": 4,
+        "manual_adherence": 2,
+        "result_confirmation": 5,
+        "overall_score": 3.6,
+        "reasoning": "このAIの応答は、ブレーキの問題に対して非常に危険な状態であることを認識し、即座にロードサービスを推奨している点で安全性に優れています。しかし、マニュアルに基づく具体的な手順（例えば、ブレーキ液の確認やペダルの感触の確認）を提示していないため、手順正確性とマニュアル準拠は低く評価されます。会話の流れは自然であり、結果確認も適切に行われているため、会話品質と結果確認は高評価です。総合的に見て、AIは安全性を重視しつつも、具体的な手順に欠けているため、全体のスコアは3.6となります。",
+        "step_comparison": [
+          {
+            "manual_step": "安全な場所に停車する",
+            "ai_step": "",
+            "match": "missing"
+          },
+          {
+            "manual_step": "ブレーキ液のリザーバータンクの液面を確認する（MINラインより上か下か）",
+            "ai_step": "",
+            "match": "missing"
+          },
+          {
+            "manual_step": "ブレーキペダルを強く踏み、ペダルの感触を確認する（硬い/スポンジのように柔らかい）",
+            "ai_step": "",
+            "match": "missing"
+          },
+          {
+            "manual_step": "液面がMIN以下またはペダルが柔らかい場合は走行せずHonda販売店に連絡する",
+            "ai_step": "",
+            "match": "missing"
+          }
+        ]
+      },
+      "conversation_log": [
+        {
+          "role": "user",
+          "content": "ブレーキを踏んでも止まらない感じがする"
+        },
+        {
+          "role": "assistant",
+          "content": "🚨 今すぐロードサービスまたは来場が必要です。\n\n走行が危険な状態と判断されます。\n出張整備の手配をおすすめします。\n\n出張手配の予約を行いますか？",
+          "step": "reservation",
+          "choices": [
+            {
+              "value": "yes",
+              "label": "はい、予約する"
+            },
+            {
+              "value": "no",
+              "label": "いいえ、今は予約しない"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "category": "エンジン警告灯",
+      "symptom": "エンジンの警告灯が点灯している",
+      "turns": 12,
+      "final_step": "diagnosing",
+      "final_action": "max_turns_reached",
+      "urgency_flag": null,
+      "error": null,
+      "judge": {
+        "step_accuracy": 3,
+        "safety_compliance": 4,
+        "conversation_quality": 3,
+        "manual_adherence": 4,
+        "result_confirmation": 4,
+        "overall_score": 3.6,
+        "reasoning": "この会話ログは、エンジンの警告灯に関する適切な手順を提供していますが、手順の一部が欠落しているため、手順正確性は3点と評価しました。安全性に関しては、エンジンオイルの補給を促す際に注意を促す内容が含まれているため4点としました。会話の流れは概ね自然ですが、同じ質問が繰り返される場面があり、冗長性が見られるため3点としました。マニュアルに基づいている部分が多いですが、一般知識も含まれているため4点としました。結果確認は適切に行われているため4点と評価しました。全体的に、会話は機能していますが、改善の余地があります。",
+        "step_comparison": []
+      },
+      "conversation_log": [
+        {
+          "role": "user",
+          "content": "エンジンの警告灯が点灯している"
+        },
+        {
+          "role": "assistant",
+          "content": "エンジンの警告灯が点灯しているのは、エンジンに異常があることを示しています。手順に従い、エンジンを止めてから再始動し、警告灯が消えるか確認してください。消えない場合は、すぐにHonda販売店に点検を依頼してください。",
+          "step": "diagnosing",
+          "choices": [
+            {
+              "value": "guide_start",
+              "label": "解決手順を教えてください"
+            },
+            {
+              "value": "yes",
+              "label": "解決しました"
+            },
+            {
+              "value": "no",
+              "label": "試してみたが解決しなかった"
+            }
+          ]
+        },
+        {
+          "role": "user",
+          "content": "解決手順を教えてください"
+        },
+        {
+          "role": "assistant",
+          "content": "ボンネットを開けて、エンジンオイルの量を確認してください。オイルの量はどうですか？",
+          "step": "diagnosing",
+          "choices": [
+            {
+              "value": "少ない",
+              "label": "少ない"
+            },
+            {
+              "value": "正常",
+              "label": "正常"
+            },
+            {
+              "value": "多い",
+              "label": "多い"
+            },
+            {
+              "value": "dont_know",
+              "label": "わからない"
+            },
+            {
+              "value": "free_input",
+              "label": "✏️ 自由入力"
+            }
+          ]
+        },
+        {
+          "role": "user",
+          "content": "少ない"
+        },
+        {
+          "role": "assistant",
+          "content": "エンジンオイルの量は、どのくらい少ないですか？",
+          "step": "diagnosing",
+          "choices": [
+            {
+              "value": "MINより下にある",
+              "label": "MINより下にある"
+            },
+            {
+              "value": "MIN〜MAXの間にある",
+              "label": "MIN〜MAXの間にある"
+            },
+            {
+              "value": "MAXを超えている",
+              "label": "MAXを超えている"
+            },
+            {
+              "value": "dont_know",
+              "label": "わからない"
+            },
+            {
+              "value": "free_input",
+              "label": "✏️ 自由入力"
+            }
+          ]
+        },
+        {
+          "role": "user",
+          "content": "MINより下にある"
+        },
+        {
+          "role": "assistant",
+          "content": "他に気になる症状や状況があれば教えてください。",
+          "step": "diagnosing",
+          "choices": [
+            {
+              "value": "MINより下にある",
+              "label": "MINより下にある"
+            },
+            {
+              "value": "MIN〜MAXの間にある",
+              "label": "MIN〜MAXの間にある"
+            },
+            {
+              "value": "MAXを超えている",
+              "label": "MAXを超えている"
+            },
+            {
+              "value": "dont_know",
+              "label": "わからない"
+            },
+            {
+              "value": "free_input",
+              "label": "✏️ 自由入力"
+            }
+          ]
+        },
+        {
+          "role": "user",
+          "content": "MINより下にある"
+        },
+        {
+          "role": "assistant",
+          "content": "エンジンの警告灯が点灯し、オイル不足が確認されました。オイルがMINより下にあるため、エンジンに悪影響を及ぼす可能性があります。エンジンオイルを補給し、警告灯が消えない場合はHonda販売店での点検をお勧めします。",
+          "step": "diagnosing",
+          "choices": [
+            {
+              "value": "guide_start",
+              "label": "解決手順を教えてください"
+            },
+            {
+              "value": "yes",
+              "label": "解決しました"
+            },
+            {
+              "value": "no",
+              "label": "試してみたが解決しなかった"
+            }
+          ]
+        },
+        {
+          "role": "user",
+          "content": "解決手順を教えてください"
+        },
+        {
+          "role": "assistant",
+          "content": "エンジンの警告灯が点灯しているのは、オイル不足が原因です。オイルの量がMINより下にあるため、エンジンに悪影響を及ぼす可能性があります。エンジンオイルを補給し、警告灯が消えない場合はHonda販売店での点検をお勧めします。",
+          "step": "diagnosing",
+          "choices": [
+            {
+              "value": "guide_start",
+              "label": "解決手順を教えてください"
+            },
+            {
+              "value": "yes",
+              "label": "解決しました"
+            },
+            {
+              "value": "no",
+              "label": "試してみたが解決しなかった"
+            }
+          ]
+        },
+        {
+          "role": "user",
+          "content": "解決手順を教えてください"
+        },
+        {
+          "role": "assistant",
+          "content": "他に気になる症状や状況があれば教えてください。",
+          "step": "diagnosing",
+          "choices": [
+            {
+              "value": "MINより下にある",
+              "label": "MINより下にある"
+            },
+            {
+              "value": "MIN〜MAXの間にある",
+              "label": "MIN〜MAXの間にある"
+            },
+            {
+              "value": "MAXを超えている",
+              "label": "MAXを超えている"
+            },
+            {
+              "value": "dont_know",
+              "label": "わからない"
+            },
+            {
+              "value": "free_input",
+              "label": "✏️ 自由入力"
+            }
+          ]
+        },
+        {
+          "role": "user",
+          "content": "MINより下にある"
+        },
+        {
+          "role": "assistant",
+          "content": "ボンネットを開けて、オイルゲージの位置を確認してください。オイルの量はどうですか？",
+          "step": "diagnosing",
+          "choices": [
+            {
+              "value": "MINより下にある",
+              "label": "MINより下にある"
+            },
+            {
+              "value": "MIN〜MAXの間にある",
+              "label": "MIN〜MAXの間にある"
+            },
+            {
+              "value": "MAXを超えている",
+              "label": "MAXを超えている"
+            },
+            {
+              "value": "dont_know",
+              "label": "わからない"
+            },
+            {
+              "value": "free_input",
+              "label": "✏️ 自由入力"
+            }
+          ]
+        },
+        {
+          "role": "user",
+          "content": "MINより下にある"
+        },
+        {
+          "role": "assistant",
+          "content": "エンジンの警告灯が点灯しているのは、オイル不足が原因です。オイルの量がMINより下にあるため、エンジンに悪影響を及ぼす可能性があります。エンジンオイルを補給し、警告灯が消えない場合はHonda販売店での点検をお勧めします。",
+          "step": "diagnosing",
+          "choices": [
+            {
+              "value": "guide_start",
+              "label": "解決手順を教えてください"
+            },
+            {
+              "value": "yes",
+              "label": "解決しました"
+            },
+            {
+              "value": "no",
+              "label": "試してみたが解決しなかった"
+            }
+          ]
+        },
+        {
+          "role": "user",
+          "content": "解決手順を教えてください"
+        },
+        {
+          "role": "assistant",
+          "content": "エンジンオイルを補給しましたか？",
+          "step": "diagnosing",
+          "choices": [
+            {
+              "value": "はい、補給しました",
+              "label": "はい、補給しました"
+            },
+            {
+              "value": "いいえ、まだです",
+              "label": "いいえ、まだです"
+            },
+            {
+              "value": "dont_know",
+              "label": "わからない"
+            },
+            {
+              "value": "free_input",
+              "label": "✏️ 自由入力"
+            }
+          ]
+        },
+        {
+          "role": "user",
+          "content": "はい、補給しました"
+        },
+        {
+          "role": "assistant",
+          "content": "エンジンを再始動して、警告灯は消えましたか？",
+          "step": "diagnosing",
+          "choices": [
+            {
+              "value": "警告灯が消えた",
+              "label": "警告灯が消えた"
+            },
+            {
+              "value": "警告灯が消えない",
+              "label": "警告灯が消えない"
+            },
+            {
+              "value": "警告灯が点滅している",
+              "label": "警告灯が点滅している"
+            },
+            {
+              "value": "dont_know",
+              "label": "わからない"
+            },
+            {
+              "value": "free_input",
+              "label": "✏️ 自由入力"
+            }
+          ]
+        },
+        {
+          "role": "user",
+          "content": "警告灯が消えた"
+        },
+        {
+          "role": "assistant",
+          "content": "エンジンの警告灯が点灯しているのは、エンジンの排気ガス制御システムに異常がある可能性を示しています。エンジンオイルを補給した結果、警告灯は消えたとのことですが、運転を再開する際には注意が必要です。今後も警告灯が点灯した場合は、すぐにHonda販売店での点検をお勧めします。",
+          "step": "diagnosing",
+          "choices": [
+            {
+              "value": "guide_start",
+              "label": "解決手順を教えてください"
+            },
+            {
+              "value": "yes",
+              "label": "解決しました"
+            },
+            {
+              "value": "no",
+              "label": "試してみたが解決しなかった"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "category": "走行中異音",
+      "symptom": "走行中にガタガタと異音がする",
+      "turns": 12,
+      "final_step": "diagnosing",
+      "final_action": "max_turns_reached",
+      "urgency_flag": null,
+      "error": null,
+      "judge": {
+        "step_accuracy": 5,
+        "safety_compliance": 4,
+        "conversation_quality": 4,
+        "manual_adherence": 5,
+        "result_confirmation": 5,
+        "overall_score": 4.6,
+        "reasoning": "このAIの問診は、ユーザーからの情報を的確に引き出し、タイヤの状態に関する詳細な確認を行っているため、手順正確性は5点と評価しました。安全性についても、タイヤの異常を確認するよう促しており、主要な安全注意事項を伝達しているため4点としました。会話の品質は概ね自然で効率的ですが、若干の改善点が見られるため4点としました。マニュアルに基づいており、推測や一般知識を使用していないため、マニュアル準拠は5点としました。最後に、結果確認も適切に行われているため5点と評価しました。全体的に、非常に高い品質の問診であると判断しました。",
+        "step_comparison": []
+      },
+      "conversation_log": [
+        {
+          "role": "user",
+          "content": "走行中にガタガタと異音がする"
+        },
+        {
+          "role": "assistant",
+          "content": "タイヤの状態を確認してください。亀裂や損傷、異常な摩耗はありますか？",
+          "step": "diagnosing",
+          "choices": [
+            {
+              "value": "亀裂や損傷がある",
+              "label": "亀裂や損傷がある"
+            },
+            {
+              "value": "異常な摩耗がある",
+              "label": "異常な摩耗がある"
+            },
+            {
+              "value": "異常はない",
+              "label": "異常はない"
+            },
+            {
+              "value": "dont_know",
+              "label": "わからない"
+            },
+            {
+              "value": "free_input",
+              "label": "✏️ 自由入力"
+            }
+          ]
+        },
+        {
+          "role": "user",
+          "content": "亀裂や損傷がある"
+        },
+        {
+          "role": "assistant",
+          "content": "タイヤの摩耗具合を確認してください。摩耗が均一ですか、それとも片減りしていますか？",
+          "step": "diagnosing",
+          "choices": [
+            {
+              "value": "均一に摩耗している",
+              "label": "均一に摩耗している"
+            },
+            {
+              "value": "片減りしている",
+              "label": "片減りしている"
+            },
+            {
+              "value": "摩耗がひどい",
+              "label": "摩耗がひどい"
+            },
+            {
+              "value": "dont_know",
+              "label": "わからない"
+            },
+            {
+              "value": "free_input",
+              "label": "✏️ 自由入力"
+            }
+          ]
+        },
+        {
+          "role": "user",
+          "content": "均一に摩耗している"
+        },
+        {
+          "role": "assistant",
+          "content": "タイヤの外観を再度確認してください。側面に裂け目や膨らみはありますか？",
+          "step": "diagnosing",
+          "choices": [
+            {
+              "value": "裂け目がある",
+              "label": "裂け目がある"
+            },
+            {
+              "value": "膨らみがある",
+              "label": "膨らみがある"
+            },
+            {
+              "value": "異常なし",
+              "label": "異常なし"
+            },
+            {
+              "value": "dont_know",
+              "label": "わからない"
+            },
+            {
+              "value": "free_input",
+              "label": "✏️ 自由入力"
+            }
+          ]
+        },
+        {
+          "role": "user",
+          "content": "裂け目がある"
+        },
+        {
+          "role": "assistant",
+          "content": "タイヤの接地面に異物（石やガラスなど）が挟まっていないか確認してください。異物はありますか？",
+          "step": "diagnosing",
+          "choices": [
+            {
+              "value": "異物が挟まっている",
+              "label": "異物が挟まっている"
+            },
+            {
+              "value": "異物はない",
+              "label": "異物はない"
+            },
+            {
+              "value": "dont_know",
+              "label": "わからない"
+            },
+            {
+              "value": "free_input",
+              "label": "✏️ 自由入力"
+            }
+          ]
+        },
+        {
+          "role": "user",
+          "content": "異物が挟まっている"
+        },
+        {
+          "role": "assistant",
+          "content": "異音がするのは特定の速度や状況ですか？それとも常に発生していますか？",
+          "step": "diagnosing",
+          "choices": [
+            {
+              "value": "特定の速度で発生",
+              "label": "特定の速度で発生"
+            },
+            {
+              "value": "特定の状況で発生",
+              "label": "特定の状況で発生"
+            },
+            {
+              "value": "常に発生している",
+              "label": "常に発生している"
+            },
+            {
+              "value": "dont_know",
+              "label": "わからない"
+            },
+            {
+              "value": "free_input",
+              "label": "✏️ 自由入力"
+            }
+          ]
+        },
+        {
+          "role": "user",
+          "content": "特定の速度で発生"
+        },
+        {
+          "role": "assistant",
+          "content": "異音が発生する速度はどのくらいですか？具体的な数値を教えてください。",
+          "step": "diagnosing",
+          "choices": [
+            {
+              "value": "30km/h前後",
+              "label": "30km/h前後"
+            },
+            {
+              "value": "50km/h前後",
+              "label": "50km/h前後"
+            },
+            {
+              "value": "80km/h前後",
+              "label": "80km/h前後"
+            },
+            {
+              "value": "100km/h以上",
+              "label": "100km/h以上"
+            },
+            {
+              "value": "dont_know",
+              "label": "わからない"
+            },
+            {
+              "value": "free_input",
+              "label": "✏️ 自由入力"
+            }
+          ]
+        },
+        {
+          "role": "user",
+          "content": "30km/h前後"
+        },
+        {
+          "role": "assistant",
+          "content": "異音は「カタカタ」「ガタガタ」など、どのような音ですか？",
+          "step": "diagnosing",
+          "choices": [
+            {
+              "value": "カタカタ音",
+              "label": "カタカタ音"
+            },
+            {
+              "value": "ガタガタ音",
+              "label": "ガタガタ音"
+            },
+            {
+              "value": "キュルキュル音",
+              "label": "キュルキュル音"
+            },
+            {
+              "value": "その他の音",
+              "label": "その他の音"
+            },
+            {
+              "value": "dont_know",
+              "label": "わからない"
+            },
+            {
+              "value": "free_input",
+              "label": "✏️ 自由入力"
+            }
+          ]
+        },
+        {
+          "role": "user",
+          "content": "カタカタ音"
+        },
+        {
+          "role": "assistant",
+          "content": "ボンネットが完全に閉まっているか確認してください。閉まっていますか？",
+          "step": "diagnosing",
+          "choices": [
+            {
+              "value": "完全に閉まっている",
+              "label": "完全に閉まっている"
+            },
+            {
+              "value": "少し開いている",
+              "label": "少し開いている"
+            },
+            {
+              "value": "閉まっていない",
+              "label": "閉まっていない"
+            },
+            {
+              "value": "dont_know",
+              "label": "わからない"
+            },
+            {
+              "value": "free_input",
+              "label": "✏️ 自由入力"
+            }
+          ]
+        },
+        {
+          "role": "user",
+          "content": "完全に閉まっている"
+        },
+        {
+          "role": "assistant",
+          "content": "異音は走行中だけですか？それとも停車時にも聞こえますか？",
+          "step": "diagnosing",
+          "choices": [
+            {
+              "value": "走行中だけ",
+              "label": "走行中だけ"
+            },
+            {
+              "value": "停車時にも聞こえる",
+              "label": "停車時にも聞こえる"
+            },
+            {
+              "value": "両方",
+              "label": "両方"
+            },
+            {
+              "value": "dont_know",
+              "label": "わからない"
+            },
+            {
+              "value": "free_input",
+              "label": "✏️ 自由入力"
+            }
+          ]
+        },
+        {
+          "role": "user",
+          "content": "走行中だけ"
+        },
+        {
+          "role": "assistant",
+          "content": "タイヤの側面に亀裂があるとのことですが、亀裂の大きさを確認できますか？",
+          "step": "diagnosing",
+          "choices": [
+            {
+              "value": "亀裂は小さい",
+              "label": "亀裂は小さい"
+            },
+            {
+              "value": "亀裂は中くらい",
+              "label": "亀裂は中くらい"
+            },
+            {
+              "value": "亀裂は大きい",
+              "label": "亀裂は大きい"
+            },
+            {
+              "value": "dont_know",
+              "label": "わからない"
+            },
+            {
+              "value": "free_input",
+              "label": "✏️ 自由入力"
+            }
+          ]
+        },
+        {
+          "role": "user",
+          "content": "亀裂は小さい"
+        },
+        {
+          "role": "assistant",
+          "content": "タイヤの接地面に異物が挟まっているとのことですが、その異物は何か確認できますか？",
+          "step": "diagnosing",
+          "choices": [
+            {
+              "value": "異物は小石です",
+              "label": "異物は小石です"
+            },
+            {
+              "value": "異物はゴミです",
+              "label": "異物はゴミです"
+            },
+            {
+              "value": "異物は確認できない",
+              "label": "異物は確認できない"
+            },
+            {
+              "value": "異物は大きな物です",
+              "label": "異物は大きな物です"
+            },
+            {
+              "value": "dont_know",
+              "label": "わからない"
+            },
+            {
+              "value": "free_input",
+              "label": "✏️ 自由入力"
+            }
+          ]
+        },
+        {
+          "role": "user",
+          "content": "異物は小石です"
+        },
+        {
+          "role": "assistant",
+          "content": "走行中にガタガタと異音がするのは、タイヤやホイールに異常がある可能性があります。これまでの確認で、タイヤに小さな亀裂と小石が挟まっていることがわかりました。安全のため、Honda販売店での点検をお勧めします。",
+          "step": "diagnosing",
+          "choices": [
+            {
+              "value": "guide_start",
+              "label": "解決手順を教えてください"
+            },
+            {
+              "value": "yes",
+              "label": "解決しました"
+            },
+            {
+              "value": "no",
+              "label": "試してみたが解決しなかった"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "category": "エアコン不調",
+      "symptom": "エアコンから冷たい風が出ない",
+      "turns": 12,
+      "final_step": "diagnosing",
+      "final_action": "max_turns_reached",
+      "urgency_flag": null,
+      "error": null,
+      "judge": {
+        "step_accuracy": 4,
+        "safety_compliance": 3,
+        "conversation_quality": 4,
+        "manual_adherence": 3,
+        "result_confirmation": 5,
+        "overall_score": 3.8,
+        "reasoning": "この会話ログは、エアコンの不調に関する一連の質問を通じて、ユーザーの状況を的確に把握し、適切な手順を踏んでいます。手順の正確性は高く、ほぼマニュアルに沿った内容ですが、マニュアルに明記されていないトラブルシューティングを行っているため、完全な準拠とは言えません。安全性に関しては基本的な注意事項が欠落しているため、やや低めの評価となります。会話の流れは自然で、結果確認も適切に行われているため、全体的には良好な評価です。",
+        "step_comparison": []
+      },
+      "conversation_log": [
+        {
+          "role": "user",
+          "content": "エアコンから冷たい風が出ない"
+        },
+        {
+          "role": "assistant",
+          "content": "エアコンの設定温度を確認しましたか？冷房に設定されていますか？",
+          "step": "diagnosing",
+          "choices": [
+            {
+              "value": "冷房に設定している",
+              "label": "冷房に設定している"
+            },
+            {
+              "value": "暖房に設定している",
+              "label": "暖房に設定している"
+            },
+            {
+              "value": "設定温度が不明",
+              "label": "設定温度が不明"
+            },
+            {
+              "value": "まだ確認していない",
+              "label": "まだ確認していない"
+            },
+            {
+              "value": "dont_know",
+              "label": "わからない"
+            },
+            {
+              "value": "free_input",
+              "label": "✏️ 自由入力"
+            }
+          ]
+        },
+        {
+          "role": "user",
+          "content": "冷房に設定している"
+        },
+        {
+          "role": "assistant",
+          "content": "エンジンはかかっていますか？",
+          "step": "diagnosing",
+          "choices": [
+            {
+              "value": "エンジンがかかっている",
+              "label": "エンジンがかかっている"
+            },
+            {
+              "value": "エンジンがかかっていない",
+              "label": "エンジンがかかっていない"
+            },
+            {
+              "value": "dont_know",
+              "label": "わからない"
+            },
+            {
+              "value": "free_input",
+              "label": "✏️ 自由入力"
+            }
+          ]
+        },
+        {
+          "role": "user",
+          "content": "エンジンがかかっている"
+        },
+        {
+          "role": "assistant",
+          "content": "エアコンの操作パネルにある「AUTO」ボタンを押して、自動運転モードにしていますか？",
+          "step": "diagnosing",
+          "choices": [
+            {
+              "value": "はい、押しました",
+              "label": "はい、押しました"
+            },
+            {
+              "value": "いいえ、押していません",
+              "label": "いいえ、押していません"
+            },
+            {
+              "value": "dont_know",
+              "label": "わからない"
+            },
+            {
+              "value": "free_input",
+              "label": "✏️ 自由入力"
+            }
+          ]
+        },
+        {
+          "role": "user",
+          "content": "はい、押しました"
+        },
+        {
+          "role": "assistant",
+          "content": "エアコンの内気/外気切り換えスイッチは外気（表示灯消灯）の状態になっていますか？",
+          "step": "diagnosing",
+          "choices": [
+            {
+              "value": "外気になっている",
+              "label": "外気になっている"
+            },
+            {
+              "value": "内気になっている",
+              "label": "内気になっている"
+            },
+            {
+              "value": "dont_know",
+              "label": "わからない"
+            },
+            {
+              "value": "free_input",
+              "label": "✏️ 自由入力"
+            }
+          ]
+        },
+        {
+          "role": "user",
+          "content": "外気になっている"
+        },
+        {
+          "role": "assistant",
+          "content": "運転席側の温度調節スイッチを確認し、設定温度が「Lo」（最大冷房）になっていますか？",
+          "step": "diagnosing",
+          "choices": [
+            {
+              "value": "「Lo」に設定されている",
+              "label": "「Lo」に設定されている"
+            },
+            {
+              "value": "「Hi」に設定されている",
+              "label": "「Hi」に設定されている"
+            },
+            {
+              "value": "設定がわからない",
+              "label": "設定がわからない"
+            },
+            {
+              "value": "dont_know",
+              "label": "わからない"
+            },
+            {
+              "value": "free_input",
+              "label": "✏️ 自由入力"
+            }
+          ]
+        },
+        {
+          "role": "user",
+          "content": "「Lo」に設定されている"
+        },
+        {
+          "role": "assistant",
+          "content": "運転席側と助手席側の温度設定が連動しているか確認するために、車内の「SYNC」ボタンを押してみてください。これで運転席側の設定温度が助手席側にも反映されますか？",
+          "step": "diagnosing",
+          "choices": [
+            {
+              "value": "連動している",
+              "label": "連動している"
+            },
+            {
+              "value": "連動していない",
+              "label": "連動していない"
+            },
+            {
+              "value": "dont_know",
+              "label": "わからない"
+            },
+            {
+              "value": "free_input",
+              "label": "✏️ 自由入力"
+            }
+          ]
+        },
+        {
+          "role": "user",
+          "content": "連動している"
+        },
+        {
+          "role": "assistant",
+          "content": "エアコンの「AUTO」ボタンを押して、自動運転モードにしていますか？",
+          "step": "diagnosing",
+          "choices": [
+            {
+              "value": "はい、押しています",
+              "label": "はい、押しています"
+            },
+            {
+              "value": "いいえ、押していません",
+              "label": "いいえ、押していません"
+            },
+            {
+              "value": "dont_know",
+              "label": "わからない"
+            },
+            {
+              "value": "free_input",
+              "label": "✏️ 自由入力"
+            }
+          ]
+        },
+        {
+          "role": "user",
+          "content": "はい、押しています"
+        },
+        {
+          "role": "assistant",
+          "content": "エアコンの風量調節スイッチを確認し、風量が最大になっていますか？",
+          "step": "diagnosing",
+          "choices": [
+            {
+              "value": "風量が最大",
+              "label": "風量が最大"
+            },
+            {
+              "value": "風量が中",
+              "label": "風量が中"
+            },
+            {
+              "value": "風量が最小",
+              "label": "風量が最小"
+            },
+            {
+              "value": "風量がオフ",
+              "label": "風量がオフ"
+            },
+            {
+              "value": "dont_know",
+              "label": "わからない"
+            },
+            {
+              "value": "free_input",
+              "label": "✏️ 自由入力"
+            }
+          ]
+        },
+        {
+          "role": "user",
+          "content": "風量が最大"
+        },
+        {
+          "role": "assistant",
+          "content": "エアコンの風量が最大になっている状態で、エアコンの外気導入（表示灯消灯）になっていますか？",
+          "step": "diagnosing",
+          "choices": [
+            {
+              "value": "外気導入になっている",
+              "label": "外気導入になっている"
+            },
+            {
+              "value": "内気循環になっている",
+              "label": "内気循環になっている"
+            },
+            {
+              "value": "dont_know",
+              "label": "わからない"
+            },
+            {
+              "value": "free_input",
+              "label": "✏️ 自由入力"
+            }
+          ]
+        },
+        {
+          "role": "user",
+          "content": "外気導入になっている"
+        },
+        {
+          "role": "assistant",
+          "content": "エアコンが正常に作動しているか確認するために、数分待ってみてください。冷たい風が出てきましたか？",
+          "step": "diagnosing",
+          "choices": [
+            {
+              "value": "冷たい風が出てきた",
+              "label": "冷たい風が出てきた"
+            },
+            {
+              "value": "まだ出ていない",
+              "label": "まだ出ていない"
+            },
+            {
+              "value": "風量が変わらない",
+              "label": "風量が変わらない"
+            },
+            {
+              "value": "dont_know",
+              "label": "わからない"
+            },
+            {
+              "value": "free_input",
+              "label": "✏️ 自由入力"
+            }
+          ]
+        },
+        {
+          "role": "user",
+          "content": "冷たい風が出てきた"
+        },
+        {
+          "role": "assistant",
+          "content": "エアコンの内気循環（表示灯点灯）になっていますか？",
+          "step": "diagnosing",
+          "choices": [
+            {
+              "value": "内気循環になっている",
+              "label": "内気循環になっている"
+            },
+            {
+              "value": "外気導入になっている",
+              "label": "外気導入になっている"
+            },
+            {
+              "value": "dont_know",
+              "label": "わからない"
+            },
+            {
+              "value": "free_input",
+              "label": "✏️ 自由入力"
+            }
+          ]
+        },
+        {
+          "role": "user",
+          "content": "内気循環になっている"
+        },
+        {
+          "role": "assistant",
+          "content": "エアコンから冷たい風が出ない場合、内気循環が原因の可能性があります。数分待った後に冷たい風が出たため、エアコンは正常に作動しています。設定やスイッチの状態も適切でしたので、内気循環を解除することをお勧めします。もし再度冷たい風が出ない場合は、ディーラーでの点検を推奨します。",
+          "step": "diagnosing",
+          "choices": [
+            {
+              "value": "guide_start",
+              "label": "解決手順を教えてください"
+            },
+            {
+              "value": "yes",
+              "label": "解決しました"
+            },
+            {
+              "value": "no",
+              "label": "試してみたが解決しなかった"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "category": "エンジン始動不良",
+      "symptom": "エンジンがかからない",
+      "turns": 12,
+      "final_step": "diagnosing",
+      "final_action": "max_turns_reached",
+      "urgency_flag": null,
+      "error": null,
+      "judge": {
+        "step_accuracy": 4,
+        "safety_compliance": 3,
+        "conversation_quality": 4,
+        "manual_adherence": 4,
+        "result_confirmation": 5,
+        "overall_score": 4.0,
+        "reasoning": "この会話は、エンジンがかからないという症状に対して、適切な手順を踏んで診断を進めています。手順の正確性は高く、ほぼマニュアルに従っていますが、いくつかの重要な手順（例えば、バッテリー上がりの可能性やイモビライザーの確認）が欠落しています。安全性に関しては、基本的な注意事項は伝えられていますが、より詳細な安全確認があれば良かったです。会話の流れは自然で、専門用語の説明も適切でしたが、若干の冗長性が見られました。結果確認については、手順の最後に適切に行われており、成功/失敗の分岐も明確でした。全体として、良好な評価を得ていますが、いくつかの改善点があるため、満点には至りません。",
+        "step_comparison": [
+          {
+            "manual_step": "スターターが回るか確認する",
+            "ai_step": "エンジンスイッチをIIIに回して、ブレーキペダルを踏んでみてください。エンジンはかかりますか？",
+            "match": "partial"
+          },
+          {
+            "manual_step": "スターターが回らない場合: バッテリー上がりの可能性→ジャンプスタート（P.208）を試す",
+            "ai_step": "エンジンがかかった後、エンジンを切った状態で、再度エンジンスイッチをIIIに回してみてください。エンジンはかかりますか？",
+            "match": "missing"
+          },
+          {
+            "manual_step": "スターターが回る場合: エンジンの始動手順を再確認する",
+            "ai_step": "エンジンがかかった後、エンジンを切った状態で、再度エンジンスイッチをIIIに回してみてください。エンジンはかかりますか？",
+            "match": "exact"
+          },
+          {
+            "manual_step": "パーキングブレーキがかかっていることを確認する",
+            "ai_step": "",
+            "match": "missing"
+          },
+          {
+            "manual_step": "セレクトレバーがPにあることを確認する",
+            "ai_step": "",
+            "match": "missing"
+          },
+          {
+            "manual_step": "ブレーキペダルを踏みながらエンジンスイッチをIIに回す",
+            "ai_step": "",
+            "match": "missing"
+          },
+          {
+            "manual_step": "イモビライザーシステムの異常がないか確認する",
+            "ai_step": "",
+            "match": "missing"
+          },
+          {
+            "manual_step": "燃料が十分にあるか確認する",
+            "ai_step": "燃料計を確認して、燃料が入っていますか？",
+            "match": "exact"
+          }
+        ]
+      },
+      "conversation_log": [
+        {
+          "role": "user",
+          "content": "エンジンがかからない"
+        },
+        {
+          "role": "assistant",
+          "content": "エンジンスイッチをIIIに回して、ブレーキペダルを踏んでみてください。エンジンはかかりますか？",
+          "step": "diagnosing",
+          "choices": [
+            {
+              "value": "エンジンがかかった",
+              "label": "エンジンがかかった"
+            },
+            {
+              "value": "エンジンがかからない",
+              "label": "エンジンがかからない"
+            },
+            {
+              "value": "スターターが回らない",
+              "label": "スターターが回らない"
+            },
+            {
+              "value": "スターターが遅い",
+              "label": "スターターが遅い"
+            },
+            {
+              "value": "dont_know",
+              "label": "わからない"
+            },
+            {
+              "value": "free_input",
+              "label": "✏️ 自由入力"
+            }
+          ]
+        },
+        {
+          "role": "user",
+          "content": "エンジンがかかった"
+        },
+        {
+          "role": "assistant",
+          "content": "室内灯（車内の明かり）が正常に点灯していますか？",
+          "step": "diagnosing",
+          "choices": [
+            {
+              "value": "正常に点灯している",
+              "label": "正常に点灯している"
+            },
+            {
+              "value": "暗いまたは点灯しない",
+              "label": "暗いまたは点灯しない"
+            },
+            {
+              "value": "dont_know",
+              "label": "わからない"
+            },
+            {
+              "value": "free_input",
+              "label": "✏️ 自由入力"
+            }
+          ]
+        },
+        {
+          "role": "user",
+          "content": "正常に点灯している"
+        },
+        {
+          "role": "assistant",
+          "content": "エンジンがかかった後、エンジンを切った状態で、再度エンジンスイッチをIIIに回してみてください。エンジンはかかりますか？",
+          "step": "diagnosing",
+          "choices": [
+            {
+              "value": "エンジンがかかった",
+              "label": "エンジンがかかった"
+            },
+            {
+              "value": "エンジンがかからない",
+              "label": "エンジンがかからない"
+            },
+            {
+              "value": "エンジンがかかるがすぐに止まる",
+              "label": "エンジンがかかるがすぐに止まる"
+            },
+            {
+              "value": "dont_know",
+              "label": "わからない"
+            },
+            {
+              "value": "free_input",
+              "label": "✏️ 自由入力"
+            }
+          ]
+        },
+        {
+          "role": "user",
+          "content": "エンジンがかかった"
+        },
+        {
+          "role": "assistant",
+          "content": "燃料計を確認して、燃料が入っていますか？",
+          "step": "diagnosing",
+          "choices": [
+            {
+              "value": "燃料が満タン",
+              "label": "燃料が満タン"
+            },
+            {
+              "value": "燃料が半分",
+              "label": "燃料が半分"
+            },
+            {
+              "value": "燃料が少ない",
+              "label": "燃料が少ない"
+            },
+            {
+              "value": "燃料がない",
+              "label": "燃料がない"
+            },
+            {
+              "value": "dont_know",
+              "label": "わからない"
+            },
+            {
+              "value": "free_input",
+              "label": "✏️ 自由入力"
+            }
+          ]
+        },
+        {
+          "role": "user",
+          "content": "燃料が満タン"
+        },
+        {
+          "role": "assistant",
+          "content": "ヒューズボックスを確認して、ヒューズが切れていないか見てください。切れているヒューズはありますか？",
+          "step": "diagnosing",
+          "choices": [
+            {
+              "value": "切れているヒューズがある",
+              "label": "切れているヒューズがある"
+            },
+            {
+              "value": "切れているヒューズはない",
+              "label": "切れているヒューズはない"
+            },
+            {
+              "value": "ヒューズボックスが見つからない",
+              "label": "ヒューズボックスが見つからない"
+            },
+            {
+              "value": "dont_know",
+              "label": "わからない"
+            },
+            {
+              "value": "free_input",
+              "label": "✏️ 自由入力"
+            }
+          ]
+        },
+        {
+          "role": "user",
+          "content": "切れているヒューズがある"
+        },
+        {
+          "role": "assistant",
+          "content": "スターターが正常に回るか確認してください。エンジンスイッチをIIIに回したとき、スターターは回りますか？",
+          "step": "diagnosing",
+          "choices": [
+            {
+              "value": "スターターが回る",
+              "label": "スターターが回る"
+            },
+            {
+              "value": "スターターが回らない",
+              "label": "スターターが回らない"
+            },
+            {
+              "value": "スターターが遅い",
+              "label": "スターターが遅い"
+            },
+            {
+              "value": "dont_know",
+              "label": "わからない"
+            },
+            {
+              "value": "free_input",
+              "label": "✏️ 自由入力"
+            }
+          ]
+        },
+        {
+          "role": "user",
+          "content": "スターターが回る"
+        },
+        {
+          "role": "assistant",
+          "content": "ヒューズボックスの切れているヒューズは、どの番号のヒューズですか？",
+          "step": "diagnosing",
+          "choices": [
+            {
+              "value": "dont_know",
+              "label": "わからない"
+            },
+            {
+              "value": "free_input",
+              "label": "✏️ 自由入力"
+            }
+          ]
+        },
+        {
+          "role": "user",
+          "content": "わからない"
+        },
+        {
+          "role": "assistant",
+          "content": "ヒューズボックスのフタを開けて、切れているヒューズの番号を確認してください。",
+          "step": "diagnosing",
+          "choices": [
+            {
+              "value": "ヒューズの番号がわかる",
+              "label": "ヒューズの番号がわかる"
+            },
+            {
+              "value": "切れているヒューズはない",
+              "label": "切れているヒューズはない"
+            },
+            {
+              "value": "ヒューズの番号がわからない",
+              "label": "ヒューズの番号がわからない"
+            },
+            {
+              "value": "dont_know",
+              "label": "わからない"
+            },
+            {
+              "value": "free_input",
+              "label": "✏️ 自由入力"
+            }
+          ]
+        },
+        {
+          "role": "user",
+          "content": "ヒューズの番号がわかる"
+        },
+        {
+          "role": "assistant",
+          "content": "ヒューズボックスのフタを開けて、切れているヒューズの状態を確認しましたか？",
+          "step": "diagnosing",
+          "choices": [
+            {
+              "value": "はい、確認しました",
+              "label": "はい、確認しました"
+            },
+            {
+              "value": "いいえ、まだ確認していない",
+              "label": "いいえ、まだ確認していない"
+            },
+            {
+              "value": "dont_know",
+              "label": "わからない"
+            },
+            {
+              "value": "free_input",
+              "label": "✏️ 自由入力"
+            }
+          ]
+        },
+        {
+          "role": "user",
+          "content": "はい、確認しました"
+        },
+        {
+          "role": "assistant",
+          "content": "ヒューズボックスの切れているヒューズの番号はわかりますか？",
+          "step": "diagnosing",
+          "choices": [
+            {
+              "value": "はい、わかります",
+              "label": "はい、わかります"
+            },
+            {
+              "value": "いいえ、わかりません",
+              "label": "いいえ、わかりません"
+            },
+            {
+              "value": "dont_know",
+              "label": "わからない"
+            },
+            {
+              "value": "free_input",
+              "label": "✏️ 自由入力"
+            }
+          ]
+        },
+        {
+          "role": "user",
+          "content": "はい、わかります"
+        },
+        {
+          "role": "assistant",
+          "content": "スターターが回るとき、エンジンはかかりますか？",
+          "step": "diagnosing",
+          "choices": [
+            {
+              "value": "エンジンがかかる",
+              "label": "エンジンがかかる"
+            },
+            {
+              "value": "エンジンがかからない",
+              "label": "エンジンがかからない"
+            },
+            {
+              "value": "スターターが回らない",
+              "label": "スターターが回らない"
+            },
+            {
+              "value": "dont_know",
+              "label": "わからない"
+            },
+            {
+              "value": "free_input",
+              "label": "✏️ 自由入力"
+            }
+          ]
+        },
+        {
+          "role": "user",
+          "content": "エンジンがかかる"
+        },
+        {
+          "role": "assistant",
+          "content": "エンジンがかからない原因として、ヒューズの切れやスターターの不具合が考えられます。ヒューズボックスの切れているヒューズが確認されているため、まずはそのヒューズを交換してください。それでもエンジンがかからない場合は、Honda販売店での点検をお勧めします。",
+          "step": "diagnosing",
+          "choices": [
+            {
+              "value": "guide_start",
+              "label": "解決手順を教えてください"
+            },
+            {
+              "value": "yes",
+              "label": "解決しました"
+            },
+            {
+              "value": "no",
+              "label": "試してみたが解決しなかった"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": 6,
+      "category": "オイル漏れ",
+      "symptom": "駐車場の地面に油のシミがある",
+      "turns": 12,
+      "final_step": "diagnosing",
+      "final_action": "max_turns_reached",
+      "urgency_flag": null,
+      "error": null,
+      "judge": {
+        "step_accuracy": 3,
+        "safety_compliance": 2,
+        "conversation_quality": 3,
+        "manual_adherence": 4,
+        "result_confirmation": 3,
+        "overall_score": 3.0,
+        "reasoning": "この会話ログは、車両のオイル漏れに関する問診を行っていますが、手順の正確性においては一部欠落が見られます。特に、ユーザーに安全に停車することやエンジンを止めることを指示する手順が欠けており、安全性に関する配慮が不足しています。また、会話の流れは機能していますが、冗長な質問が多く、自然さに欠ける部分があります。マニュアルに基づいた情報提供は行われていますが、一般知識に基づく推測が見られるため、マニュアル準拠の評価は高めです。結果確認の質問は行われていますが、分岐が不十分であり、全体的に改善の余地があります。",
+        "step_comparison": [
+          {
+            "manual_step": "安全な場所に停車する",
+            "ai_step": "",
+            "match": "missing"
+          },
+          {
+            "manual_step": "エンジンを止めて1分以上待つ",
+            "ai_step": "",
+            "match": "missing"
+          },
+          {
+            "manual_step": "ボンネットを開ける",
+            "ai_step": "",
+            "match": "exact"
+          },
+          {
+            "manual_step": "エンジンオイルの量を確認する",
+            "ai_step": "エンジンオイルの量は、オイルゲージで確認した結果、どのような状態でしたか？",
+            "match": "partial"
+          },
+          {
+            "manual_step": "オイルが不足している場合は補給する",
+            "ai_step": "",
+            "match": "missing"
+          },
+          {
+            "manual_step": "エンジンをかけて油圧警告灯が10秒以内に消灯するか確認する",
+            "ai_step": "",
+            "match": "missing"
+          },
+          {
+            "manual_step": "消灯しない場合はエンジンを止めてHonda販売店に連絡する",
+            "ai_step": "",
+            "match": "missing"
+          }
+        ]
+      },
+      "conversation_log": [
+        {
+          "role": "user",
+          "content": "駐車場の地面に油のシミがある"
+        },
+        {
+          "role": "assistant",
+          "content": "車の下に油のシミが見える位置を確認してください。どの部分から漏れているように見えますか？",
+          "step": "diagnosing",
+          "choices": [
+            {
+              "value": "エンジンの下",
+              "label": "エンジンの下"
+            },
+            {
+              "value": "トランスミッションの下",
+              "label": "トランスミッションの下"
+            },
+            {
+              "value": "タイヤの周り",
+              "label": "タイヤの周り"
+            },
+            {
+              "value": "dont_know",
+              "label": "わからない"
+            },
+            {
+              "value": "free_input",
+              "label": "✏️ 自由入力"
+            }
+          ]
+        },
+        {
+          "role": "user",
+          "content": "エンジンの下"
+        },
+        {
+          "role": "assistant",
+          "content": "エンジンオイルの量を確認するために、オイルゲージを引き抜いて、清潔な布で拭きましたか？",
+          "step": "diagnosing",
+          "choices": [
+            {
+              "value": "はい、確認しました",
+              "label": "はい、確認しました"
+            },
+            {
+              "value": "いいえ、まだです",
+              "label": "いいえ、まだです"
+            },
+            {
+              "value": "dont_know",
+              "label": "わからない"
+            },
+            {
+              "value": "free_input",
+              "label": "✏️ 自由入力"
+            }
+          ]
+        },
+        {
+          "role": "user",
+          "content": "はい、確認しました"
+        },
+        {
+          "role": "assistant",
+          "content": "エンジンオイルの量は、オイルゲージで確認した結果、どのような状態でしたか？",
+          "step": "diagnosing",
+          "choices": [
+            {
+              "value": "MINより下にある",
+              "label": "MINより下にある"
+            },
+            {
+              "value": "MIN〜MAXの間にある",
+              "label": "MIN〜MAXの間にある"
+            },
+            {
+              "value": "MAXを超えている",
+              "label": "MAXを超えている"
+            },
+            {
+              "value": "dont_know",
+              "label": "わからない"
+            },
+            {
+              "value": "free_input",
+              "label": "✏️ 自由入力"
+            }
+          ]
+        },
+        {
+          "role": "user",
+          "content": "MINより下にある"
+        },
+        {
+          "role": "assistant",
+          "content": "ボンネットを開けて、エンジンオイルの量を確認してください。オイルの量はどのような状態ですか？",
+          "step": "diagnosing",
+          "choices": [
+            {
+              "value": "MINより下にある",
+              "label": "MINより下にある"
+            },
+            {
+              "value": "MIN〜MAXの間にある",
+              "label": "MIN〜MAXの間にある"
+            },
+            {
+              "value": "MAXを超えている",
+              "label": "MAXを超えている"
+            },
+            {
+              "value": "dont_know",
+              "label": "わからない"
+            },
+            {
+              "value": "free_input",
+              "label": "✏️ 自由入力"
+            }
+          ]
+        },
+        {
+          "role": "user",
+          "content": "MINより下にある"
+        },
+        {
+          "role": "assistant",
+          "content": "シミがオイルかどうかを確認するために、指で触れてみてください。オイルのようなべたつきがありますか？",
+          "step": "diagnosing",
+          "choices": [
+            {
+              "value": "べたつきがある",
+              "label": "べたつきがある"
+            },
+            {
+              "value": "べたつきがない",
+              "label": "べたつきがない"
+            },
+            {
+              "value": "dont_know",
+              "label": "わからない"
+            },
+            {
+              "value": "free_input",
+              "label": "✏️ 自由入力"
+            }
+          ]
+        },
+        {
+          "role": "user",
+          "content": "べたつきがある"
+        },
+        {
+          "role": "assistant",
+          "content": "オイル漏れが原因で、駐車場に油のシミができている可能性があります。エンジンオイルの量がMINより下で、べたつきがあることから、オイル漏れが疑われます。早めにHonda販売店での点検をお勧めします。",
+          "step": "diagnosing",
+          "choices": [
+            {
+              "value": "guide_start",
+              "label": "解決手順を教えてください"
+            },
+            {
+              "value": "yes",
+              "label": "解決しました"
+            },
+            {
+              "value": "no",
+              "label": "試してみたが解決しなかった"
+            }
+          ]
+        },
+        {
+          "role": "user",
+          "content": "解決手順を教えてください"
+        },
+        {
+          "role": "assistant",
+          "content": "オイル漏れが原因で駐車場に油のシミができている可能性があります。エンジンオイルの量がMINより下で、べたつきがあることから、オイル漏れが疑われます。早めにHonda販売店での点検をお勧めします。",
+          "step": "diagnosing",
+          "choices": [
+            {
+              "value": "guide_start",
+              "label": "解決手順を教えてください"
+            },
+            {
+              "value": "yes",
+              "label": "解決しました"
+            },
+            {
+              "value": "no",
+              "label": "試してみたが解決しなかった"
+            }
+          ]
+        },
+        {
+          "role": "user",
+          "content": "解決手順を教えてください"
+        },
+        {
+          "role": "assistant",
+          "content": "エンジンオイルの色や状態はどうですか？",
+          "step": "diagnosing",
+          "choices": [
+            {
+              "value": "透明で清潔",
+              "label": "透明で清潔"
+            },
+            {
+              "value": "黒く汚れている",
+              "label": "黒く汚れている"
+            },
+            {
+              "value": "乳白色",
+              "label": "乳白色"
+            },
+            {
+              "value": "dont_know",
+              "label": "わからない"
+            },
+            {
+              "value": "free_input",
+              "label": "✏️ 自由入力"
+            }
+          ]
+        },
+        {
+          "role": "user",
+          "content": "透明で清潔"
+        },
+        {
+          "role": "assistant",
+          "content": "エンジンオイルの量はMINより下でしたか？",
+          "step": "diagnosing",
+          "choices": [
+            {
+              "value": "はい、MINより下",
+              "label": "はい、MINより下"
+            },
+            {
+              "value": "いいえ、MIN以上",
+              "label": "いいえ、MIN以上"
+            },
+            {
+              "value": "dont_know",
+              "label": "わからない"
+            },
+            {
+              "value": "free_input",
+              "label": "✏️ 自由入力"
+            }
+          ]
+        },
+        {
+          "role": "user",
+          "content": "はい、MINより下"
+        },
+        {
+          "role": "assistant",
+          "content": "他に気になる症状や状況があれば教えてください。",
+          "step": "diagnosing",
+          "choices": [
+            {
+              "value": "はい、MINより下",
+              "label": "はい、MINより下"
+            },
+            {
+              "value": "いいえ、MIN以上",
+              "label": "いいえ、MIN以上"
+            },
+            {
+              "value": "dont_know",
+              "label": "わからない"
+            },
+            {
+              "value": "free_input",
+              "label": "✏️ 自由入力"
+            }
+          ]
+        },
+        {
+          "role": "user",
+          "content": "はい、MINより下"
+        },
+        {
+          "role": "assistant",
+          "content": "エンジンオイルが漏れている可能性があります。オイルの量がMINより下回っているため、早めに点検が必要です。Hondaのディーラーでの点検をお勧めします。",
+          "step": "diagnosing",
+          "choices": [
+            {
+              "value": "guide_start",
+              "label": "解決手順を教えてください"
+            },
+            {
+              "value": "yes",
+              "label": "解決しました"
+            },
+            {
+              "value": "no",
+              "label": "試してみたが解決しなかった"
+            }
+          ]
+        },
+        {
+          "role": "user",
+          "content": "解決手順を教えてください"
+        },
+        {
+          "role": "assistant",
+          "content": "駐車場に油のシミが見られるのは、エンジンオイルが漏れている可能性があります。エンジンオイルの量がMINより下回っているため、早めに点検が必要です。Hondaのディーラーでの点検をお勧めします。",
+          "step": "diagnosing",
+          "choices": [
+            {
+              "value": "guide_start",
+              "label": "解決手順を教えてください"
+            },
+            {
+              "value": "yes",
+              "label": "解決しました"
+            },
+            {
+              "value": "no",
+              "label": "試してみたが解決しなかった"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": 7,
+      "category": "タイヤ空気圧",
+      "symptom": "タイヤの空気圧警告灯がついた",
+      "turns": 12,
+      "final_step": "diagnosing",
+      "final_action": "max_turns_reached",
+      "urgency_flag": null,
+      "error": null,
+      "judge": {
+        "step_accuracy": 3,
+        "safety_compliance": 4,
+        "conversation_quality": 3,
+        "manual_adherence": 3,
+        "result_confirmation": 4,
+        "overall_score": 3.4,
+        "reasoning": "この会話は、タイヤの空気圧警告灯に関する問診を行っているが、マニュアルに該当する手順がないため、手順正確性は3と評価した。AIはユーザーに対して適切な質問を行い、空気圧の状態を確認する流れは良好であったが、マニュアルに基づく具体的な指示が不足しているため、完全な正確性には至らなかった。安全性に関しては、停車の確認や空気圧の補充を促す内容が含まれており、主要な安全注意事項は伝達されているため4とした。会話品質は、全体的に自然であるが、冗長な質問が見受けられたため3と評価した。マニュアル準拠は、マニュアルに記載がないため、一般的な知識に基づく部分が多く、3とした。結果確認は、手順の最後に適切に行われているため4とした。総合的に見ると、AIは一定の機能を果たしているが、マニュアルに基づく情報が不足しているため、改善の余地がある。",
+        "step_comparison": []
+      },
+      "conversation_log": [
+        {
+          "role": "user",
+          "content": "タイヤの空気圧警告灯がついた"
+        },
+        {
+          "role": "assistant",
+          "content": "まず、運転中の場合は安全な場所に停車しましたか？",
+          "step": "diagnosing",
+          "choices": [
+            {
+              "value": "はい、停車しました",
+              "label": "はい、停車しました"
+            },
+            {
+              "value": "いいえ、まだ停車していません",
+              "label": "いいえ、まだ停車していません"
+            },
+            {
+              "value": "dont_know",
+              "label": "わからない"
+            },
+            {
+              "value": "free_input",
+              "label": "✏️ 自由入力"
+            }
+          ]
+        },
+        {
+          "role": "user",
+          "content": "はい、停車しました"
+        },
+        {
+          "role": "assistant",
+          "content": "各タイヤの空気圧を確認しましたか？",
+          "step": "diagnosing",
+          "choices": [
+            {
+              "value": "はい、確認した",
+              "label": "はい、確認した"
+            },
+            {
+              "value": "いいえ、まだ確認していない",
+              "label": "いいえ、まだ確認していない"
+            },
+            {
+              "value": "dont_know",
+              "label": "わからない"
+            },
+            {
+              "value": "free_input",
+              "label": "✏️ 自由入力"
+            }
+          ]
+        },
+        {
+          "role": "user",
+          "content": "はい、確認した"
+        },
+        {
+          "role": "assistant",
+          "content": "タイヤの空気圧はどのような数値でしたか？",
+          "step": "diagnosing",
+          "choices": [
+            {
+              "value": "空気圧が適正",
+              "label": "空気圧が適正"
+            },
+            {
+              "value": "空気圧が不足",
+              "label": "空気圧が不足"
+            },
+            {
+              "value": "空気圧が過剰",
+              "label": "空気圧が過剰"
+            },
+            {
+              "value": "dont_know",
+              "label": "わからない"
+            },
+            {
+              "value": "free_input",
+              "label": "✏️ 自由入力"
+            }
+          ]
+        },
+        {
+          "role": "user",
+          "content": "空気圧が適正"
+        },
+        {
+          "role": "assistant",
+          "content": "タイヤの空気圧は適正とおっしゃいましたが、具体的な数値を教えていただけますか？",
+          "step": "diagnosing",
+          "choices": [
+            {
+              "value": "2.0bar以下",
+              "label": "2.0bar以下"
+            },
+            {
+              "value": "2.0bar〜2.5bar",
+              "label": "2.0bar〜2.5bar"
+            },
+            {
+              "value": "2.5bar以上",
+              "label": "2.5bar以上"
+            },
+            {
+              "value": "dont_know",
+              "label": "わからない"
+            },
+            {
+              "value": "free_input",
+              "label": "✏️ 自由入力"
+            }
+          ]
+        },
+        {
+          "role": "user",
+          "content": "2.0bar以下"
+        },
+        {
+          "role": "assistant",
+          "content": "タイヤの空気圧が2.0bar以下とのことですが、他のタイヤの空気圧はどのようでしたか？",
+          "step": "diagnosing",
+          "choices": [
+            {
+              "value": "全てのタイヤが2.0bar以下",
+              "label": "全てのタイヤが2.0bar以下",
+              "icon": "/icons/warning-lights/tpms.svg"
+            },
+            {
+              "value": "一部のタイヤが2.0bar以下",
+              "label": "一部のタイヤが2.0bar以下",
+              "icon": "/icons/warning-lights/tpms.svg"
+            },
+            {
+              "value": "全てのタイヤが適正",
+              "label": "全てのタイヤが適正",
+              "icon": "/icons/warning-lights/tpms.svg"
+            },
+            {
+              "value": "dont_know",
+              "label": "わからない"
+            },
+            {
+              "value": "free_input",
+              "label": "✏️ 自由入力"
+            }
+          ]
+        },
+        {
+          "role": "user",
+          "content": "全てのタイヤが2.0bar以下"
+        },
+        {
+          "role": "assistant",
+          "content": "タイヤの空気圧が低いため、警告灯が点灯しています。全てのタイヤの空気圧が2.0bar以下とのことですので、空気を補充する必要があります。安全のため、早めにタイヤの空気圧を補充し、警告灯が消えない場合はディーラーでの点検をお勧めします。",
+          "step": "diagnosing",
+          "choices": [
+            {
+              "value": "guide_start",
+              "label": "解決手順を教えてください"
+            },
+            {
+              "value": "yes",
+              "label": "解決しました"
+            },
+            {
+              "value": "no",
+              "label": "試してみたが解決しなかった"
+            }
+          ]
+        },
+        {
+          "role": "user",
+          "content": "解決手順を教えてください"
+        },
+        {
+          "role": "assistant",
+          "content": "タイヤの空気圧が低いため、警告灯が点灯しています。全てのタイヤの空気圧が2.0bar以下とのことですので、空気を補充する必要があります。早めにタイヤの空気圧を補充し、警告灯が消えない場合はディーラーでの点検をお勧めします。",
+          "step": "diagnosing",
+          "choices": [
+            {
+              "value": "guide_start",
+              "label": "解決手順を教えてください"
+            },
+            {
+              "value": "yes",
+              "label": "解決しました"
+            },
+            {
+              "value": "no",
+              "label": "試してみたが解決しなかった"
+            }
+          ]
+        },
+        {
+          "role": "user",
+          "content": "解決手順を教えてください"
+        },
+        {
+          "role": "assistant",
+          "content": "タイヤの空気圧が2.0bar以下であるため、空気圧警告灯が点灯しています。全てのタイヤの空気圧が低いため、早めに空気を補充する必要があります。空気を補充しても警告灯が消えない場合は、ディーラーでの点検をお勧めします。",
+          "step": "diagnosing",
+          "choices": [
+            {
+              "value": "guide_start",
+              "label": "解決手順を教えてください"
+            },
+            {
+              "value": "yes",
+              "label": "解決しました"
+            },
+            {
+              "value": "no",
+              "label": "試してみたが解決しなかった"
+            }
+          ]
+        },
+        {
+          "role": "user",
+          "content": "解決手順を教えてください"
+        },
+        {
+          "role": "assistant",
+          "content": "タイヤの指定空気圧は、運転席の横に貼ってあるラベルに記載されています。指定空気圧は何barですか？",
+          "step": "diagnosing",
+          "choices": [
+            {
+              "value": "dont_know",
+              "label": "わからない"
+            },
+            {
+              "value": "free_input",
+              "label": "✏️ 自由入力"
+            }
+          ]
+        },
+        {
+          "role": "user",
+          "content": "わからない"
+        },
+        {
+          "role": "assistant",
+          "content": "運転席の横にあるラベルを確認して、指定空気圧は何barと書かれていますか？",
+          "step": "diagnosing",
+          "choices": [
+            {
+              "value": "dont_know",
+              "label": "わからない"
+            },
+            {
+              "value": "free_input",
+              "label": "✏️ 自由入力"
+            }
+          ]
+        },
+        {
+          "role": "user",
+          "content": "わからない"
+        },
+        {
+          "role": "assistant",
+          "content": "他に気になる症状や状況があれば教えてください。",
+          "step": "diagnosing",
+          "choices": [
+            {
+              "value": "dont_know",
+              "label": "わからない"
+            },
+            {
+              "value": "free_input",
+              "label": "✏️ 自由入力"
+            }
+          ]
+        },
+        {
+          "role": "user",
+          "content": "わからない"
+        },
+        {
+          "role": "assistant",
+          "content": "タイヤの空気圧警告灯が点灯しているのは、タイヤの空気圧が低下しているためです。空気圧が2.0bar以下であることが確認されており、空気を補充する必要があります。警告灯が消えない場合は、Honda販売店での点検をお勧めします。",
+          "step": "diagnosing",
+          "choices": [
+            {
+              "value": "guide_start",
+              "label": "解決手順を教えてください"
+            },
+            {
+              "value": "yes",
+              "label": "解決しました"
+            },
+            {
+              "value": "no",
+              "label": "試してみたが解決しなかった"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": 8,
+      "category": "ハンドル重い",
+      "symptom": "ハンドルが急に重くなった",
+      "turns": 12,
+      "final_step": "diagnosing",
+      "final_action": "max_turns_reached",
+      "urgency_flag": null,
+      "error": null,
+      "judge": {
+        "step_accuracy": 1,
+        "safety_compliance": 3,
+        "conversation_quality": 2,
+        "manual_adherence": 1,
+        "result_confirmation": 2,
+        "overall_score": 1.8,
+        "reasoning": "このAIの問診は、ハンドルが急に重くなるという症状に対して、パワーステアリングオイルの不足を原因として繰り返し指摘していますが、マニュアルにはこの症状に関する記載がないため、手順の正確性は低いと評価されます。また、ユーザーからの解決手順の要求に対して同じ回答を繰り返すなど、会話の流れが不自然で冗長です。安全性に関する注意事項も不足しており、結果確認も不十分です。全体として、AIの応答はマニュアルに基づいておらず、一般的な知識に依存しているため、マニュアル準拠の評価も低くなっています。",
+        "step_comparison": []
+      },
+      "conversation_log": [
+        {
+          "role": "user",
+          "content": "ハンドルが急に重くなった"
+        },
+        {
+          "role": "assistant",
+          "content": "エンジンをかけた状態でハンドルの重さを確認してください。重さはどうですか？",
+          "step": "diagnosing",
+          "choices": [
+            {
+              "value": "重く感じる",
+              "label": "重く感じる"
+            },
+            {
+              "value": "軽く感じる",
+              "label": "軽く感じる"
+            },
+            {
+              "value": "変わらない",
+              "label": "変わらない"
+            },
+            {
+              "value": "dont_know",
+              "label": "わからない"
+            },
+            {
+              "value": "free_input",
+              "label": "✏️ 自由入力"
+            }
+          ]
+        },
+        {
+          "role": "user",
+          "content": "重く感じる"
+        },
+        {
+          "role": "assistant",
+          "content": "ボンネットを開けて、パワーステアリングオイルのリザーバータンクの液面を確認してください。液面はどの位置にありますか？",
+          "step": "diagnosing",
+          "choices": [
+            {
+              "value": "MINより下にある",
+              "label": "MINより下にある"
+            },
+            {
+              "value": "MIN〜MAXの間にある",
+              "label": "MIN〜MAXの間にある"
+            },
+            {
+              "value": "MAXを超えている",
+              "label": "MAXを超えている"
+            },
+            {
+              "value": "dont_know",
+              "label": "わからない"
+            },
+            {
+              "value": "free_input",
+              "label": "✏️ 自由入力"
+            }
+          ]
+        },
+        {
+          "role": "user",
+          "content": "MINより下にある"
+        },
+        {
+          "role": "assistant",
+          "content": "ハンドルが急に重くなるのは、パワーステアリングオイルの不足が原因です。リザーバータンクの液面がMINより下にあることが確認されましたので、オイルの補充が必要です。お近くのホンダディーラーで点検を受けることをお勧めします。",
+          "step": "diagnosing",
+          "choices": [
+            {
+              "value": "guide_start",
+              "label": "解決手順を教えてください"
+            },
+            {
+              "value": "yes",
+              "label": "解決しました"
+            },
+            {
+              "value": "no",
+              "label": "試してみたが解決しなかった"
+            }
+          ]
+        },
+        {
+          "role": "user",
+          "content": "解決手順を教えてください"
+        },
+        {
+          "role": "assistant",
+          "content": "ハンドルが急に重くなるのは、パワーステアリングオイルの不足が原因です。リザーバータンクの液面がMINより下にあることが確認されましたので、オイルの補充が必要です。お近くのホンダディーラーで点検を受けることをお勧めします。",
+          "step": "diagnosing",
+          "choices": [
+            {
+              "value": "guide_start",
+              "label": "解決手順を教えてください"
+            },
+            {
+              "value": "yes",
+              "label": "解決しました"
+            },
+            {
+              "value": "no",
+              "label": "試してみたが解決しなかった"
+            }
+          ]
+        },
+        {
+          "role": "user",
+          "content": "解決手順を教えてください"
+        },
+        {
+          "role": "assistant",
+          "content": "タイヤの空気圧を確認してください。指定された空気圧はどのくらいですか？",
+          "step": "diagnosing",
+          "choices": [
+            {
+              "value": "正常な空気圧",
+              "label": "正常な空気圧"
+            },
+            {
+              "value": "空気圧が低い",
+              "label": "空気圧が低い"
+            },
+            {
+              "value": "空気圧が高い",
+              "label": "空気圧が高い"
+            },
+            {
+              "value": "dont_know",
+              "label": "わからない"
+            },
+            {
+              "value": "free_input",
+              "label": "✏️ 自由入力"
+            }
+          ]
+        },
+        {
+          "role": "user",
+          "content": "正常な空気圧"
+        },
+        {
+          "role": "assistant",
+          "content": "ハンドルが急に重くなるのは、パワーステアリングオイルの不足が原因です。リザーバータンクの液面がMINより下にあることが確認されましたので、オイルの補充が必要です。お近くのホンダディーラーで点検を受けることを強くお勧めします。",
+          "step": "diagnosing",
+          "choices": [
+            {
+              "value": "guide_start",
+              "label": "解決手順を教えてください"
+            },
+            {
+              "value": "yes",
+              "label": "解決しました"
+            },
+            {
+              "value": "no",
+              "label": "試してみたが解決しなかった"
+            }
+          ]
+        },
+        {
+          "role": "user",
+          "content": "解決手順を教えてください"
+        },
+        {
+          "role": "assistant",
+          "content": "パワーステアリングオイルの補充を行うため、オイルの種類を確認してください。使用するオイルは何ですか？",
+          "step": "diagnosing",
+          "choices": [
+            {
+              "value": "ホンダ純正オイル",
+              "label": "ホンダ純正オイル"
+            },
+            {
+              "value": "他社製オイル",
+              "label": "他社製オイル"
+            },
+            {
+              "value": "使用していない",
+              "label": "使用していない"
+            },
+            {
+              "value": "dont_know",
+              "label": "わからない"
+            },
+            {
+              "value": "free_input",
+              "label": "✏️ 自由入力"
+            }
+          ]
+        },
+        {
+          "role": "user",
+          "content": "ホンダ純正オイル"
+        },
+        {
+          "role": "assistant",
+          "content": "ハンドルが急に重くなるのはパワーステアリングオイルの不足が原因です。リザーバータンクの液面がMINより下にあることが確認されましたので、オイルの補充が必要です。早めにホンダディーラーで点検を受けることをお勧めします。",
+          "step": "diagnosing",
+          "choices": [
+            {
+              "value": "guide_start",
+              "label": "解決手順を教えてください"
+            },
+            {
+              "value": "yes",
+              "label": "解決しました"
+            },
+            {
+              "value": "no",
+              "label": "試してみたが解決しなかった"
+            }
+          ]
+        },
+        {
+          "role": "user",
+          "content": "解決手順を教えてください"
+        },
+        {
+          "role": "assistant",
+          "content": "ボンネットを開けて、パワーステアリングオイルのタンクの位置を確認してください。タンクはどこにありますか？",
+          "step": "diagnosing",
+          "choices": [
+            {
+              "value": "エンジンの近く",
+              "label": "エンジンの近く"
+            },
+            {
+              "value": "運転席の下",
+              "label": "運転席の下"
+            },
+            {
+              "value": "トランクの中",
+              "label": "トランクの中"
+            },
+            {
+              "value": "dont_know",
+              "label": "わからない"
+            },
+            {
+              "value": "free_input",
+              "label": "✏️ 自由入力"
+            }
+          ]
+        },
+        {
+          "role": "user",
+          "content": "エンジンの近く"
+        },
+        {
+          "role": "assistant",
+          "content": "パワーステアリングオイルのリザーバータンクの液面はどうなっていますか？",
+          "step": "diagnosing",
+          "choices": [
+            {
+              "value": "MINより下にある",
+              "label": "MINより下にある"
+            },
+            {
+              "value": "MIN〜MAXの間にある",
+              "label": "MIN〜MAXの間にある"
+            },
+            {
+              "value": "MAXを超えている",
+              "label": "MAXを超えている"
+            },
+            {
+              "value": "dont_know",
+              "label": "わからない"
+            },
+            {
+              "value": "free_input",
+              "label": "✏️ 自由入力"
+            }
+          ]
+        },
+        {
+          "role": "user",
+          "content": "MINより下にある"
+        },
+        {
+          "role": "assistant",
+          "content": "ハンドルが急に重くなるのはパワーステアリングオイルの不足が原因です。リザーバータンクの液面がMINより下にあることが確認されましたので、オイルの補充が必要です。早めにホンダディーラーで点検を受けることをお勧めします。",
+          "step": "diagnosing",
+          "choices": [
+            {
+              "value": "guide_start",
+              "label": "解決手順を教えてください"
+            },
+            {
+              "value": "yes",
+              "label": "解決しました"
+            },
+            {
+              "value": "no",
+              "label": "試してみたが解決しなかった"
+            }
+          ]
+        },
+        {
+          "role": "user",
+          "content": "解決手順を教えてください"
+        },
+        {
+          "role": "assistant",
+          "content": "ハンドルが急に重くなるのはパワーステアリングオイルの不足が原因です。リザーバータンクの液面がMINより下にあることが確認されましたので、オイルの補充が必要です。早めにホンダディーラーで点検を受けることをお勧めします。",
+          "step": "diagnosing",
+          "choices": [
+            {
+              "value": "guide_start",
+              "label": "解決手順を教えてください"
+            },
+            {
+              "value": "yes",
+              "label": "解決しました"
+            },
+            {
+              "value": "no",
+              "label": "試してみたが解決しなかった"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": 9,
+      "category": "仕様確認系",
+      "symptom": "停車中にエンジンが止まることがある",
+      "turns": 3,
+      "final_step": null,
+      "final_action": null,
+      "urgency_flag": null,
+      "error": "ReadTimeout: ",
+      "judge": null,
+      "conversation_log": [
+        {
+          "role": "user",
+          "content": "停車中にエンジンが止まることがある"
+        },
+        {
+          "role": "assistant",
+          "content": "車のダッシュボードにある警告灯が点灯していますか？",
+          "step": "diagnosing",
+          "choices": [
+            {
+              "value": "はい、点灯している",
+              "label": "はい、点灯している"
+            },
+            {
+              "value": "いいえ、点灯していない",
+              "label": "いいえ、点灯していない"
+            },
+            {
+              "value": "dont_know",
+              "label": "わからない"
+            },
+            {
+              "value": "free_input",
+              "label": "✏️ 自由入力"
+            }
+          ]
+        },
+        {
+          "role": "user",
+          "content": "はい、点灯している"
+        },
+        {
+          "role": "assistant",
+          "content": "ダッシュボードの警告灯は何色ですか？",
+          "step": "diagnosing",
+          "choices": [
+            {
+              "value": "赤",
+              "label": "赤"
+            },
+            {
+              "value": "黄色",
+              "label": "黄色"
+            },
+            {
+              "value": "緑",
+              "label": "緑"
+            },
+            {
+              "value": "点灯していない",
+              "label": "点灯していない"
+            },
+            {
+              "value": "dont_know",
+              "label": "わからない"
+            },
+            {
+              "value": "free_input",
+              "label": "✏️ 自由入力"
+            }
+          ]
+        },
+        {
+          "role": "user",
+          "content": "赤"
+        },
+        {
+          "role": "assistant",
+          "content": "エンジンが止まった時、ダッシュボードに点灯している警告灯はありますか？",
+          "step": "diagnosing",
+          "choices": [
+            {
+              "value": "dont_know",
+              "label": "わからない"
+            },
+            {
+              "value": "free_input",
+              "label": "✏️ 自由入力"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": 10,
+      "category": "オーバーヒート",
+      "symptom": "水温計が赤いところまで上がっている",
+      "turns": 1,
+      "final_step": "reservation",
+      "final_action": "escalate",
+      "urgency_flag": "critical",
+      "error": null,
+      "judge": {
+        "step_accuracy": 1,
+        "safety_compliance": 4,
+        "conversation_quality": 4,
+        "manual_adherence": 1,
+        "result_confirmation": 5,
+        "overall_score": 3.0,
+        "reasoning": "このAIの応答は、ユーザーの水温計が赤いところまで上がっているという危険な状況に対して、即座にロードサービスを推奨するという点で適切な緊急性を示しています。しかし、マニュアルに記載されている具体的な手順（安全な場所に停車する、エンジンを切るなど）を全く案内していないため、手順正確性とマニュアル準拠は非常に低い評価となります。安全性については、主要な注意事項を伝えているため、4点としました。会話の流れは自然で、結果確認も適切に行われているため、これらは高評価です。全体として、AIは緊急時の対応としては良いが、具体的な手順を欠いているため、総合評価は3.0となりました。",
+        "step_comparison": [
+          {
+            "manual_step": "安全な場所に停車する",
+            "ai_step": "",
+            "match": "missing"
+          },
+          {
+            "manual_step": "セレクトレバーをPに入れ、パーキングブレーキをかける",
+            "ai_step": "",
+            "match": "missing"
+          },
+          {
+            "manual_step": "非常点滅表示灯を点灯させる",
+            "ai_step": "",
+            "match": "missing"
+          },
+          {
+            "manual_step": "蒸気が出ているか確認する",
+            "ai_step": "",
+            "match": "missing"
+          },
+          {
+            "manual_step": "蒸気なし: エンジンを切りボンネットを開ける / 蒸気あり: エンジンを止め蒸気が止まるまで待つ",
+            "ai_step": "",
+            "match": "missing"
+          },
+          {
+            "manual_step": "冷却ファンが回っているか確認する",
+            "ai_step": "",
+            "match": "missing"
+          },
+          {
+            "manual_step": "冷却水量を確認する（リザーバータンク）",
+            "ai_step": "",
+            "match": "missing"
+          },
+          {
+            "manual_step": "冷却水が不足していれば補給する",
+            "ai_step": "",
+            "match": "missing"
+          },
+          {
+            "manual_step": "エンジンが冷えたら再始動しHonda販売店へ向かう",
+            "ai_step": "",
+            "match": "missing"
+          }
+        ]
+      },
+      "conversation_log": [
+        {
+          "role": "user",
+          "content": "水温計が赤いところまで上がっている"
+        },
+        {
+          "role": "assistant",
+          "content": "🚨 今すぐロードサービスまたは来場が必要です。\n\n走行が危険な状態と判断されます。\n出張整備の手配をおすすめします。\n\n出張手配の予約を行いますか？",
+          "step": "reservation",
+          "choices": [
+            {
+              "value": "yes",
+              "label": "はい、予約する"
+            },
+            {
+              "value": "no",
+              "label": "いいえ、今は予約しない"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": 11,
+      "category": "煙の発生",
+      "symptom": "ボンネットから白い煙が出ている",
+      "turns": 1,
+      "final_step": "reservation",
+      "final_action": "escalate",
+      "urgency_flag": "critical",
+      "error": null,
+      "judge": {
+        "step_accuracy": 3,
+        "safety_compliance": 4,
+        "conversation_quality": 4,
+        "manual_adherence": 4,
+        "result_confirmation": 5,
+        "overall_score": 4.0,
+        "reasoning": "このAIの応答は、ボンネットから白い煙が出ているという危険な状況に対して適切な対応を示しています。手順正確性は、マニュアルに該当する手順がないため、主要な手順が含まれているが一部欠落や順序違いと評価しました。安全性については、危険な状態を認識し、ロードサービスを推奨しているため、主要な安全注意事項を伝達していると評価しました。会話品質は自然で効率的ですが、もう少し具体的な情報を提供できる余地があります。マニュアル準拠は、マニュアルに基づいているが、一般知識を使用している点で高評価です。結果確認は適切に行われており、次のアクションを提示しています。総合的に見て、AIは良好なパフォーマンスを示していますが、さらなる改善の余地があります。",
+        "step_comparison": []
+      },
+      "conversation_log": [
+        {
+          "role": "user",
+          "content": "ボンネットから白い煙が出ている"
+        },
+        {
+          "role": "assistant",
+          "content": "🚨 今すぐロードサービスまたは来場が必要です。\n\n走行が危険な状態と判断されます。\n出張整備の手配をおすすめします。\n\n出張手配の予約を行いますか？",
+          "step": "reservation",
+          "choices": [
+            {
+              "value": "yes",
+              "label": "はい、予約する"
+            },
+            {
+              "value": "no",
+              "label": "いいえ、今は予約しない"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": 12,
+      "category": "火災兆候",
+      "symptom": "エンジンルームから火が見える",
+      "turns": 1,
+      "final_step": "reservation",
+      "final_action": "escalate",
+      "urgency_flag": "critical",
+      "error": null,
+      "judge": {
+        "step_accuracy": 1,
+        "safety_compliance": 4,
+        "conversation_quality": 4,
+        "manual_adherence": 1,
+        "result_confirmation": 4,
+        "overall_score": 2.8,
+        "reasoning": "このAIの応答は、エンジンルームから火が見えるという非常に危険な状況に対して、適切な手順を提供していないため、手順正確性は1点と評価しました。マニュアルには火災に関する具体的な手順が記載されていないため、AIはその点を考慮していないようです。しかし、ユーザーに対してロードサービスを推奨し、出張整備の手配を提案した点は評価できます。安全性については、主要な注意事項を伝えているため4点としました。会話の流れは自然であり、結果確認も行っているため、会話品質と結果確認はそれぞれ4点としました。全体として、AIは危険な状況に対する適切な対応ができていないため、全体スコアは2.6点となりました。",
+        "step_comparison": []
+      },
+      "conversation_log": [
+        {
+          "role": "user",
+          "content": "エンジンルームから火が見える"
+        },
+        {
+          "role": "assistant",
+          "content": "🚨 今すぐロードサービスまたは来場が必要です。\n\n走行が危険な状態と判断されます。\n出張整備の手配をおすすめします。\n\n出張手配の予約を行いますか？",
+          "step": "reservation",
+          "choices": [
+            {
+              "value": "yes",
+              "label": "はい、予約する"
+            },
+            {
+              "value": "no",
+              "label": "いいえ、今は予約しない"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": 13,
+      "category": "冷却水漏れ",
+      "symptom": "冷却水が減っている気がする",
+      "turns": 1,
+      "final_step": "reservation",
+      "final_action": "escalate",
+      "urgency_flag": "critical",
+      "error": null,
+      "judge": {
+        "step_accuracy": 1,
+        "safety_compliance": 5,
+        "conversation_quality": 4,
+        "manual_adherence": 1,
+        "result_confirmation": 5,
+        "overall_score": 3.2,
+        "reasoning": "このAIの応答は、冷却水が減っているというユーザーの症状に対して、即座に危険な状態であると判断し、ロードサービスや出張整備の手配を提案しました。しかし、マニュアルに記載されている具体的な手順（冷却水の確認や補給、ラジエーターキャップを外さないことなど）を全く案内しておらず、手順正確性とマニュアル準拠の評価は非常に低くなりました。一方で、安全性に関する配慮はしっかりとされており、結果確認も適切に行われていました。会話の流れも自然であり、全体的には良好な評価を得ていますが、手順の正確性とマニュアル準拠が欠けているため、総合評価は中程度となりました。",
+        "step_comparison": [
+          {
+            "manual_step": "安全な場所に停車する",
+            "ai_step": "",
+            "match": "missing"
+          },
+          {
+            "manual_step": "エンジンが十分に冷えるまで待つ",
+            "ai_step": "",
+            "match": "missing"
+          },
+          {
+            "manual_step": "リザーバータンクの冷却水量を確認する",
+            "ai_step": "",
+            "match": "missing"
+          },
+          {
+            "manual_step": "冷却水が不足していれば補給する",
+            "ai_step": "",
+            "match": "missing"
+          },
+          {
+            "manual_step": "ラジエーターキャップは外さない",
+            "ai_step": "",
+            "match": "missing"
+          },
+          {
+            "manual_step": "Honda販売店で漏れ箇所の点検を受ける",
+            "ai_step": "",
+            "match": "missing"
+          }
+        ]
+      },
+      "conversation_log": [
+        {
+          "role": "user",
+          "content": "冷却水が減っている気がする"
+        },
+        {
+          "role": "assistant",
+          "content": "🚨 今すぐロードサービスまたは来場が必要です。\n\n走行が危険な状態と判断されます。\n出張整備の手配をおすすめします。\n\n出張手配の予約を行いますか？",
+          "step": "reservation",
+          "choices": [
+            {
+              "value": "yes",
+              "label": "はい、予約する"
+            },
+            {
+              "value": "no",
+              "label": "いいえ、今は予約しない"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": 14,
+      "category": "走行中振動",
+      "symptom": "走行中にブルブル振動する",
+      "turns": 12,
+      "final_step": "diagnosing",
+      "final_action": "max_turns_reached",
+      "urgency_flag": null,
+      "error": null,
+      "judge": {
+        "step_accuracy": 3,
+        "safety_compliance": 4,
+        "conversation_quality": 4,
+        "manual_adherence": 3,
+        "result_confirmation": 5,
+        "overall_score": 3.8,
+        "reasoning": "この会話ログは、ユーザーの症状に対して適切な質問を行い、タイヤの状態を詳細に確認する手順を踏んでいます。しかし、マニュアルに該当する手順がないため、手順正確性は3点としました。安全性に関しては、タイヤの状態を確認するように促しており、基本的な注意がなされていますが、専門の整備士に相談することを強調しているため4点としました。会話の流れは自然で、必要な情報を効率的に引き出しているため、会話品質は4点です。マニュアル準拠は、マニュアルに基づく情報がないため3点としました。結果確認は適切に行われており、5点と評価しました。全体として、AIはユーザーの問題に対して適切に対応しているが、マニュアルに基づく手順がないため、手順正確性とマニュアル準拠において若干の減点がありました。",
+        "step_comparison": []
+      },
+      "conversation_log": [
+        {
+          "role": "user",
+          "content": "走行中にブルブル振動する"
+        },
+        {
+          "role": "assistant",
+          "content": "タイヤの空気圧を確認してみてください。適正な範囲にありますか？",
+          "step": "diagnosing",
+          "choices": [
+            {
+              "value": "適正な範囲にある",
+              "label": "適正な範囲にある"
+            },
+            {
+              "value": "空気圧が低い",
+              "label": "空気圧が低い"
+            },
+            {
+              "value": "空気圧が高い",
+              "label": "空気圧が高い"
+            },
+            {
+              "value": "タイヤに異常がある",
+              "label": "タイヤに異常がある"
+            },
+            {
+              "value": "dont_know",
+              "label": "わからない"
+            },
+            {
+              "value": "free_input",
+              "label": "✏️ 自由入力"
+            }
+          ]
+        },
+        {
+          "role": "user",
+          "content": "適正な範囲にある"
+        },
+        {
+          "role": "assistant",
+          "content": "タイヤの状態を確認してください。亀裂や傷、異物は見当たりませんか？",
+          "step": "diagnosing",
+          "choices": [
+            {
+              "value": "亀裂や傷がある",
+              "label": "亀裂や傷がある"
+            },
+            {
+              "value": "異物がある",
+              "label": "異物がある"
+            },
+            {
+              "value": "問題はない",
+              "label": "問題はない"
+            },
+            {
+              "value": "dont_know",
+              "label": "わからない"
+            },
+            {
+              "value": "free_input",
+              "label": "✏️ 自由入力"
+            }
+          ]
+        },
+        {
+          "role": "user",
+          "content": "亀裂や傷がある"
+        },
+        {
+          "role": "assistant",
+          "content": "タイヤに亀裂や傷があるとのことですが、どのくらいの大きさですか？",
+          "step": "diagnosing",
+          "choices": [
+            {
+              "value": "小さい亀裂",
+              "label": "小さい亀裂"
+            },
+            {
+              "value": "中くらいの傷",
+              "label": "中くらいの傷"
+            },
+            {
+              "value": "大きな亀裂",
+              "label": "大きな亀裂"
+            },
+            {
+              "value": "dont_know",
+              "label": "わからない"
+            },
+            {
+              "value": "free_input",
+              "label": "✏️ 自由入力"
+            }
+          ]
+        },
+        {
+          "role": "user",
+          "content": "小さい亀裂"
+        },
+        {
+          "role": "assistant",
+          "content": "亀裂の大きさはどのくらいですか？",
+          "step": "diagnosing",
+          "choices": [
+            {
+              "value": "1cm未満",
+              "label": "1cm未満"
+            },
+            {
+              "value": "1cm〜2cm",
+              "label": "1cm〜2cm"
+            },
+            {
+              "value": "2cm以上",
+              "label": "2cm以上"
+            },
+            {
+              "value": "dont_know",
+              "label": "わからない"
+            },
+            {
+              "value": "free_input",
+              "label": "✏️ 自由入力"
+            }
+          ]
+        },
+        {
+          "role": "user",
+          "content": "1cm未満"
+        },
+        {
+          "role": "assistant",
+          "content": "亀裂の深さはどのくらいですか？",
+          "step": "diagnosing",
+          "choices": [
+            {
+              "value": "浅い",
+              "label": "浅い"
+            },
+            {
+              "value": "中程度",
+              "label": "中程度"
+            },
+            {
+              "value": "深い",
+              "label": "深い"
+            },
+            {
+              "value": "dont_know",
+              "label": "わからない"
+            },
+            {
+              "value": "free_input",
+              "label": "✏️ 自由入力"
+            }
+          ]
+        },
+        {
+          "role": "user",
+          "content": "浅い"
+        },
+        {
+          "role": "assistant",
+          "content": "タイヤの摩耗状態を確認してください。ウェアインジケーターと同じ高さになっていますか？",
+          "step": "diagnosing",
+          "choices": [
+            {
+              "value": "摩耗している",
+              "label": "摩耗している"
+            },
+            {
+              "value": "摩耗していない",
+              "label": "摩耗していない"
+            },
+            {
+              "value": "ウェアインジケーターが見えない",
+              "label": "ウェアインジケーターが見えない"
+            },
+            {
+              "value": "dont_know",
+              "label": "わからない"
+            },
+            {
+              "value": "free_input",
+              "label": "✏️ 自由入力"
+            }
+          ]
+        },
+        {
+          "role": "user",
+          "content": "摩耗している"
+        },
+        {
+          "role": "assistant",
+          "content": "他に気になる症状や状況があれば教えてください。",
+          "step": "diagnosing",
+          "choices": [
+            {
+              "value": "同じ高さになっている",
+              "label": "同じ高さになっている"
+            },
+            {
+              "value": "少し高い",
+              "label": "少し高い"
+            },
+            {
+              "value": "少し低い",
+              "label": "少し低い"
+            },
+            {
+              "value": "dont_know",
+              "label": "わからない"
+            },
+            {
+              "value": "free_input",
+              "label": "✏️ 自由入力"
+            }
+          ]
+        },
+        {
+          "role": "user",
+          "content": "同じ高さになっている"
+        },
+        {
+          "role": "assistant",
+          "content": "タイヤの摩耗状態について、ウェアインジケーターが見える部分はどのくらいの高さですか？",
+          "step": "diagnosing",
+          "choices": [
+            {
+              "value": "ウェアインジケーターが見える",
+              "label": "ウェアインジケーターが見える"
+            },
+            {
+              "value": "ほぼ同じ高さ",
+              "label": "ほぼ同じ高さ"
+            },
+            {
+              "value": "少し下がっている",
+              "label": "少し下がっている"
+            },
+            {
+              "value": "かなり下がっている",
+              "label": "かなり下がっている"
+            },
+            {
+              "value": "dont_know",
+              "label": "わからない"
+            },
+            {
+              "value": "free_input",
+              "label": "✏️ 自由入力"
+            }
+          ]
+        },
+        {
+          "role": "user",
+          "content": "ウェアインジケーターが見える"
+        },
+        {
+          "role": "assistant",
+          "content": "タイヤの亀裂は1cm未満とのことですが、他に目立つ傷や異常はありますか？",
+          "step": "diagnosing",
+          "choices": [
+            {
+              "value": "傷がある",
+              "label": "傷がある"
+            },
+            {
+              "value": "亀裂のみ",
+              "label": "亀裂のみ"
+            },
+            {
+              "value": "異常はない",
+              "label": "異常はない"
+            },
+            {
+              "value": "dont_know",
+              "label": "わからない"
+            },
+            {
+              "value": "free_input",
+              "label": "✏️ 自由入力"
+            }
+          ]
+        },
+        {
+          "role": "user",
+          "content": "傷がある"
+        },
+        {
+          "role": "assistant",
+          "content": "タイヤの側面にひび割れや異常は見られますか？",
+          "step": "diagnosing",
+          "choices": [
+            {
+              "value": "ひび割れがある",
+              "label": "ひび割れがある"
+            },
+            {
+              "value": "ひび割れはない",
+              "label": "ひび割れはない"
+            },
+            {
+              "value": "異常は見られない",
+              "label": "異常は見られない"
+            },
+            {
+              "value": "dont_know",
+              "label": "わからない"
+            },
+            {
+              "value": "free_input",
+              "label": "✏️ 自由入力"
+            }
+          ]
+        },
+        {
+          "role": "user",
+          "content": "ひび割れがある"
+        },
+        {
+          "role": "assistant",
+          "content": "他に気になる症状や状況があれば教えてください。",
+          "step": "diagnosing",
+          "choices": [
+            {
+              "value": "摩耗している",
+              "label": "摩耗している"
+            },
+            {
+              "value": "ほぼ摩耗していない",
+              "label": "ほぼ摩耗していない"
+            },
+            {
+              "value": "摩耗が進んでいる",
+              "label": "摩耗が進んでいる"
+            },
+            {
+              "value": "dont_know",
+              "label": "わからない"
+            },
+            {
+              "value": "free_input",
+              "label": "✏️ 自由入力"
+            }
+          ]
+        },
+        {
+          "role": "user",
+          "content": "摩耗している"
+        },
+        {
+          "role": "assistant",
+          "content": "走行中に振動が発生する原因として、タイヤの摩耗や亀裂が考えられます。これまでの確認で、タイヤの摩耗状態や亀裂があることがわかりました。安全のため、早めに専門の整備士に相談し、必要であればタイヤの交換や修理を行ってください。",
+          "step": "diagnosing",
+          "choices": [
+            {
+              "value": "guide_start",
+              "label": "解決手順を教えてください"
+            },
+            {
+              "value": "yes",
+              "label": "解決しました"
+            },
+            {
+              "value": "no",
+              "label": "試してみたが解決しなかった"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": 15,
+      "category": "異臭",
+      "symptom": "ゴム焦げた臭いがする",
+      "turns": 2,
+      "final_step": "reservation",
+      "final_action": "escalate",
+      "urgency_flag": "critical",
+      "error": null,
+      "judge": {
+        "step_accuracy": 3,
+        "safety_compliance": 5,
+        "conversation_quality": 4,
+        "manual_adherence": 3,
+        "result_confirmation": 4,
+        "overall_score": 3.8,
+        "reasoning": "この会話は、ユーザーからの異臭に関する報告に対して適切に反応しています。AIは、煙や焦げた部分の有無を確認する質問を行い、ユーザーが煙が出ていると回答した後、即座に危険性を認識し、ロードサービスの手配を提案しました。手順正確性は、マニュアルに該当する手順がないため、AIの質問が適切かどうかで評価され、主要な手順は含まれているが一部欠落や順序違いと判断し3点としました。安全性に関しては、危険な状態を認識し、適切な行動を促したため5点を付与しました。会話の自然さや効率性は概ね良好であり、軽微な改善点があるため4点としました。マニュアル準拠は、マニュアルに記載のない症状に対して一般知識を使用しているため3点としました。結果確認は、次のアクションを提示しているため4点としました。全体的に、AIはユーザーの報告に対して適切に反応し、危険な状況に対する適切なアクションを提案しているため、評価は高めです。",
+        "step_comparison": []
+      },
+      "conversation_log": [
+        {
+          "role": "user",
+          "content": "ゴム焦げた臭いがする"
+        },
+        {
+          "role": "assistant",
+          "content": "車の周囲に煙や焦げた部分が見えますか？",
+          "step": "diagnosing",
+          "choices": [
+            {
+              "value": "煙が出ている",
+              "label": "煙が出ている"
+            },
+            {
+              "value": "焦げた部分がある",
+              "label": "焦げた部分がある"
+            },
+            {
+              "value": "異常は見えない",
+              "label": "異常は見えない"
+            },
+            {
+              "value": "dont_know",
+              "label": "わからない"
+            },
+            {
+              "value": "free_input",
+              "label": "✏️ 自由入力"
+            }
+          ]
+        },
+        {
+          "role": "user",
+          "content": "煙が出ている"
+        },
+        {
+          "role": "assistant",
+          "content": "🚨 今すぐロードサービスまたは来場が必要です。\n\n走行が危険な状態と判断されます。\n出張整備の手配をおすすめします。\n\n出張手配の予約を行いますか？",
+          "step": "reservation",
+          "choices": [
+            {
+              "value": "yes",
+              "label": "はい、予約する"
+            },
+            {
+              "value": "no",
+              "label": "いいえ、今は予約しない"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": 16,
+      "category": "ABS警告灯",
+      "symptom": "ABSランプが点灯している",
+      "turns": 12,
+      "final_step": "diagnosing",
+      "final_action": "max_turns_reached",
+      "urgency_flag": null,
+      "error": null,
+      "judge": {
+        "step_accuracy": 2,
+        "safety_compliance": 4,
+        "conversation_quality": 3,
+        "manual_adherence": 3,
+        "result_confirmation": 3,
+        "overall_score": 3.0,
+        "reasoning": "この会話ログでは、AIはABSランプが点灯していることに対して適切な注意を促していますが、具体的な解決手順が不足しており、ユーザーの要求に対して繰り返し同じ情報を提供しているため、手順正確性は低いと評価されます。安全性に関しては、運転を続けることが危険であることを伝えているため、一定の評価を得ています。会話の流れは機能していますが、冗長な質問が多く、自然さに欠ける部分が見受けられます。マニュアルに基づく情報は提供されていますが、一般知識の使用も見られ、完全なマニュアル準拠とは言えません。結果確認の質問は行われていますが、分岐が不十分であるため、評価は中程度となります。",
+        "step_comparison": []
+      },
+      "conversation_log": [
+        {
+          "role": "user",
+          "content": "ABSランプが点灯している"
+        },
+        {
+          "role": "assistant",
+          "content": "ABSランプが点灯している場合、システムに異常がある可能性があります。運転は可能ですが、ABSが作動しない状態ですので、安全運転を心がけてください。早めにHonda販売店で点検を受けることをお勧めします。",
+          "step": "diagnosing",
+          "choices": [
+            {
+              "value": "guide_start",
+              "label": "解決手順を教えてください"
+            },
+            {
+              "value": "yes",
+              "label": "解決しました"
+            },
+            {
+              "value": "no",
+              "label": "試してみたが解決しなかった"
+            }
+          ]
+        },
+        {
+          "role": "user",
+          "content": "解決手順を教えてください"
+        },
+        {
+          "role": "assistant",
+          "content": "ABSランプが点灯している場合、システムに異常がある可能性があります。運転は可能ですが、ABSが作動しない状態ですので、安全運転を心がけてください。早めにHonda販売店で点検を受けることをお勧めします。",
+          "step": "diagnosing",
+          "choices": [
+            {
+              "value": "guide_start",
+              "label": "解決手順を教えてください"
+            },
+            {
+              "value": "yes",
+              "label": "解決しました"
+            },
+            {
+              "value": "no",
+              "label": "試してみたが解決しなかった"
+            }
+          ]
+        },
+        {
+          "role": "user",
+          "content": "解決手順を教えてください"
+        },
+        {
+          "role": "assistant",
+          "content": "ABSランプが点灯している場合、システムに異常がある可能性があります。これまでの手順で、エンジンを再始動してもABSランプが消えない場合は、早めにHonda販売店で点検を受けることをお勧めします。",
+          "step": "diagnosing",
+          "choices": [
+            {
+              "value": "guide_start",
+              "label": "解決手順を教えてください"
+            },
+            {
+              "value": "yes",
+              "label": "解決しました"
+            },
+            {
+              "value": "no",
+              "label": "試してみたが解決しなかった"
+            }
+          ]
+        },
+        {
+          "role": "user",
+          "content": "解決手順を教えてください"
+        },
+        {
+          "role": "assistant",
+          "content": "ABSランプが点灯している場合、システムに異常がある可能性があります。運転は可能ですが、ABSが作動しないため、安全運転が求められます。早めにHonda販売店で点検を受けることをお勧めします。",
+          "step": "diagnosing",
+          "choices": [
+            {
+              "value": "guide_start",
+              "label": "解決手順を教えてください"
+            },
+            {
+              "value": "yes",
+              "label": "解決しました"
+            },
+            {
+              "value": "no",
+              "label": "試してみたが解決しなかった"
+            }
+          ]
+        },
+        {
+          "role": "user",
+          "content": "解決手順を教えてください"
+        },
+        {
+          "role": "assistant",
+          "content": "ブレーキペダルを踏んだときの感触を教えてください。",
+          "step": "diagnosing",
+          "choices": [
+            {
+              "value": "ペダルが軽い",
+              "label": "ペダルが軽い"
+            },
+            {
+              "value": "ペダルが重い",
+              "label": "ペダルが重い"
+            },
+            {
+              "value": "正常な感触",
+              "label": "正常な感触"
+            },
+            {
+              "value": "dont_know",
+              "label": "わからない"
+            },
+            {
+              "value": "free_input",
+              "label": "✏️ 自由入力"
+            }
+          ]
+        },
+        {
+          "role": "user",
+          "content": "ペダルが軽い"
+        },
+        {
+          "role": "assistant",
+          "content": "ABSランプが点灯している場合、システムに異常がある可能性があります。これまでの確認で、ブレーキペダルが軽いことが判明しました。早めにHonda販売店で点検を受けることをお勧めします。",
+          "step": "diagnosing",
+          "choices": [
+            {
+              "value": "guide_start",
+              "label": "解決手順を教えてください"
+            },
+            {
+              "value": "yes",
+              "label": "解決しました"
+            },
+            {
+              "value": "no",
+              "label": "試してみたが解決しなかった"
+            }
+          ]
+        },
+        {
+          "role": "user",
+          "content": "解決手順を教えてください"
+        },
+        {
+          "role": "assistant",
+          "content": "ABSランプが点灯している場合、システムに異常がある可能性があります。これまでの確認でブレーキペダルが軽いことが判明しました。早めにHonda販売店で点検を受けることをお勧めします。",
+          "step": "diagnosing",
+          "choices": [
+            {
+              "value": "guide_start",
+              "label": "解決手順を教えてください"
+            },
+            {
+              "value": "yes",
+              "label": "解決しました"
+            },
+            {
+              "value": "no",
+              "label": "試してみたが解決しなかった"
+            }
+          ]
+        },
+        {
+          "role": "user",
+          "content": "解決手順を教えてください"
+        },
+        {
+          "role": "assistant",
+          "content": "ABSランプが点灯している場合、システムに異常がある可能性があります。これまでの確認でブレーキペダルが軽いことが判明しました。早めにHonda販売店で点検を受けることをお勧めします。",
+          "step": "diagnosing",
+          "choices": [
+            {
+              "value": "guide_start",
+              "label": "解決手順を教えてください"
+            },
+            {
+              "value": "yes",
+              "label": "解決しました"
+            },
+            {
+              "value": "no",
+              "label": "試してみたが解決しなかった"
+            }
+          ]
+        },
+        {
+          "role": "user",
+          "content": "解決手順を教えてください"
+        },
+        {
+          "role": "assistant",
+          "content": "ブレーキを踏んだときに、ブレーキが効かないと感じますか？それとも、通常通り効いていますか？",
+          "step": "diagnosing",
+          "choices": [
+            {
+              "value": "効かない",
+              "label": "効かない"
+            },
+            {
+              "value": "通常通り効く",
+              "label": "通常通り効く"
+            },
+            {
+              "value": "dont_know",
+              "label": "わからない"
+            },
+            {
+              "value": "free_input",
+              "label": "✏️ 自由入力"
+            }
+          ]
+        },
+        {
+          "role": "user",
+          "content": "効かない"
+        },
+        {
+          "role": "assistant",
+          "content": "ABSランプが点灯し、ブレーキペダルが軽い場合、ブレーキシステムに異常がある可能性があります。これまでの確認でブレーキペダルが軽く、効かないと感じているため、運転を続けるのは危険です。早めにHonda販売店で点検を受けることをお勧めします。",
+          "step": "diagnosing",
+          "choices": [
+            {
+              "value": "guide_start",
+              "label": "解決手順を教えてください"
+            },
+            {
+              "value": "yes",
+              "label": "解決しました"
+            },
+            {
+              "value": "no",
+              "label": "試してみたが解決しなかった"
+            }
+          ]
+        },
+        {
+          "role": "user",
+          "content": "解決手順を教えてください"
+        },
+        {
+          "role": "assistant",
+          "content": "ABSランプが点灯し、ブレーキペダルが軽い場合、ブレーキシステムに異常がある可能性があります。運転を続けるのは危険ですので、早めにHonda販売店で点検を受けることをお勧めします。",
+          "step": "diagnosing",
+          "choices": [
+            {
+              "value": "guide_start",
+              "label": "解決手順を教えてください"
+            },
+            {
+              "value": "yes",
+              "label": "解決しました"
+            },
+            {
+              "value": "no",
+              "label": "試してみたが解決しなかった"
+            }
+          ]
+        },
+        {
+          "role": "user",
+          "content": "解決手順を教えてください"
+        },
+        {
+          "role": "assistant",
+          "content": "ABSランプが点灯し、ブレーキペダルが軽い場合、ブレーキシステムに異常がある可能性があります。これまでの確認でブレーキペダルが軽く、効かないと感じているため、運転を続けるのは非常に危険です。早めにHonda販売店で点検を受けることを強くお勧めします。",
+          "step": "diagnosing",
+          "choices": [
+            {
+              "value": "guide_start",
+              "label": "解決手順を教えてください"
+            },
+            {
+              "value": "yes",
+              "label": "解決しました"
+            },
+            {
+              "value": "no",
+              "label": "試してみたが解決しなかった"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": 17,
+      "category": "燃費悪化",
+      "symptom": "最近ガソリンの減りが早い",
+      "turns": 12,
+      "final_step": "diagnosing",
+      "final_action": "max_turns_reached",
+      "urgency_flag": null,
+      "error": null,
+      "judge": {
+        "step_accuracy": 4,
+        "safety_compliance": 4,
+        "conversation_quality": 4,
+        "manual_adherence": 4,
+        "result_confirmation": 5,
+        "overall_score": 4.2,
+        "reasoning": "この会話は、ユーザーの燃費悪化に関する問題に対して、適切な質問を通じて原因を探る手順を踏んでいます。手順の正確性は高く、ほぼマニュアルに準拠しており、特にエンジンの異常音や運転スタイルに関する質問は関連性が高いです。安全性に関する注意事項も適切に伝えられており、結果確認も行われています。ただし、マニュアルに明確な手順がないため、手順の正確性は4点としました。会話の流れも自然で、専門用語の使用も適切でしたが、若干の改善点が見受けられました。全体として、非常に良好な評価を得ています。",
+        "step_comparison": []
+      },
+      "conversation_log": [
+        {
+          "role": "user",
+          "content": "最近ガソリンの減りが早い"
+        },
+        {
+          "role": "assistant",
+          "content": "最近給油した際、フューエルキャップ（燃料タンクの蓋）はしっかり閉まっていましたか？",
+          "step": "diagnosing",
+          "choices": [
+            {
+              "value": "しっかり閉まっていた",
+              "label": "しっかり閉まっていた"
+            },
+            {
+              "value": "少し緩んでいた",
+              "label": "少し緩んでいた"
+            },
+            {
+              "value": "閉まっていなかった",
+              "label": "閉まっていなかった"
+            },
+            {
+              "value": "覚えていない",
+              "label": "覚えていない"
+            },
+            {
+              "value": "dont_know",
+              "label": "わからない"
+            },
+            {
+              "value": "free_input",
+              "label": "✏️ 自由入力"
+            }
+          ]
+        },
+        {
+          "role": "user",
+          "content": "しっかり閉まっていた"
+        },
+        {
+          "role": "assistant",
+          "content": "最近の運転スタイルについて教えてください。急加速や急ブレーキを頻繁に行っていますか？",
+          "step": "diagnosing",
+          "choices": [
+            {
+              "value": "急加速が多い",
+              "label": "急加速が多い"
+            },
+            {
+              "value": "急ブレーキが多い",
+              "label": "急ブレーキが多い"
+            },
+            {
+              "value": "穏やかな運転",
+              "label": "穏やかな運転"
+            },
+            {
+              "value": "特に変わらない",
+              "label": "特に変わらない"
+            },
+            {
+              "value": "dont_know",
+              "label": "わからない"
+            },
+            {
+              "value": "free_input",
+              "label": "✏️ 自由入力"
+            }
+          ]
+        },
+        {
+          "role": "user",
+          "content": "急加速が多い"
+        },
+        {
+          "role": "assistant",
+          "content": "最近、エンジンの調子や排気音に異常を感じたことはありますか？",
+          "step": "diagnosing",
+          "choices": [
+            {
+              "value": "異常を感じている",
+              "label": "異常を感じている"
+            },
+            {
+              "value": "特に問題はない",
+              "label": "特に問題はない"
+            },
+            {
+              "value": "dont_know",
+              "label": "わからない"
+            },
+            {
+              "value": "free_input",
+              "label": "✏️ 自由入力"
+            }
+          ]
+        },
+        {
+          "role": "user",
+          "content": "異常を感じている"
+        },
+        {
+          "role": "assistant",
+          "content": "最近、エンジンオイルの量を確認しましたか？",
+          "step": "diagnosing",
+          "choices": [
+            {
+              "value": "確認した",
+              "label": "確認した"
+            },
+            {
+              "value": "確認していない",
+              "label": "確認していない"
+            },
+            {
+              "value": "dont_know",
+              "label": "わからない"
+            },
+            {
+              "value": "free_input",
+              "label": "✏️ 自由入力"
+            }
+          ]
+        },
+        {
+          "role": "user",
+          "content": "確認した"
+        },
+        {
+          "role": "assistant",
+          "content": "最近、指定の無鉛レギュラーガソリンを使用していますか？",
+          "step": "diagnosing",
+          "choices": [
+            {
+              "value": "はい、使用している",
+              "label": "はい、使用している"
+            },
+            {
+              "value": "いいえ、他の燃料",
+              "label": "いいえ、他の燃料"
+            },
+            {
+              "value": "最近給油していない",
+              "label": "最近給油していない"
+            },
+            {
+              "value": "dont_know",
+              "label": "わからない"
+            },
+            {
+              "value": "free_input",
+              "label": "✏️ 自由入力"
+            }
+          ]
+        },
+        {
+          "role": "user",
+          "content": "はい、使用している"
+        },
+        {
+          "role": "assistant",
+          "content": "タイヤの空気圧を確認しましたか？",
+          "step": "diagnosing",
+          "choices": [
+            {
+              "value": "確認した",
+              "label": "確認した"
+            },
+            {
+              "value": "まだ確認していない",
+              "label": "まだ確認していない"
+            },
+            {
+              "value": "dont_know",
+              "label": "わからない"
+            },
+            {
+              "value": "free_input",
+              "label": "✏️ 自由入力"
+            }
+          ]
+        },
+        {
+          "role": "user",
+          "content": "確認した"
+        },
+        {
+          "role": "assistant",
+          "content": "最近、車に不要な荷物を積んでいますか？",
+          "step": "diagnosing",
+          "choices": [
+            {
+              "value": "はい、積んでいる",
+              "label": "はい、積んでいる"
+            },
+            {
+              "value": "いいえ、積んでいない",
+              "label": "いいえ、積んでいない"
+            },
+            {
+              "value": "dont_know",
+              "label": "わからない"
+            },
+            {
+              "value": "free_input",
+              "label": "✏️ 自由入力"
+            }
+          ]
+        },
+        {
+          "role": "user",
+          "content": "はい、積んでいる"
+        },
+        {
+          "role": "assistant",
+          "content": "最近、エンジンの調子が悪いと感じることはありますか？",
+          "step": "diagnosing",
+          "choices": [
+            {
+              "value": "はい、調子が悪い",
+              "label": "はい、調子が悪い"
+            },
+            {
+              "value": "いいえ、問題ない",
+              "label": "いいえ、問題ない"
+            },
+            {
+              "value": "dont_know",
+              "label": "わからない"
+            },
+            {
+              "value": "free_input",
+              "label": "✏️ 自由入力"
+            }
+          ]
+        },
+        {
+          "role": "user",
+          "content": "はい、調子が悪い"
+        },
+        {
+          "role": "assistant",
+          "content": "エンジンオイルの状態はどうですか？色や粘度に異常を感じますか？",
+          "step": "diagnosing",
+          "choices": [
+            {
+              "value": "異常を感じる",
+              "label": "異常を感じる"
+            },
+            {
+              "value": "特に問題ない",
+              "label": "特に問題ない"
+            },
+            {
+              "value": "dont_know",
+              "label": "わからない"
+            },
+            {
+              "value": "free_input",
+              "label": "✏️ 自由入力"
+            }
+          ]
+        },
+        {
+          "role": "user",
+          "content": "異常を感じる"
+        },
+        {
+          "role": "assistant",
+          "content": "エンジンをかけた際に、異常な音やガソリンや排気ガスのにおいがしますか？",
+          "step": "diagnosing",
+          "choices": [
+            {
+              "value": "異常な音がする",
+              "label": "異常な音がする"
+            },
+            {
+              "value": "ガソリンのにおいがする",
+              "label": "ガソリンのにおいがする"
+            },
+            {
+              "value": "排気ガスのにおいがする",
+              "label": "排気ガスのにおいがする"
+            },
+            {
+              "value": "特に異常は感じない",
+              "label": "特に異常は感じない"
+            },
+            {
+              "value": "dont_know",
+              "label": "わからない"
+            },
+            {
+              "value": "free_input",
+              "label": "✏️ 自由入力"
+            }
+          ]
+        },
+        {
+          "role": "user",
+          "content": "異常な音がする"
+        },
+        {
+          "role": "assistant",
+          "content": "エンジンオイルの量は適正ですか？",
+          "step": "diagnosing",
+          "choices": [
+            {
+              "value": "適正",
+              "label": "適正"
+            },
+            {
+              "value": "少ない",
+              "label": "少ない"
+            },
+            {
+              "value": "多い",
+              "label": "多い"
+            },
+            {
+              "value": "dont_know",
+              "label": "わからない"
+            },
+            {
+              "value": "free_input",
+              "label": "✏️ 自由入力"
+            }
+          ]
+        },
+        {
+          "role": "user",
+          "content": "適正"
+        },
+        {
+          "role": "assistant",
+          "content": "ガソリンの減りが早い原因として、エンジンの異常や運転方法が考えられます。エンジンの異常音があるため、早急に点検が必要です。安全運転を心がけ、Honda販売店での点検をお勧めします。",
+          "step": "diagnosing",
+          "choices": [
+            {
+              "value": "guide_start",
+              "label": "解決手順を教えてください"
+            },
+            {
+              "value": "yes",
+              "label": "解決しました"
+            },
+            {
+              "value": "no",
+              "label": "試してみたが解決しなかった"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": 18,
+      "category": "ワイパー故障",
+      "symptom": "ワイパーが動かない",
+      "turns": 12,
+      "final_step": "diagnosing",
+      "final_action": "max_turns_reached",
+      "urgency_flag": null,
+      "error": null,
+      "judge": {
+        "step_accuracy": 4,
+        "safety_compliance": 3,
+        "conversation_quality": 3,
+        "manual_adherence": 4,
+        "result_confirmation": 4,
+        "overall_score": 3.6,
+        "reasoning": "この会話ログは、ワイパーが動かないという症状に対して、AIが適切な手順をほぼ正確に案内しています。手順の大部分はマニュアルに基づいており、特にワイパースイッチの確認やヒューズのチェックが含まれています。ただし、マニュアルに記載されている「モーターの保護機能」についての言及が欠落しており、これが手順正確性を4点に留める要因となっています。安全性については、基本的な注意事項は伝えられていますが、引っかかりを解消する際の具体的な注意点が不足しているため3点としました。会話の流れは概ね自然ですが、冗長な質問がいくつか見受けられ、会話品質は3点です。マニュアル準拠は高く評価され、結果確認も適切に行われています。全体として、AIは効果的に問題を診断し、解決策を提示していますが、いくつかの改善点があるため、総合評価は3.6点としました。",
+        "step_comparison": [
+          {
+            "manual_step": "ワイパースイッチの設定を確認する（OFF以外になっているか）",
+            "ai_step": "エンジンをかけた状態で、ワイパースイッチが「OFF」になっていないか確認してください。スイッチの位置はどうなっていますか？",
+            "match": "partial"
+          },
+          {
+            "manual_step": "ワイパーモーターの保護機能で一時停止していないか数分待つ",
+            "ai_step": "ワイパースイッチを「ON」にして、ワイパーが動くか確認してください。動きましたか？",
+            "match": "missing"
+          },
+          {
+            "manual_step": "運転席側ヒューズボックスのワイパーヒューズ（7.5A）を確認する",
+            "ai_step": "ヒューズボックスを開けて、ワイパー用のヒューズが切れていないか確認してください。切れている場合は教えてください。",
+            "match": "exact"
+          },
+          {
+            "manual_step": "ヒューズが切れていれば同じアンペア数のヒューズに交換する",
+            "ai_step": "ヒューズは切れていないとのことですが、ワイパーのモーターが正常に動作しているか確認するために、ワイパーを手で動かしてみてください。動きますか？",
+            "match": "missing"
+          },
+          {
+            "manual_step": "寒冷時はデフロスターでフロントガラスを温めてから再度試す",
+            "ai_step": "ワイパーアームが何かに引っかかっていないか確認してください。引っかかっている場合は教えてください。",
+            "match": "missing"
+          }
+        ]
+      },
+      "conversation_log": [
+        {
+          "role": "user",
+          "content": "ワイパーが動かない"
+        },
+        {
+          "role": "assistant",
+          "content": "エンジンをかけた状態で、ワイパースイッチが「OFF」になっていないか確認してください。スイッチの位置はどうなっていますか？",
+          "step": "diagnosing",
+          "choices": [
+            {
+              "value": "OFFになっている",
+              "label": "OFFになっている"
+            },
+            {
+              "value": "AUTOになっている",
+              "label": "AUTOになっている"
+            },
+            {
+              "value": "LOになっている",
+              "label": "LOになっている"
+            },
+            {
+              "value": "HIになっている",
+              "label": "HIになっている"
+            },
+            {
+              "value": "dont_know",
+              "label": "わからない"
+            },
+            {
+              "value": "free_input",
+              "label": "✏️ 自由入力"
+            }
+          ]
+        },
+        {
+          "role": "user",
+          "content": "OFFになっている"
+        },
+        {
+          "role": "assistant",
+          "content": "ワイパーのスイッチは「INTERMITTENT」や「LOW」、「HIGH」の位置に設定されていますか？",
+          "step": "diagnosing",
+          "choices": [
+            {
+              "value": "INTERMITTENTに設定",
+              "label": "INTERMITTENTに設定"
+            },
+            {
+              "value": "LOWに設定",
+              "label": "LOWに設定"
+            },
+            {
+              "value": "HIGHに設定",
+              "label": "HIGHに設定"
+            },
+            {
+              "value": "OFFに設定",
+              "label": "OFFに設定"
+            },
+            {
+              "value": "dont_know",
+              "label": "わからない"
+            },
+            {
+              "value": "free_input",
+              "label": "✏️ 自由入力"
+            }
+          ]
+        },
+        {
+          "role": "user",
+          "content": "INTERMITTENTに設定"
+        },
+        {
+          "role": "assistant",
+          "content": "ワイパースイッチを「ON」にして、ワイパーが動くか確認してください。動きましたか？",
+          "step": "diagnosing",
+          "choices": [
+            {
+              "value": "動いた",
+              "label": "動いた"
+            },
+            {
+              "value": "動かなかった",
+              "label": "動かなかった"
+            },
+            {
+              "value": "dont_know",
+              "label": "わからない"
+            },
+            {
+              "value": "free_input",
+              "label": "✏️ 自由入力"
+            }
+          ]
+        },
+        {
+          "role": "user",
+          "content": "動いた"
+        },
+        {
+          "role": "assistant",
+          "content": "ヒューズボックスを開けて、ワイパー用のヒューズが切れていないか確認してください。切れている場合は教えてください。",
+          "step": "diagnosing",
+          "choices": [
+            {
+              "value": "ヒューズは切れていない",
+              "label": "ヒューズは切れていない"
+            },
+            {
+              "value": "ヒューズが切れている",
+              "label": "ヒューズが切れている"
+            },
+            {
+              "value": "ヒューズの状態が不明",
+              "label": "ヒューズの状態が不明"
+            },
+            {
+              "value": "dont_know",
+              "label": "わからない"
+            },
+            {
+              "value": "free_input",
+              "label": "✏️ 自由入力"
+            }
+          ]
+        },
+        {
+          "role": "user",
+          "content": "ヒューズは切れていない"
+        },
+        {
+          "role": "assistant",
+          "content": "ヒューズは切れていないとのことですが、ワイパーのモーターが正常に動作しているか確認するために、ワイパーを手で動かしてみてください。動きますか？",
+          "step": "diagnosing",
+          "choices": [
+            {
+              "value": "動く",
+              "label": "動く"
+            },
+            {
+              "value": "動かない",
+              "label": "動かない"
+            },
+            {
+              "value": "dont_know",
+              "label": "わからない"
+            },
+            {
+              "value": "free_input",
+              "label": "✏️ 自由入力"
+            }
+          ]
+        },
+        {
+          "role": "user",
+          "content": "動く"
+        },
+        {
+          "role": "assistant",
+          "content": "ワイパーアームが何かに引っかかっていないか確認してください。引っかかっている場合は教えてください。",
+          "step": "diagnosing",
+          "choices": [
+            {
+              "value": "引っかかっている",
+              "label": "引っかかっている"
+            },
+            {
+              "value": "引っかかっていない",
+              "label": "引っかかっていない"
+            },
+            {
+              "value": "dont_know",
+              "label": "わからない"
+            },
+            {
+              "value": "free_input",
+              "label": "✏️ 自由入力"
+            }
+          ]
+        },
+        {
+          "role": "user",
+          "content": "引っかかっている"
+        },
+        {
+          "role": "assistant",
+          "content": "ワイパーアームが何かに引っかかっている場合、どのように引っかかっていますか？",
+          "step": "diagnosing",
+          "choices": [
+            {
+              "value": "引っかかっている",
+              "label": "引っかかっている"
+            },
+            {
+              "value": "引っかかっていない",
+              "label": "引っかかっていない"
+            },
+            {
+              "value": "dont_know",
+              "label": "わからない"
+            },
+            {
+              "value": "free_input",
+              "label": "✏️ 自由入力"
+            }
+          ]
+        },
+        {
+          "role": "user",
+          "content": "引っかかっている"
+        },
+        {
+          "role": "assistant",
+          "content": "他に気になる症状や状況があれば教えてください。",
+          "step": "diagnosing",
+          "choices": [
+            {
+              "value": "dont_know",
+              "label": "わからない"
+            },
+            {
+              "value": "free_input",
+              "label": "✏️ 自由入力"
+            }
+          ]
+        },
+        {
+          "role": "user",
+          "content": "わからない"
+        },
+        {
+          "role": "assistant",
+          "content": "ワイパーアームが何に引っかかっているのか、具体的に教えてください。",
+          "step": "diagnosing",
+          "choices": [
+            {
+              "value": "ガラスに引っかかっている",
+              "label": "ガラスに引っかかっている"
+            },
+            {
+              "value": "他の部品に引っかかっている",
+              "label": "他の部品に引っかかっている"
+            },
+            {
+              "value": "何も見えない",
+              "label": "何も見えない"
+            },
+            {
+              "value": "dont_know",
+              "label": "わからない"
+            },
+            {
+              "value": "free_input",
+              "label": "✏️ 自由入力"
+            }
+          ]
+        },
+        {
+          "role": "user",
+          "content": "ガラスに引っかかっている"
+        },
+        {
+          "role": "assistant",
+          "content": "ワイパーが動かない原因は、ワイパーアームがガラスに引っかかっていることです。ワイパーアームが引っかかっているため、正常に動作しません。引っかかりを解消するために、ワイパーアームを慎重に持ち上げて、ガラスから外してください。それでも問題が解決しない場合は、ディーラーでの点検をお勧めします。",
+          "step": "diagnosing",
+          "choices": [
+            {
+              "value": "guide_start",
+              "label": "解決手順を教えてください"
+            },
+            {
+              "value": "yes",
+              "label": "解決しました"
+            },
+            {
+              "value": "no",
+              "label": "試してみたが解決しなかった"
+            }
+          ]
+        },
+        {
+          "role": "user",
+          "content": "解決手順を教えてください"
+        },
+        {
+          "role": "assistant",
+          "content": "ワイパーが動かない原因は、ワイパーアームがガラスに引っかかっていることです。引っかかりを解消するために、ワイパーアームを慎重に持ち上げて、ガラスから外してください。それでも問題が解決しない場合は、ディーラーでの点検をお勧めします。",
+          "step": "diagnosing",
+          "choices": [
+            {
+              "value": "guide_start",
+              "label": "解決手順を教えてください"
+            },
+            {
+              "value": "yes",
+              "label": "解決しました"
+            },
+            {
+              "value": "no",
+              "label": "試してみたが解決しなかった"
+            }
+          ]
+        },
+        {
+          "role": "user",
+          "content": "解決手順を教えてください"
+        },
+        {
+          "role": "assistant",
+          "content": "ワイパーが動かない原因は、ワイパーアームがガラスに引っかかっていることです。これまでの手順で、ワイパーアームがガラスに引っかかっていることが確認されました。引っかかりを解消するために、ワイパーアームを慎重に持ち上げて、ガラスから外してください。それでも問題が解決しない場合は、ディーラーでの点検をお勧めします。",
+          "step": "diagnosing",
+          "choices": [
+            {
+              "value": "guide_start",
+              "label": "解決手順を教えてください"
+            },
+            {
+              "value": "yes",
+              "label": "解決しました"
+            },
+            {
+              "value": "no",
+              "label": "試してみたが解決しなかった"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "summary": {
+    "total": 18,
+    "evaluated": 17,
+    "average_overall": 3.48
+  }
+}
