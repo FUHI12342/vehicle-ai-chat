@@ -1080,193 +1080,7 @@ choices に「エンジン内部異常」
 </div>
 
 <!-- ============================================ -->
-<!-- SLIDE 15 — Rewind Feature -->
-<!-- ============================================ -->
-<div class="slide">
-  <span class="label label-amber mb-1">Part 4</span>
-  <h2>やり直し（Rewind）機能 — <span class="accent-amber">過去の回答を変更可能</span></h2>
-
-  <div class="cols cols-2 mt-2">
-    <div>
-      <div class="card card-warning">
-        <h3>なぜ必要か？</h3>
-        <p class="small">一問一答形式の問診では、ユーザーが途中の回答を間違えると、診断結果が不正確になる。従来は最初からやり直すしかなかった。</p>
-        <div class="highlight-box amber mt-1">
-          <b>解決:</b> 各ターンのセッション状態を保存し、任意のターンまで巻き戻して別の回答を試せるようにする。
-        </div>
-      </div>
-
-      <div class="card mt-2">
-        <h3>スナップショット方式</h3>
-        <div class="flow" style="flex-direction: column; gap: 0; align-items: stretch; margin-top: 0.5rem;">
-          <div class="flow-node" style="width: 100%; text-align: left; font-size: 0.82rem;">
-            <b>Turn 1:</b> エンジンかかる？→「かかっている」<br>
-            <span class="small">→ snapshot[0] 保存</span>
-          </div>
-          <div class="flow-arrow-down"></div>
-          <div class="flow-node" style="width: 100%; text-align: left; font-size: 0.82rem;">
-            <b>Turn 2:</b> 異音はありますか？→「ある」<br>
-            <span class="small">→ snapshot[1] 保存</span>
-          </div>
-          <div class="flow-arrow-down"></div>
-          <div class="flow-node active" style="width: 100%; text-align: left; font-size: 0.82rem;">
-            <b>Turn 3:</b> どんな音ですか？→「カタカタ音」<br>
-            <span class="small">→ snapshot[2] 保存</span>
-          </div>
-          <div class="flow-arrow-down"></div>
-          <div class="flow-node danger" style="width: 100%; text-align: left; font-size: 0.82rem;">
-            ユーザー:「Turn 2 をやり直したい」<br>
-            <span class="small">→ snapshot[1] を復元、snapshot[2]以降を削除</span>
-          </div>
-        </div>
-      </div>
-    </div>
-    <div>
-      <div class="card card-blue">
-        <h3>技術的な仕組み</h3>
-
-        <h3 style="font-size: 0.95rem;" class="mt-1">バックエンド</h3>
-        <pre><code># SessionState に追加
-state_snapshots: list[dict] = []
-
-# 各ターン開始時
-snapshot = session.model_dump(
-    exclude={"state_snapshots"}
-)
-session.state_snapshots.append({
-    "turn": session.diagnostic_turn,
-    "state": snapshot
-})
-
-# Rewind時
-target = next(
-    s for s in session.state_snapshots
-    if s["turn"] == rewind_to_turn
-)
-# → target["state"] で状態を復元
-# → 以降の snapshot を削除</code></pre>
-
-        <h3 style="font-size: 0.95rem;" class="mt-2">フロントエンド</h3>
-        <pre><code>// 各ユーザーメッセージに「やり直す」ボタン
-// （diagnosing中、最新以外のメッセージ）
-
-rewindToTurn(turn) {
-  // 1. API に rewind_to_turn を送信
-  // 2. 該当ターン以降のメッセージを削除
-  // 3. 復元された状態で問診を再開
-}</code></pre>
-      </div>
-
-      <div class="card mt-2">
-        <h3>制約</h3>
-        <ul class="small">
-          <li>DIAGNOSINGステップのみ有効</li>
-          <li>最大<b>8スナップショット</b>（約40KB）</li>
-          <li>インメモリ保存（セッション内で完結）</li>
-        </ul>
-      </div>
-    </div>
-  </div>
-
-  <span class="slide-num">15</span>
-</div>
-
-<!-- ============================================ -->
-<!-- SLIDE 16 — Rewind: User Flow -->
-<!-- ============================================ -->
-<div class="slide">
-  <h2>やり直し機能 — <span class="accent-amber">ユーザーの操作フロー</span></h2>
-
-  <div class="diagram-box mt-2">
-    <div style="display: grid; grid-template-columns: 1fr auto 1fr auto 1fr; gap: 1rem; align-items: start;">
-      <!-- State 1: Normal Chat -->
-      <div class="card" style="background: rgba(30, 41, 59, 0.9);">
-        <div class="text-center mb-1"><span class="badge badge-blue">Step 1</span></div>
-        <h3 class="text-center" style="font-size: 0.95rem;">通常の問診</h3>
-        <div style="margin-top: 0.5rem; font-size: 0.78rem;">
-          <div style="background: #1e3a5f; padding: 0.4rem 0.6rem; border-radius: 8px; margin: 0.3rem 0;">
-            AI: エンジンはかかりますか？
-          </div>
-          <div style="background: #065f46; padding: 0.4rem 0.6rem; border-radius: 8px; margin: 0.3rem 0; text-align: right;">
-            ユーザー: かかっている
-            <div style="color: #fbbf24; font-size: 0.7rem;">← やり直す</div>
-          </div>
-          <div style="background: #1e3a5f; padding: 0.4rem 0.6rem; border-radius: 8px; margin: 0.3rem 0;">
-            AI: 異音はありますか？
-          </div>
-          <div style="background: #065f46; padding: 0.4rem 0.6rem; border-radius: 8px; margin: 0.3rem 0; text-align: right;">
-            ユーザー: ある
-            <div style="color: #fbbf24; font-size: 0.7rem;">← やり直す</div>
-          </div>
-          <div style="background: #1e3a5f; padding: 0.4rem 0.6rem; border-radius: 8px; margin: 0.3rem 0;">
-            AI: どんな音ですか？
-          </div>
-        </div>
-      </div>
-
-      <!-- Arrow -->
-      <div style="display: flex; align-items: center; padding-top: 5rem;">
-        <svg width="32" height="32" viewBox="0 0 48 48" fill="none"><path d="M8 24h28m0 0l-8-8m8 8l-8 8" stroke="#f59e0b" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>
-      </div>
-
-      <!-- State 2: Click Rewind -->
-      <div class="card card-warning" style="background: rgba(120, 53, 15, 0.3);">
-        <div class="text-center mb-1"><span class="badge badge-amber">Step 2</span></div>
-        <h3 class="text-center" style="font-size: 0.95rem;">「やり直す」を押す</h3>
-        <div style="margin-top: 0.5rem; font-size: 0.78rem;">
-          <div style="background: #1e3a5f; padding: 0.4rem 0.6rem; border-radius: 8px; margin: 0.3rem 0;">
-            AI: エンジンはかかりますか？
-          </div>
-          <div style="background: #065f46; padding: 0.4rem 0.6rem; border-radius: 8px; margin: 0.3rem 0; text-align: right; border: 2px solid #f59e0b;">
-            ユーザー: かかっている
-            <div style="color: #fbbf24; font-size: 0.7rem; font-weight: 700;">★ ここをやり直す</div>
-          </div>
-          <div style="opacity: 0.3;">
-            <div style="background: #1e3a5f; padding: 0.4rem 0.6rem; border-radius: 8px; margin: 0.3rem 0;">
-              AI: 異音はありますか？
-            </div>
-            <div style="background: #065f46; padding: 0.4rem 0.6rem; border-radius: 8px; margin: 0.3rem 0; text-align: right;">
-              ユーザー: ある
-            </div>
-            <div style="background: #1e3a5f; padding: 0.4rem 0.6rem; border-radius: 8px; margin: 0.3rem 0;">
-              AI: どんな音ですか？
-            </div>
-          </div>
-          <div style="text-align: center; color: #f87171; font-size: 0.7rem; margin-top: 0.3rem;">↑ これ以降は削除される</div>
-        </div>
-      </div>
-
-      <!-- Arrow -->
-      <div style="display: flex; align-items: center; padding-top: 5rem;">
-        <svg width="32" height="32" viewBox="0 0 48 48" fill="none"><path d="M8 24h28m0 0l-8-8m8 8l-8 8" stroke="#10b981" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>
-      </div>
-
-      <!-- State 3: Rewound -->
-      <div class="card card-success" style="background: rgba(6, 78, 59, 0.3);">
-        <div class="text-center mb-1"><span class="badge badge-green">Step 3</span></div>
-        <h3 class="text-center" style="font-size: 0.95rem;">巻き戻し後</h3>
-        <div style="margin-top: 0.5rem; font-size: 0.78rem;">
-          <div style="background: #1e3a5f; padding: 0.4rem 0.6rem; border-radius: 8px; margin: 0.3rem 0;">
-            AI: エンジンはかかりますか？
-          </div>
-          <div style="margin: 0.8rem 0; text-align: center; padding: 0.5rem; border: 2px dashed #10b981; border-radius: 8px; color: #34d399; font-size: 0.75rem;">
-            別の回答を入力できる<br>
-            例: 「かかっていない」
-          </div>
-          <div style="text-align: center; color: #34d399; font-size: 0.7rem;">
-            セッション状態もこの時点に復元<br>
-            → 新しい回答から問診を再開
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <span class="slide-num">16</span>
-</div>
-
-<!-- ============================================ -->
-<!-- SLIDE 17 — Warning Light Icon Cards -->
+<!-- SLIDE 15 — Warning Light Icon Cards -->
 <!-- ============================================ -->
 <div class="slide">
   <h2>画像選択カード — <span class="accent-amber">警告灯を視覚的に選択</span></h2>
@@ -1325,11 +1139,11 @@ rewindToTurn(turn) {
     </div>
   </div>
 
-  <span class="slide-num">17</span>
+  <span class="slide-num">15</span>
 </div>
 
 <!-- ============================================ -->
-<!-- SLIDE 18 — Safety Architecture Summary -->
+<!-- SLIDE 16 — Safety Architecture Summary -->
 <!-- ============================================ -->
 <div class="slide">
   <h2>安全アーキテクチャ — <span class="accent-red">多層防御の全体像</span></h2>
@@ -1394,11 +1208,11 @@ rewindToTurn(turn) {
     </div>
   </div>
 
-  <span class="slide-num">18</span>
+  <span class="slide-num">16</span>
 </div>
 
 <!-- ============================================ -->
-<!-- SLIDE 19 — Summary -->
+<!-- SLIDE 17 — Summary -->
 <!-- ============================================ -->
 <div class="slide">
   <h2>まとめ — <span class="accent">改善の成果</span></h2>
@@ -1458,21 +1272,9 @@ rewindToTurn(turn) {
     </div>
   </div>
 
-  <span class="slide-num">19</span>
+  <span class="slide-num">17</span>
 </div>
 
-<!-- ============================================ -->
-<!-- SLIDE 20 — End -->
-<!-- ============================================ -->
-<div class="slide title-slide">
-  <div>
-    <h1 style="font-size: 2.5rem;">Thank You</h1>
-    <p class="subtitle mt-2">Vehicle AI Chat — システム改善報告</p>
-    <div class="divider" style="max-width: 300px; margin: 2rem auto;"></div>
-    <p class="small">質疑応答</p>
-  </div>
-  <span class="slide-num">20</span>
-</div>
 
 </body>
 </html>

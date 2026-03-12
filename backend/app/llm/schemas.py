@@ -72,7 +72,7 @@ DIAGNOSTIC_SCHEMA = {
             "choices": {
                 "type": ["array", "null"],
                 "items": {"type": "string"},
-                "description": "ユーザーに提示する選択肢（任意）。重複禁止。質問の回答として適切な選択肢のみ。",
+                "description": "ユーザーに提示する選択肢。ask_question時は質問の回答選択肢、provide_answer時は次のアクション選択肢（状況に応じて動的生成）。nullの場合は選択肢なし（provide_answer時はnull=会話終了）。重複禁止。",
             },
             "can_drive": {
                 "type": ["boolean", "null"],

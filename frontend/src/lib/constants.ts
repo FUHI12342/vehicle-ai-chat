@@ -1,4 +1,4 @@
-export const API_BASE = "/api";
+export const API_BASE = process.env.NEXT_PUBLIC_API_URL || "/api";
 
 export const URGENCY_COLORS = {
   low: { bg: "bg-green-50", border: "border-green-300", text: "text-green-800", label: "低" },

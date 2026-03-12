@@ -15,6 +15,9 @@ logger = logging.getLogger(__name__)
 # Task 2: 待ちメッセージ検出パターン
 _WAITING_PATTERN = re.compile(r"まとめ|整理|お待ち|確認.{0,5}させ|少々", re.UNICODE)
 
+# マルチステップダンプ検出パターン（番号付きリストが2行以上）
+_MULTI_STEP_PATTERN = re.compile(r"(?:\d+[.、）]\s.*\n){2,}", re.UNICODE)
+
 
 # A) ask_question / clarify_term の末尾に必ず追加するデフォルト選択肢
 _DEFAULT_TAIL: list[dict] = [
@@ -55,19 +58,21 @@ def _attach_icons(choices: list[dict], question_topic: str | None) -> list[dict]
     return choices
 
 
+_FILTER_KEYWORDS = {"わからない", "わかりません", "不明", "自由入力", "自由回答", "その他"}
+
+
 def _append_default_choices(choices: list[str] | None) -> list[dict]:
     """LLM が返した choices に「わからない」「自由入力」を末尾追加する（重複除外）。"""
     result: list[dict] = []
     seen: set[str] = set()
     if choices:
         for c in choices:
-            if c not in seen:
+            # LLMが「わからない」等の汎用選択肢を生成した場合は除外
+            if c not in seen and c not in _FILTER_KEYWORDS:
                 seen.add(c)
                 result.append({"value": c, "label": c})
-    existing_values = {d["value"] for d in result}
     for tail in _DEFAULT_TAIL:
-        if tail["value"] not in existing_values:
-            result.append(tail)
+        result.append(tail)
     return result
 
 
@@ -140,7 +145,7 @@ def _is_irrelevant_topic(topic: str, symptom_text: str, conversation_history: li
 # RAG駆動型ヘルパー関数
 # ---------------------------------------------------------------------------
 
-def _build_recent_turns(session: SessionState, n: int = 4) -> str:
+def _build_recent_turns(session: SessionState, n: int = 6) -> str:
     """直近N件のやり取りのみテキスト化する。"""
     history = session.conversation_history
     recent = history[-n:] if len(history) > n else history
@@ -165,21 +170,29 @@ def _build_additional_instructions(session: SessionState, user_input: str, candi
     # Force provide_answer if max turns reached
     if session.diagnostic_turn >= session.max_diagnostic_turns:
         parts.append(
-            "\n\n【重要】問診回数の上限に達しました。これまでの情報をもとに action: \"provide_answer\" で回答を提供してください。"
+            "\n\n【重要】問診回数の上限に達しました。これまでの情報をもとに "
+            "action: \"provide_answer\" で最終結論を提供してください。"
+        )
+    # Soft nudge at turn 10+
+    elif session.diagnostic_turn >= 10 and session.last_confidence >= 0.8:
+        parts.append(
+            "\n\n【参考】多くの手順を案内済みです。残りの手順がなければ "
+            "provide_answer で最終結論を案内してください。"
         )
 
-    # 解決策提示トリガー
-    if candidates_just_triggered or (session.candidates_shown and session.solutions_tried == 0):
+    # Retry with different approach
+    if session.solutions_tried > 0:
         parts.append(
-            "\n\n【重要】これまでの情報から、最も可能性の高い原因を1つ特定し、"
-            "ユーザーが自分で試せる具体的な対処手順を action: \"provide_answer\" で提示してください。"
-            "手順は番号付きで、素人でもできる内容にしてください。"
+            f"\n\n【重要】前回の結論ではユーザーの問題が解決しませんでした（{session.solutions_tried}回目）。"
+            "次に可能性の高い別の該当事象を探し、手順ガイドモードで案内してください。"
         )
-    elif session.solutions_tried > 0:
+
+    # 重複防止: 過去の質問をプロンプトに含める
+    if session.last_questions:
+        recent_qs = session.last_questions[-6:]  # 直近6件
+        qs_text = "\n".join(f"- {q}" for q in recent_qs)
         parts.append(
-            f"\n\n【重要】前回提示した解決策ではユーザーの問題が解決しませんでした（{session.solutions_tried}回目）。"
-            "次に可能性の高い別の原因と対処法を action: \"provide_answer\" で提示してください。"
-            "前回と異なる原因・対処法を提示してください。"
+            f"\n\n【既に案内済みの内容（繰り返し禁止）】\n{qs_text}"
         )
 
     return "".join(parts)
@@ -266,6 +279,7 @@ async def handle_diagnosing(session: SessionState, request: ChatRequest) -> Chat
     # Handle "resolved" action from provide_answer step
     if request.action == "resolved":
         if request.action_value == "yes":
+            # 後方互換（既存セッション用）
             session.current_step = ChatStep.DONE
             return ChatResponse(
                 session_id=session.session_id,
@@ -278,6 +292,7 @@ async def handle_diagnosing(session: SessionState, request: ChatRequest) -> Chat
                 diagnostic_turn=session.diagnostic_turn,
             )
         elif request.action_value == "no":
+            # 後方互換
             session.solutions_tried += 1
             # 3回解決策を試しても解決しない場合 → 専門家へ
             if session.solutions_tried >= 3:
@@ -288,16 +303,41 @@ async def handle_diagnosing(session: SessionState, request: ChatRequest) -> Chat
             request.message = "解決しませんでした。他の原因を教えてください。"
             return await handle_diagnosing(session, request)
         elif request.action_value == "book":
-            # 「点検を予約する」を直接選択
+            # 後方互換: 「点検を予約する」を直接選択
             session.current_step = ChatStep.RESERVATION
             from app.chat_flow.step_reservation import handle_reservation
             return await handle_reservation(session, request)
+        elif request.action_value and request.action_value.startswith("followup_"):
+            # 動的選択肢: ユーザーの選択テキストを次の入力として処理
+            selected_label = request.message or request.action_value
+            # 予約系キーワード検出
+            if any(kw in selected_label for kw in ["予約", "ディーラー", "持ち込", "ロードサービス"]):
+                session.current_step = ChatStep.RESERVATION
+                from app.chat_flow.step_reservation import handle_reservation
+                return await handle_reservation(session, request)
+            # 解決系キーワード検出
+            if any(kw in selected_label for kw in ["理解しました", "解決", "試してみ"]):
+                session.current_step = ChatStep.DONE
+                return ChatResponse(
+                    session_id=session.session_id,
+                    current_step=ChatStep.DONE.value,
+                    prompt=PromptInfo(
+                        type="text",
+                        message="お役に立てて良かったです！安全運転をお願いいたします。",
+                    ),
+                    manual_coverage=session.manual_coverage,
+                    diagnostic_turn=session.diagnostic_turn,
+                )
+            # その他 → 追加質問として DIAGNOSING 続行
+            request.message = selected_label
+            return await handle_diagnosing(session, request)
         else:
-            logger.warning(f"Unexpected resolved value: {request.action_value!r}")
+            # null choices で provide_answer → 自動的に DONE
+            session.current_step = ChatStep.DONE
             return ChatResponse(
                 session_id=session.session_id,
-                current_step=ChatStep.DIAGNOSING.value,
-                prompt=PromptInfo(type="text", message="症状について教えてください。"),
+                current_step=ChatStep.DONE.value,
+                prompt=PromptInfo(type="text", message="ご利用ありがとうございました。安全運転をお願いいたします。"),
                 manual_coverage=session.manual_coverage,
                 diagnostic_turn=session.diagnostic_turn,
             )
@@ -378,12 +418,9 @@ async def handle_diagnosing(session: SessionState, request: ChatRequest) -> Chat
 
     await _maybe_summarize(session, provider)
 
-    # 5. Candidate trigger: confidence >= 0.7 OR turn >= 4 (fallback)
+    # 5. ステップバイステップ案内のため候補トリガーは不要
+    # provide_answer は LLM の confidence 判断 + max_turns 制限で制御
     candidates_just_triggered = False
-    if not session.candidates_shown:
-        if session.last_confidence >= 0.7 or session.diagnostic_turn >= 4:
-            session.candidates_shown = True
-            candidates_just_triggered = True
 
     # 6. Build prompt
     recent_turns = _build_recent_turns(session)
@@ -470,6 +507,33 @@ async def handle_diagnosing(session: SessionState, request: ChatRequest) -> Chat
                 logger.warning(f"Topic guard re-call failed: {e}")
 
     # ---------------------------------------------------------------
+    # 8c. マルチステップダンプガード: ask_question に番号付きリストが含まれていたらリトライ
+    # ---------------------------------------------------------------
+    if action == "ask_question" and _MULTI_STEP_PATTERN.search(message):
+        logger.warning(f"Multi-step dump in ask_question, retrying: {message[:80]!r}")
+        retry_prompt = (
+            diagnostic_prompt
+            + "\n\n【重要】ask_question には1つの物理的アクションのみ記載してください。"
+            "複数の手順を番号付きで列挙しないでください。"
+            "最初に行うべき1ステップだけを案内してください。"
+        )
+        try:
+            result = await _llm_call(provider, retry_prompt)
+            action = result.get("action", "ask_question")
+            message = result.get("message", message)
+            urgency_flag = result.get("urgency_flag", urgency_flag)
+            choices = result.get("choices")
+            can_drive_llm = result.get("can_drive", can_drive_llm)
+            session.rewritten_query = result.get("rewritten_query", session.rewritten_query)
+            session.last_confidence = result.get("confidence_to_answer", session.last_confidence)
+            question_topic = result.get("question_topic", "")
+        except Exception as e:
+            logger.warning(f"Multi-step guard re-call failed: {e}")
+            lines = [l for l in message.split("\n") if l.strip()]
+            if lines:
+                message = lines[0]
+
+    # ---------------------------------------------------------------
     # 9. 待ちメッセージ検出 → リトライして provide_answer を取得
     # ---------------------------------------------------------------
     if action == "ask_question" and _is_waiting_message(message):
@@ -541,6 +605,35 @@ async def handle_diagnosing(session: SessionState, request: ChatRequest) -> Chat
             manual_coverage=session.manual_coverage,
         )
 
+    # ---------------------------------------------------------------
+    # 10b. provide_answer 早期使用ガード
+    # ---------------------------------------------------------------
+    if (action == "provide_answer"
+            and session.last_confidence < 0.9
+            and session.diagnostic_turn <= 3):
+        logger.warning(
+            f"Early provide_answer blocked (confidence={session.last_confidence:.2f}, "
+            f"turn={session.diagnostic_turn})"
+        )
+        retry_prompt = (
+            diagnostic_prompt
+            + "\n\n【重要】まだ手順ガイドが完了していません。confidence が0.9未満のため、"
+            "provide_answer は使えません。マニュアルの対処手順がある場合は、"
+            "最初の1ステップを ask_question で案内してください。"
+        )
+        try:
+            result = await _llm_call(provider, retry_prompt)
+            action = result.get("action", "ask_question")
+            message = result.get("message", message)
+            urgency_flag = result.get("urgency_flag", urgency_flag)
+            choices = result.get("choices")
+            can_drive_llm = result.get("can_drive", can_drive_llm)
+            session.rewritten_query = result.get("rewritten_query", session.rewritten_query)
+            session.last_confidence = result.get("confidence_to_answer", session.last_confidence)
+            question_topic = result.get("question_topic", "")
+        except Exception as e:
+            logger.warning(f"Early provide_answer guard re-call failed: {e}")
+
     if action == "provide_answer":
         # F3: manual_coverage warnings
         if manual_coverage == "not_covered":
@@ -594,21 +687,29 @@ async def handle_diagnosing(session: SessionState, request: ChatRequest) -> Chat
                 diagnostic_turn=session.diagnostic_turn,
             )
 
-        # low/medium/none → 解決確認 + 予約へのショートカット
+        # low/medium/none → LLM生成の動的選択肢
+        llm_choices = result.get("choices")
+        if llm_choices:
+            # LLMが生成した選択肢を使用
+            dynamic_choices = [{"value": f"followup_{i}", "label": c} for i, c in enumerate(llm_choices)]
+            prompt_type = "single_choice"
+        else:
+            # choicesがnull → 最終回答、会話終了
+            dynamic_choices = None
+            prompt_type = "text"
+            session.current_step = ChatStep.DONE
+
         return ChatResponse(
             session_id=session.session_id,
-            current_step=ChatStep.DIAGNOSING.value,
+            current_step=session.current_step.value if hasattr(session.current_step, 'value') else session.current_step,
             prompt=PromptInfo(
-                type="single_choice",
+                type=prompt_type,
                 message=message,
-                choices=[
-                    {"value": "yes", "label": "解決しました"},
-                    {"value": "no", "label": "解決していません"},
-                    {"value": "book", "label": "予約したい"},
-                ],
+                choices=dynamic_choices,
             ),
             rag_sources=rag_sources,
             manual_coverage=session.manual_coverage,
+            diagnostic_turn=session.diagnostic_turn,
         )
 
     if action == "clarify_term":

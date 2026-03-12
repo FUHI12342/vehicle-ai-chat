@@ -204,6 +204,19 @@
   .highlight-box.red { border-left-color: #ef4444; background: rgba(127, 29, 29, 0.15); }
   .highlight-box.green { border-left-color: #10b981; background: rgba(6, 78, 59, 0.15); }
   .highlight-box.purple { border-left-color: #8b5cf6; background: rgba(76, 29, 149, 0.15); }
+  /* ── Conversation Flow ── */
+  .cv { display:flex; gap:5px; margin-bottom:3px; }
+  .cv-n { min-width:14px; font-size:0.68rem; font-weight:700; color:#475569; text-align:right; padding-top:1px; }
+  .cv-b { padding-left:7px; flex:1; }
+  .cv-l { font-size:0.67rem; font-weight:700; }
+  .cv-s { font-size:0.7rem; color:#93c5fd; margin:1px 0; line-height:1.35; }
+  .cv-u { font-size:0.7rem; color:#34d399; font-weight:600; }
+  .cv-r { font-size:0.63rem; color:#fbbf24; font-style:italic; margin:1px 0; }
+  .cv-p { display:flex; flex-wrap:wrap; gap:2px; margin:2px 0; }
+  .cv-c { display:inline-block; background:rgba(30,58,95,0.3); border:1px solid #475569; border-radius:3px; padding:0 5px; font-size:0.6rem; color:#94a3b8; white-space:nowrap; }
+  .cv-c.sel { border-color:#34d399; color:#34d399; font-weight:600; background:rgba(6,78,59,0.12); }
+  .cv-symptom { background:rgba(15,23,42,0.5); padding:4px 8px; border-radius:4px; margin-bottom:6px; font-size:0.72rem; }
+  .cv-result { text-align:center; margin-top:6px; padding:4px; border-radius:6px; font-size:0.72rem; font-weight:600; }
 </style>
 </head>
 <body>
@@ -247,7 +260,7 @@
         <h3>RAGAS導入で解決</h3>
         <ul>
           <li><b>4つのメトリクス</b>でRAGパイプラインを自動評価</li>
-          <li>10種の標準テストケースで<b>再現可能な品質測定</b></li>
+          <li>18種の標準テストケースで<b>再現可能な品質測定</b></li>
           <li>変更前後のスコア比較で<b>改善/劣化を即座に検出</b></li>
           <li>E2Eテストでチャットフロー全体の正確性も検証</li>
         </ul>
@@ -266,7 +279,7 @@
             <div class="flow-arrow-down"></div>
             <div class="flow-node active" style="width: 80%;">
               <b>RAGAS 自動評価</b> <span class="badge badge-amber">NEW</span><br>
-              <span class="small">4メトリクス × 10テストケース</span>
+              <span class="small">4メトリクス × 18テストケース</span>
             </div>
             <div class="flow-arrow-down"></div>
             <div class="flow-node active" style="width: 80%;">
@@ -560,23 +573,23 @@
 </div>
 
 <!-- ============================================ -->
-<!-- SLIDE 6 — 10 Test Cases -->
+<!-- SLIDE 6 — 18 Test Cases -->
 <!-- ============================================ -->
 <div class="slide">
   <span class="label label-amber mb-1">Test Cases</span>
-  <h2>10種問診テストケース — <span class="accent-amber">品質評価の基準セット</span></h2>
+  <h2>18種問診テストケース — <span class="accent-amber">品質評価の基準セット</span></h2>
 
-  <p class="small mb-2">車両: ホンダ アコード 2011年式 (vehicle_id: 30TA06210_web) — 緊急度4段階 × アクション3種をカバー</p>
+  <p class="small mb-2">車両: ホンダ アコード 2011年式 (vehicle_id: 30TA06210_web) — 緊急度4段階 × アクション3種をカバー。キーワード緊急度ルール全19件を網羅。</p>
 
-  <table>
+  <table style="font-size:0.82rem;">
     <thead>
       <tr>
-        <th style="width: 30px;">#</th>
-        <th style="width: 130px;">カテゴリ</th>
+        <th style="width: 26px;">#</th>
+        <th style="width: 110px;">カテゴリ</th>
         <th>症状テキスト</th>
-        <th style="width: 85px;">urgency</th>
-        <th style="width: 110px;">action</th>
-        <th style="width: 200px;">ground_truth要点</th>
+        <th style="width: 75px;">urgency</th>
+        <th style="width: 95px;">action</th>
+        <th style="width: 170px;">ground_truth要点</th>
       </tr>
     </thead>
     <tbody>
@@ -660,21 +673,89 @@
         <td><span class="badge badge-red">escalate</span></td>
         <td class="small">即停車・冷却系異常</td>
       </tr>
+      <tr style="background:rgba(139,92,246,0.08);">
+        <td>11</td>
+        <td>煙の発生</td>
+        <td>ボンネットから白い煙が出ている</td>
+        <td><span class="urgency-dot critical"></span>critical</td>
+        <td><span class="badge badge-red">escalate</span></td>
+        <td class="small">即停車・冷却水漏れ疑い</td>
+      </tr>
+      <tr style="background:rgba(139,92,246,0.08);">
+        <td>12</td>
+        <td>火災兆候</td>
+        <td>エンジンルームから火が見える</td>
+        <td><span class="urgency-dot critical"></span>critical</td>
+        <td><span class="badge badge-red">escalate</span></td>
+        <td class="small">車両火災・全員避難・119番</td>
+      </tr>
+      <tr style="background:rgba(139,92,246,0.08);">
+        <td>13</td>
+        <td>冷却水漏れ</td>
+        <td>冷却水が減っている気がする</td>
+        <td><span class="urgency-dot critical"></span>critical</td>
+        <td><span class="badge badge-red">escalate</span></td>
+        <td class="small">走行中止・漏れ点検推奨</td>
+      </tr>
+      <tr style="background:rgba(139,92,246,0.08);">
+        <td>14</td>
+        <td>走行中振動</td>
+        <td>走行中にブルブル振動する</td>
+        <td><span class="urgency-dot high"></span>high</td>
+        <td><span class="badge badge-amber">ask_question</span></td>
+        <td class="small">速度域・発生条件の確認</td>
+      </tr>
+      <tr style="background:rgba(139,92,246,0.08);">
+        <td>15</td>
+        <td>異臭</td>
+        <td>ゴム焦げた臭いがする</td>
+        <td><span class="urgency-dot high"></span>high</td>
+        <td><span class="badge badge-amber">ask_question</span></td>
+        <td class="small">ベルト/ブレーキ確認</td>
+      </tr>
+      <tr style="background:rgba(139,92,246,0.08);">
+        <td>16</td>
+        <td>ABS警告灯</td>
+        <td>ABSランプが点灯している</td>
+        <td><span class="urgency-dot high"></span>high</td>
+        <td><span class="badge badge-amber">ask_question</span></td>
+        <td class="small">ABS異常・ディーラー推奨</td>
+      </tr>
+      <tr style="background:rgba(139,92,246,0.08);">
+        <td>17</td>
+        <td>燃費悪化</td>
+        <td>最近ガソリンの減りが早い</td>
+        <td><span class="urgency-dot medium"></span>medium</td>
+        <td><span class="badge badge-amber">ask_question</span></td>
+        <td class="small">空気圧・走行パターン確認</td>
+      </tr>
+      <tr style="background:rgba(139,92,246,0.08);">
+        <td>18</td>
+        <td>ワイパー故障</td>
+        <td>ワイパーが動かない</td>
+        <td><span class="urgency-dot medium"></span>medium</td>
+        <td><span class="badge badge-amber">ask_question</span></td>
+        <td class="small">ヒューズ確認・修理推奨</td>
+      </tr>
     </tbody>
   </table>
 
-  <div class="cols cols-3 mt-2">
-    <div class="card" style="padding: 1rem;">
-      <div class="text-center"><span class="badge badge-red">critical × 2</span></div>
+  <div class="cols cols-4 mt-2">
+    <div class="card" style="padding: 0.8rem;">
+      <div class="text-center"><span class="badge badge-red">critical × 5</span></div>
       <p class="small text-center mt-1">即座にescalate → 予約画面遷移</p>
     </div>
-    <div class="card" style="padding: 1rem;">
-      <div class="text-center"><span class="badge badge-amber">high/medium × 7</span></div>
+    <div class="card" style="padding: 0.8rem;">
+      <div class="text-center"><span class="badge badge-amber">high × 6</span></div>
       <p class="small text-center mt-1">追加質問で症状を絞り込み</p>
     </div>
-    <div class="card" style="padding: 1rem;">
-      <div class="text-center"><span class="badge badge-blue">spec_answer × 1</span></div>
-      <p class="small text-center mt-1">仕様確認で正常動作を説明</p>
+    <div class="card" style="padding: 0.8rem;">
+      <div class="text-center"><span class="badge badge-blue">medium × 5</span></div>
+      <p class="small text-center mt-1">状況確認後にアドバイス</p>
+    </div>
+    <div class="card" style="padding: 0.8rem;">
+      <div class="text-center"><span class="badge badge-green">low/spec × 2</span></div>
+      <p class="small text-center mt-1">仕様確認 or 経過観察</p>
     </div>
   </div>
 
@@ -697,7 +778,7 @@
     __init__.py
     ragas/
       __init__.py
-      <span style="color: #fbbf24;">test_cases.py</span>       <span style="color: #64748b;"># 10テストケース定義</span>
+      <span style="color: #fbbf24;">test_cases.py</span>       <span style="color: #64748b;"># 18テストケース定義</span>
       <span style="color: #fbbf24;">run_ragas_eval.py</span>   <span style="color: #64748b;"># RAGAS 4メトリクス評価</span>
       <span style="color: #fbbf24;">run_e2e_chat.py</span>     <span style="color: #64748b;"># E2E チャットフローテスト</span>
   requirements.txt          <span style="color: #64748b;"># + ragas, datasets</span>
@@ -729,7 +810,7 @@ docs/
         <h3>RAGAS評価 処理フロー</h3>
         <div style="display: flex; flex-direction: column; gap: 0; align-items: center; margin-top: 0.5rem;">
           <div class="flow-node" style="width: 100%; font-size: 0.82rem;">
-            <b>Step 1:</b> test_cases.py から10件ロード
+            <b>Step 1:</b> test_cases.py から18件ロード
           </div>
           <div class="flow-arrow-down"></div>
           <div class="flow-node" style="width: 100%; font-size: 0.82rem;">
@@ -897,7 +978,7 @@ python -m tests.ragas.run_e2e_chat</code></pre>
             <div class="flow-arrow-down"></div>
             <div class="flow-node" style="width: 80%;">
               <b>再評価</b><br>
-              <span class="small">同じ10テストケースでRAGAS実行</span>
+              <span class="small">同じ18テストケースでRAGAS実行</span>
             </div>
             <div class="flow-arrow-down"></div>
             <div class="flow-node success" style="width: 80%;">
@@ -940,12 +1021,12 @@ python -m tests.ragas.run_e2e_chat</code></pre>
       </div>
     </div>
     <div class="card card-warning" style="text-align: center;">
-      <div style="font-size: 2.5rem; font-weight: 800; color: #fbbf24;">10</div>
+      <div style="font-size: 2.5rem; font-weight: 800; color: #fbbf24;">18</div>
       <div style="font-size: 1.1rem; font-weight: 700; margin-top: 0.3rem;">標準テストケース</div>
       <div class="divider"></div>
       <div class="small">
-        critical 2件 / high 3件<br>
-        medium 3件 / low 2件
+        critical 5件 / high 6件<br>
+        medium 5件 / low+spec 2件
       </div>
     </div>
     <div class="card card-success" style="text-align: center;">
@@ -971,7 +1052,7 @@ python -m tests.ragas.run_e2e_chat</code></pre>
         <tr>
           <td><code>tests/ragas/test_cases.py</code></td>
           <td><span class="badge badge-green">NEW</span></td>
-          <td>10テストケース定義</td>
+          <td>18テストケース定義</td>
         </tr>
         <tr>
           <td><code>tests/ragas/run_ragas_eval.py</code></td>
@@ -1011,6 +1092,1580 @@ python -m tests.ragas.run_e2e_chat</code></pre>
   </div>
 
   <span class="slide-num">10</span>
+</div>
+
+<!-- ============================================ -->
+<!-- SLIDE 11 — Chat Flow Overview -->
+<!-- ============================================ -->
+<div class="slide">
+  <span class="label label-purple mb-1">Chat Flow</span>
+  <h2>問診チャットフロー全体像 — <span class="accent-purple">9ステップ ステートマシン</span></h2>
+
+  <div class="cols cols-1-2 mt-2">
+    <div>
+      <div class="card card-purple" style="font-size: 0.82rem;">
+        <h3>ステップ一覧</h3>
+        <div style="display: flex; flex-direction: column; gap: 0.4rem; margin-top: 0.5rem;">
+          <div style="display: flex; align-items: center; gap: 0.5rem;">
+            <span class="badge badge-blue" style="min-width: 24px; justify-content: center;">1</span>
+            <span><b>VEHICLE_ID</b> — 車両選択</span>
+          </div>
+          <div style="display: flex; align-items: center; gap: 0.5rem;">
+            <span class="badge badge-blue" style="min-width: 24px; justify-content: center;">2</span>
+            <span><b>PHOTO_CONFIRM</b> — 写真確認</span>
+          </div>
+          <div style="display: flex; align-items: center; gap: 0.5rem;">
+            <span class="badge badge-amber" style="min-width: 24px; justify-content: center;">3</span>
+            <span><b>FREE_TEXT</b> — 症状入力+ルーティング</span>
+          </div>
+          <div style="display: flex; align-items: center; gap: 0.5rem;">
+            <span class="badge badge-green" style="min-width: 24px; justify-content: center;">4</span>
+            <span><b>SPEC_CHECK</b> — 仕様確認（2フェーズ）</span>
+          </div>
+          <div style="display: flex; align-items: center; gap: 0.5rem;">
+            <span class="badge badge-amber" style="min-width: 24px; justify-content: center;">5</span>
+            <span><b>DIAGNOSING</b> — 問診ループ（中核）</span>
+          </div>
+          <div style="display: flex; align-items: center; gap: 0.5rem;">
+            <span class="badge badge-red" style="min-width: 24px; justify-content: center;">6</span>
+            <span><b>URGENCY_CHECK</b> — 緊急度評価</span>
+          </div>
+          <div style="display: flex; align-items: center; gap: 0.5rem;">
+            <span class="badge badge-red" style="min-width: 24px; justify-content: center;">7</span>
+            <span><b>RESERVATION</b> — 予約導線</span>
+          </div>
+          <div style="display: flex; align-items: center; gap: 0.5rem;">
+            <span class="badge badge-gray" style="min-width: 24px; justify-content: center;">8</span>
+            <span><b>BOOKING_INFO</b> — 予約情報入力</span>
+          </div>
+          <div style="display: flex; align-items: center; gap: 0.5rem;">
+            <span class="badge badge-gray" style="min-width: 24px; justify-content: center;">9</span>
+            <span><b>BOOKING_CONFIRM</b> — 予約確認</span>
+          </div>
+          <div style="display: flex; align-items: center; gap: 0.5rem;">
+            <span class="badge badge-green" style="min-width: 24px; justify-content: center;">✓</span>
+            <span><b>DONE</b> — 完了</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <div class="card" style="padding: 1.5rem;">
+        <div style="display: flex; flex-direction: column; gap: 0; align-items: center;">
+          <!-- Row 1: Vehicle ID -->
+          <div class="flow-node" style="width: 260px;">
+            <b>1. VEHICLE_ID</b><br>
+            <span class="small">車種を選択（ドロップダウン）</span>
+          </div>
+          <div class="flow-arrow-down"></div>
+
+          <!-- Row 2: Photo Confirm -->
+          <div class="flow-node" style="width: 260px;">
+            <b>2. PHOTO_CONFIRM</b><br>
+            <span class="small">車両写真で「この車ですか？」</span>
+          </div>
+          <div style="display: flex; width: 420px; align-items: flex-start;">
+            <div style="flex: 1; display: flex; flex-direction: column; align-items: center;">
+              <div style="font-size: 0.7rem; color: #34d399; font-weight: 600; margin: 4px 0;">はい</div>
+              <div class="flow-arrow-down"></div>
+            </div>
+            <div style="flex: 1; display: flex; flex-direction: column; align-items: center;">
+              <div style="font-size: 0.7rem; color: #f87171; font-weight: 600; margin: 4px 0;">いいえ</div>
+              <div class="flow-arrow-down" style="height: 14px;"></div>
+              <div style="font-size: 0.68rem; color: #94a3b8; background: rgba(30,41,59,0.7); border: 1px dashed #475569; border-radius: 6px; padding: 2px 8px;">← VEHICLE_ID に戻る</div>
+            </div>
+          </div>
+
+          <!-- Row 3: Free Text -->
+          <div class="flow-node active" style="width: 340px;">
+            <b>3. FREE_TEXT</b> <span class="badge badge-amber" style="font-size: 0.6rem;">ルーティング分岐</span><br>
+            <span class="small">症状テキスト入力 → キーワード緊急度判定 + RAG検索</span>
+          </div>
+
+          <!-- Branching from FREE_TEXT -->
+          <div style="display: flex; width: 100%; align-items: flex-start; margin-top: 4px;">
+            <!-- Left: Critical path -->
+            <div style="flex: 1; display: flex; flex-direction: column; align-items: center;">
+              <div style="font-size: 0.68rem; color: #f87171; font-weight: 600; margin: 2px 0;">CRITICAL</div>
+              <div class="flow-arrow-down" style="height: 16px;"></div>
+              <div class="flow-node danger" style="width: 90%; font-size: 0.78rem;">
+                <b>7. RESERVATION</b><br>
+                <span class="small">即座に予約導線</span>
+              </div>
+              <div class="flow-arrow-down" style="height: 16px;"></div>
+              <div class="flow-node" style="width: 90%; font-size: 0.78rem;">
+                <b>8. BOOKING_INFO</b><br>
+                <span class="small">dispatch (ロードサービス)</span>
+              </div>
+              <div class="flow-arrow-down" style="height: 16px;"></div>
+              <div class="flow-node" style="width: 90%; font-size: 0.78rem;">
+                9. BOOKING_CONFIRM
+              </div>
+            </div>
+
+            <!-- Center: Spec path -->
+            <div style="flex: 1; display: flex; flex-direction: column; align-items: center;">
+              <div style="font-size: 0.68rem; color: #34d399; font-weight: 600; margin: 2px 0;">RAG仕様一致</div>
+              <div class="flow-arrow-down" style="height: 16px;"></div>
+              <div class="flow-node success" style="width: 90%; font-size: 0.78rem;">
+                <b>4. SPEC_CHECK</b><br>
+                <span class="small">仕様確認 (2フェーズ)</span>
+              </div>
+              <div style="display: flex; width: 100%; margin-top: 4px;">
+                <div style="flex: 1; display: flex; flex-direction: column; align-items: center;">
+                  <div style="font-size: 0.65rem; color: #34d399;">解決</div>
+                  <div class="flow-arrow-down" style="height: 12px;"></div>
+                  <div class="flow-node success" style="width: 85%; font-size: 0.72rem;">DONE</div>
+                </div>
+                <div style="flex: 1; display: flex; flex-direction: column; align-items: center;">
+                  <div style="font-size: 0.65rem; color: #fbbf24;">未解決</div>
+                  <div class="flow-arrow-down" style="height: 12px;"></div>
+                  <div style="font-size: 0.65rem; color: #94a3b8;">→ DIAGNOSING</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Right: Normal diagnostic path -->
+            <div style="flex: 1.2; display: flex; flex-direction: column; align-items: center;">
+              <div style="font-size: 0.68rem; color: #60a5fa; font-weight: 600; margin: 2px 0;">通常（デフォルト）</div>
+              <div class="flow-arrow-down" style="height: 16px;"></div>
+              <div class="flow-node" style="width: 95%; font-size: 0.78rem; border-color: #f59e0b;">
+                <b>5. DIAGNOSING</b><br>
+                <span class="small" style="color: #fbbf24;">多ターン問診ループ (詳細次ページ)</span>
+              </div>
+              <div class="flow-arrow-down" style="height: 16px;"></div>
+              <div style="display: flex; width: 100%; gap: 4px;">
+                <div style="flex: 1; display: flex; flex-direction: column; align-items: center;">
+                  <div style="font-size: 0.62rem; color: #34d399;">解決</div>
+                  <div class="flow-arrow-down" style="height: 10px;"></div>
+                  <div class="flow-node success" style="width: 90%; font-size: 0.68rem;">DONE</div>
+                </div>
+                <div style="flex: 1; display: flex; flex-direction: column; align-items: center;">
+                  <div style="font-size: 0.62rem; color: #fbbf24;">3回失敗</div>
+                  <div class="flow-arrow-down" style="height: 10px;"></div>
+                  <div style="font-size: 0.62rem; color: #f87171;">URGENCY</div>
+                </div>
+                <div style="flex: 1; display: flex; flex-direction: column; align-items: center;">
+                  <div style="font-size: 0.62rem; color: #f87171;">高緊急</div>
+                  <div class="flow-arrow-down" style="height: 10px;"></div>
+                  <div style="font-size: 0.62rem; color: #f87171;">RESERVATION</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <span class="slide-num">11</span>
+</div>
+
+<!-- ============================================ -->
+<!-- SLIDE 12 — FREE_TEXT Routing Detail -->
+<!-- ============================================ -->
+<div class="slide">
+  <span class="label label-amber mb-1">Chat Flow</span>
+  <h2>FREE_TEXT ルーティング判定 — <span class="accent-amber">症状入力後の3方向分岐</span></h2>
+
+  <div class="cols cols-2 mt-2">
+    <div>
+      <div class="card card-danger">
+        <h3>キーワード緊急度チェック（即時判定）</h3>
+        <p class="small mb-1">症状テキストに危険キーワードが含まれるか同期的に判定。LLM呼び出し不要で遅延なし。</p>
+        <table style="font-size: 0.8rem;">
+          <tr>
+            <th>レベル</th>
+            <th>キーワード例</th>
+            <th>遷移先</th>
+          </tr>
+          <tr>
+            <td><span class="urgency-dot critical"></span>critical</td>
+            <td>ブレーキ効かない, 煙が出ている, 水温異常</td>
+            <td style="color: #f87171; font-weight: 700;">→ RESERVATION</td>
+          </tr>
+          <tr>
+            <td><span class="urgency-dot high"></span>high</td>
+            <td>警告灯, エンジン不調, 油漏れ</td>
+            <td>→ DIAGNOSING<br><span class="small">(SPEC_CHECK スキップ)</span></td>
+          </tr>
+          <tr>
+            <td><span class="urgency-dot medium"></span>medium</td>
+            <td>異音, 振動, 空気圧</td>
+            <td>→ RAGルーティング判定</td>
+          </tr>
+          <tr>
+            <td><span class="urgency-dot low"></span>low / none</td>
+            <td>エアコン, 音, 匂い</td>
+            <td>→ RAGルーティング判定</td>
+          </tr>
+        </table>
+      </div>
+
+      <div class="card card-success mt-2">
+        <h3>SPEC_CHECK ルーティング条件</h3>
+        <p class="small mb-1"><code>_should_route_to_spec_check()</code> — 3つのセーフティゲート + 2つの条件ゲート</p>
+        <div style="font-size: 0.8rem;">
+          <div style="color: #f87171; font-weight: 600; margin-bottom: 0.3rem;">セーフティゲート（1つでもHIT → SPEC不可）:</div>
+          <ul style="font-size: 0.78rem; margin-bottom: 0.6rem;">
+            <li>キーワード緊急度 = critical / high</li>
+            <li>RAG結果に <code>has_warning</code> フラグあり</li>
+            <li>高スコア結果で danger_count &gt; spec_count</li>
+          </ul>
+          <div style="color: #34d399; font-weight: 600; margin-bottom: 0.3rem;">SPEC条件（全て満たす → SPEC_CHECK へ）:</div>
+          <ul style="font-size: 0.78rem;">
+            <li>スコア ≥ 0.50 の結果が1件以上</li>
+            <li>spec系タイプが2件以上 or トップスコア ≥ 0.70</li>
+            <li>高スコア結果中 spec_ratio ≥ 60%</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <div class="card card-blue">
+        <h3>ルーティングフローチャート</h3>
+        <div style="display: flex; flex-direction: column; gap: 0; align-items: center; margin-top: 0.5rem;">
+          <div class="flow-node active" style="width: 90%;">
+            <b>症状テキスト入力</b><br>
+            <span class="small">「ブレーキが効かない」「エアコンが冷えない」etc.</span>
+          </div>
+
+          <div class="flow-arrow-down"></div>
+          <div class="flow-node" style="width: 90%; font-size: 0.82rem;">
+            <b>キーワード緊急度チェック</b><br>
+            <span class="small">同期処理・即時判定</span>
+          </div>
+
+          <div style="display: flex; width: 90%; margin-top: 4px;">
+            <div style="flex: 1; display: flex; flex-direction: column; align-items: center;">
+              <div style="font-size: 0.68rem; color: #f87171; font-weight: 600;">CRITICAL</div>
+              <div class="flow-arrow-down" style="height: 14px;"></div>
+              <div class="flow-node danger" style="width: 95%; font-size: 0.75rem;">
+                RESERVATION<br>
+                <span class="small">即 dispatch</span>
+              </div>
+            </div>
+            <div style="flex: 1.5; display: flex; flex-direction: column; align-items: center;">
+              <div style="font-size: 0.68rem; color: #60a5fa; font-weight: 600;">CRITICAL以外</div>
+              <div class="flow-arrow-down" style="height: 14px;"></div>
+              <div class="flow-node" style="width: 95%; font-size: 0.75rem;">
+                <b>RAG検索</b> (ChromaDB)<br>
+                <span class="small">車両マニュアルから関連チャンク取得</span>
+              </div>
+            </div>
+          </div>
+
+          <div style="width: 55%; margin-left: auto;">
+            <div style="display: flex; flex-direction: column; align-items: center;">
+              <div class="flow-arrow-down"></div>
+              <div class="flow-node" style="width: 95%; font-size: 0.75rem;">
+                <b>_should_route_to_spec_check()</b><br>
+                <span class="small">3 Safety Gates + 2 Conditions</span>
+              </div>
+              <div style="display: flex; width: 100%; margin-top: 4px;">
+                <div style="flex: 1; display: flex; flex-direction: column; align-items: center;">
+                  <div style="font-size: 0.65rem; color: #34d399; font-weight: 600;">True</div>
+                  <div class="flow-arrow-down" style="height: 12px;"></div>
+                  <div class="flow-node success" style="width: 95%; font-size: 0.72rem;">
+                    SPEC_CHECK<br>
+                    <span class="small">仕様確認フェーズ</span>
+                  </div>
+                </div>
+                <div style="flex: 1; display: flex; flex-direction: column; align-items: center;">
+                  <div style="font-size: 0.65rem; color: #fbbf24; font-weight: 600;">False</div>
+                  <div class="flow-arrow-down" style="height: 12px;"></div>
+                  <div class="flow-node" style="width: 95%; font-size: 0.72rem; border-color: #f59e0b; color: #fbbf24;">
+                    DIAGNOSING<br>
+                    <span class="small">問診ループ開始</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <span class="slide-num">12</span>
+</div>
+
+<!-- ============================================ -->
+<!-- SLIDE 13 — DIAGNOSING Loop Detail -->
+<!-- ============================================ -->
+<div class="slide">
+  <span class="label label-amber mb-1">Chat Flow</span>
+  <h2>DIAGNOSING 問診ループ — <span class="accent-amber">中核ロジックの詳細</span></h2>
+
+  <div class="cols cols-3-2 mt-2">
+    <div>
+      <div class="card" style="padding: 1.2rem;">
+        <h3>ターンごとの処理フロー</h3>
+        <div style="display: flex; flex-direction: column; gap: 0; align-items: center; margin-top: 0.5rem;">
+          <div class="flow-node" style="width: 95%; font-size: 0.78rem;">
+            <b>ユーザー入力受信</b><br>
+            <span class="small">回答 or Rewindリクエスト</span>
+          </div>
+
+          <div class="flow-arrow-down" style="height: 14px;"></div>
+          <div class="flow-node purple" style="width: 95%; font-size: 0.78rem;">
+            <b>Rewind チェック</b><br>
+            <span class="small">rewind_to_turn → スナップショット復元</span>
+          </div>
+
+          <div class="flow-arrow-down" style="height: 14px;"></div>
+          <div class="flow-node" style="width: 95%; font-size: 0.78rem;">
+            <b>「解決しましたか？」応答処理</b><br>
+            <span class="small">yes→DONE / no→retry / book→RESERVATION</span>
+          </div>
+
+          <div class="flow-arrow-down" style="height: 14px;"></div>
+          <div class="flow-node" style="width: 95%; font-size: 0.78rem;">
+            <b>スナップショット保存</b> (最大8件)<br>
+            <span class="small">diagnostic_turn++ → 状態全体を記録</span>
+          </div>
+
+          <div class="flow-arrow-down" style="height: 14px;"></div>
+          <div class="flow-node danger" style="width: 95%; font-size: 0.78rem;">
+            <b>キーワード緊急度 再チェック</b><br>
+            <span class="small">蓄積症状で CRITICAL → RESERVATION</span>
+          </div>
+
+          <div class="flow-arrow-down" style="height: 14px;"></div>
+          <div class="flow-node" style="width: 95%; font-size: 0.78rem;">
+            <b>RAG検索</b> (rewritten_query 使用)<br>
+            <span class="small">ChromaDB → 関連マニュアルチャンク取得</span>
+          </div>
+
+          <div class="flow-arrow-down" style="height: 14px;"></div>
+          <div style="width: 95%; font-size: 0.7rem; color: #94a3b8; text-align: center; padding: 2px;">
+            3ターンごとに会話要約 (200文字)
+          </div>
+
+          <div class="flow-arrow-down" style="height: 10px;"></div>
+          <div class="flow-node active" style="width: 95%; font-size: 0.78rem;">
+            <b>LLM呼び出し</b> (DIAGNOSTIC_SCHEMA)<br>
+            <span class="small">車両情報 + 症状 + 会話履歴 + RAGコンテキスト</span>
+          </div>
+
+          <div class="flow-arrow-down" style="height: 14px;"></div>
+          <div class="flow-node" style="width: 95%; font-size: 0.78rem;">
+            <b>ガードレール検査</b><br>
+            <span class="small">トピック関連性チェック + 待機メッセージ検出</span>
+          </div>
+
+          <div class="flow-arrow-down" style="height: 14px;"></div>
+          <div class="flow-node active" style="width: 95%; font-size: 0.78rem;">
+            <b>アクション ディスパッチ</b><br>
+            <span class="small">LLM応答の action フィールドで分岐 →</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <div class="card card-blue">
+        <h3>LLM action による分岐</h3>
+        <div style="display: flex; flex-direction: column; gap: 0.6rem; margin-top: 0.5rem;">
+          <div style="background: rgba(30,58,95,0.4); border-left: 3px solid #60a5fa; padding: 0.6rem 0.8rem; border-radius: 0 8px 8px 0;">
+            <div style="font-size: 0.85rem; font-weight: 700; color: #60a5fa;">ask_question</div>
+            <div style="font-size: 0.75rem; color: #94a3b8; margin-top: 0.2rem;">
+              追加質問を表示（選択肢 + 「わからない」+ 自由入力）<br>
+              警告灯トピック検出時 → SVGアイコンカード表示
+            </div>
+            <div style="font-size: 0.7rem; color: #60a5fa; margin-top: 0.2rem;">→ ループ継続（次のターンへ）</div>
+          </div>
+
+          <div style="background: rgba(139,92,246,0.15); border-left: 3px solid #a78bfa; padding: 0.6rem 0.8rem; border-radius: 0 8px 8px 0;">
+            <div style="font-size: 0.85rem; font-weight: 700; color: #a78bfa;">clarify_term</div>
+            <div style="font-size: 0.75rem; color: #94a3b8; margin-top: 0.2rem;">
+              専門用語の説明を表示し、理解度を確認
+            </div>
+            <div style="font-size: 0.7rem; color: #a78bfa; margin-top: 0.2rem;">→ ループ継続</div>
+          </div>
+
+          <div style="background: rgba(6,78,59,0.2); border-left: 3px solid #34d399; padding: 0.6rem 0.8rem; border-radius: 0 8px 8px 0;">
+            <div style="font-size: 0.85rem; font-weight: 700; color: #34d399;">provide_answer</div>
+            <div style="font-size: 0.75rem; color: #94a3b8; margin-top: 0.2rem;">
+              マニュアルに基づく案内を提示。LLM生成の動的選択肢<br>
+              urgency high/critical → 即 RESERVATION
+            </div>
+            <div style="font-size: 0.7rem; color: #34d399; margin-top: 0.2rem;">→ 動的選択肢 or RESERVATION</div>
+          </div>
+
+          <div style="background: rgba(127,29,29,0.15); border-left: 3px solid #f87171; padding: 0.6rem 0.8rem; border-radius: 0 8px 8px 0;">
+            <div style="font-size: 0.85rem; font-weight: 700; color: #f87171;">escalate</div>
+            <div style="font-size: 0.75rem; color: #94a3b8; margin-top: 0.2rem;">
+              LLMが危険と判断。緊急度設定して即予約へ
+            </div>
+            <div style="font-size: 0.7rem; color: #f87171; margin-top: 0.2rem;">→ RESERVATION</div>
+          </div>
+
+          <div style="background: rgba(6,78,59,0.2); border-left: 3px solid #10b981; padding: 0.6rem 0.8rem; border-radius: 0 8px 8px 0;">
+            <div style="font-size: 0.85rem; font-weight: 700; color: #10b981;">spec_answer</div>
+            <div style="font-size: 0.75rem; color: #94a3b8; margin-top: 0.2rem;">
+              「仕様です」の説明を表示
+            </div>
+            <div style="font-size: 0.7rem; color: #10b981; margin-top: 0.2rem;">→ SPEC_CHECK</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card mt-2">
+        <h3>候補トリガー条件</h3>
+        <div style="font-size: 0.82rem;">
+          以下のいずれかで <code>candidates_shown=True</code>（解決策提示許可）:
+          <div style="display: flex; gap: 0.5rem; margin-top: 0.5rem;">
+            <div style="flex: 1; background: rgba(30,58,95,0.3); padding: 0.5rem; border-radius: 6px; text-align: center;">
+              <div style="font-size: 1.3rem; font-weight: 700; color: #60a5fa;">≥ 0.7</div>
+              <div class="small">confidence_to_answer</div>
+            </div>
+            <div style="flex: 0.3; display: flex; align-items: center; justify-content: center; font-size: 0.8rem; color: #94a3b8;">or</div>
+            <div style="flex: 1; background: rgba(30,58,95,0.3); padding: 0.5rem; border-radius: 6px; text-align: center;">
+              <div style="font-size: 1.3rem; font-weight: 700; color: #fbbf24;">≥ 4</div>
+              <div class="small">diagnostic_turn</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <span class="slide-num">13</span>
+</div>
+
+<!-- ============================================ -->
+<!-- SLIDE 14 — RESERVATION & Booking Flow + SPEC_CHECK -->
+<!-- ============================================ -->
+<div class="slide">
+  <span class="label label-red mb-1">Chat Flow</span>
+  <h2>SPEC_CHECK / URGENCY / 予約フロー — <span class="accent-red">出口ステップの詳細</span></h2>
+
+  <div class="cols cols-3 mt-2">
+    <!-- Column 1: SPEC_CHECK -->
+    <div>
+      <div class="card card-success">
+        <h3 style="color: #34d399;">SPEC_CHECK（仕様確認）</h3>
+        <p class="small mb-1">症状が「正常な仕様動作」かをLLMが判定する2フェーズ処理</p>
+
+        <div style="display: flex; flex-direction: column; gap: 0; align-items: center; margin-top: 0.5rem;">
+          <div style="background: rgba(6,78,59,0.3); border: 1px solid #10b981; border-radius: 8px; padding: 0.5rem; width: 100%; font-size: 0.78rem; text-align: center;">
+            <b>Phase 1: LLM分類</b><br>
+            <span class="small">SPEC_CLASSIFICATION_SCHEMA</span>
+          </div>
+          <div class="flow-arrow-down" style="height: 12px;"></div>
+          <div style="display: flex; width: 100%; gap: 4px;">
+            <div style="flex: 1; text-align: center;">
+              <div style="font-size: 0.65rem; color: #34d399;">is_spec=true<br>confidence=high</div>
+              <div class="flow-arrow-down" style="height: 10px;"></div>
+              <div style="background: rgba(6,78,59,0.2); border: 1px solid #10b981; border-radius: 6px; padding: 0.4rem; font-size: 0.7rem;">
+                仕様説明を表示
+              </div>
+            </div>
+            <div style="flex: 1; text-align: center;">
+              <div style="font-size: 0.65rem; color: #fbbf24;">confidence低<br>or判定失敗</div>
+              <div class="flow-arrow-down" style="height: 10px;"></div>
+              <div style="background: rgba(120,53,15,0.15); border: 1px solid #f59e0b; border-radius: 6px; padding: 0.4rem; font-size: 0.7rem;">
+                → DIAGNOSING
+              </div>
+            </div>
+          </div>
+
+          <div class="divider" style="width: 100%;"></div>
+
+          <div style="background: rgba(6,78,59,0.3); border: 1px solid #10b981; border-radius: 8px; padding: 0.5rem; width: 100%; font-size: 0.78rem; text-align: center;">
+            <b>Phase 2: ユーザー選択</b>
+          </div>
+          <div class="flow-arrow-down" style="height: 10px;"></div>
+          <div style="display: flex; width: 100%; gap: 4px;">
+            <div style="flex: 1; text-align: center; font-size: 0.68rem;">
+              <span style="color: #34d399;">「解決」</span><br>→ DONE
+            </div>
+            <div style="flex: 1; text-align: center; font-size: 0.68rem;">
+              <span style="color: #fbbf24;">「未解決」</span><br>→ DIAGNOSING
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Column 2: URGENCY_CHECK -->
+    <div>
+      <div class="card card-warning">
+        <h3 style="color: #fbbf24;">URGENCY_CHECK（緊急度評価）</h3>
+        <p class="small mb-1">DIAGNOSINGで3回解決失敗時 or provide_answer時のurgency判定</p>
+
+        <div style="display: flex; flex-direction: column; gap: 0; align-items: center; margin-top: 0.5rem;">
+          <div style="background: rgba(120,53,15,0.2); border: 1px solid #f59e0b; border-radius: 8px; padding: 0.5rem; width: 100%; font-size: 0.78rem; text-align: center;">
+            <b>LLM緊急度アセスメント</b><br>
+            <span class="small">URGENCY_SCHEMA で総合判定</span>
+          </div>
+          <div class="flow-arrow-down" style="height: 12px;"></div>
+
+          <div style="width: 100%; font-size: 0.75rem;">
+            <div style="display: flex; align-items: center; gap: 0.3rem; margin-bottom: 0.3rem;">
+              <span class="urgency-dot critical"></span>
+              <b>critical</b> — 即停車
+            </div>
+            <div style="display: flex; align-items: center; gap: 0.3rem; margin-bottom: 0.3rem;">
+              <span class="urgency-dot high"></span>
+              <b>high</b> — 早期来場
+            </div>
+            <div style="display: flex; align-items: center; gap: 0.3rem; margin-bottom: 0.3rem;">
+              <span class="urgency-dot medium"></span>
+              <b>medium</b> — 今週中確認
+            </div>
+            <div style="display: flex; align-items: center; gap: 0.3rem;">
+              <span class="urgency-dot low"></span>
+              <b>low</b> — 経過観察
+            </div>
+          </div>
+
+          <div class="divider" style="width: 100%;"></div>
+          <div style="display: flex; width: 100%; gap: 4px;">
+            <div style="flex: 1; text-align: center; font-size: 0.7rem;">
+              <span style="color: #f87171; font-weight: 600;">high / critical</span><br>
+              → RESERVATION
+            </div>
+            <div style="flex: 1; text-align: center; font-size: 0.7rem;">
+              <span style="color: #34d399; font-weight: 600;">low / medium</span><br>
+              → DONE + アドバイス
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Column 3: RESERVATION & BOOKING -->
+    <div>
+      <div class="card card-danger">
+        <h3 style="color: #fca5a5;">RESERVATION → BOOKING</h3>
+        <p class="small mb-1">予約種別の判定と予約情報の収集</p>
+
+        <div style="display: flex; flex-direction: column; gap: 0; align-items: center; margin-top: 0.5rem;">
+          <div style="background: rgba(127,29,29,0.2); border: 1px solid #ef4444; border-radius: 8px; padding: 0.5rem; width: 100%; font-size: 0.78rem; text-align: center;">
+            <b>予約種別判定</b><br>
+            <span class="small">can_drive で自動分類</span>
+          </div>
+          <div class="flow-arrow-down" style="height: 12px;"></div>
+
+          <div style="display: flex; width: 100%; gap: 4px;">
+            <div style="flex: 1; display: flex; flex-direction: column; align-items: center;">
+              <div style="font-size: 0.68rem; color: #f87171; font-weight: 600;">can_drive=false</div>
+              <div class="flow-arrow-down" style="height: 10px;"></div>
+              <div style="background: rgba(127,29,29,0.3); border: 1px solid #ef4444; border-radius: 6px; padding: 0.4rem; font-size: 0.7rem; text-align: center; width: 100%;">
+                <b>dispatch</b><br>
+                ロードサービス
+              </div>
+            </div>
+            <div style="flex: 1; display: flex; flex-direction: column; align-items: center;">
+              <div style="font-size: 0.68rem; color: #fbbf24; font-weight: 600;">can_drive=true</div>
+              <div class="flow-arrow-down" style="height: 10px;"></div>
+              <div style="background: rgba(120,53,15,0.15); border: 1px solid #f59e0b; border-radius: 6px; padding: 0.4rem; font-size: 0.7rem; text-align: center; width: 100%;">
+                <b>visit</b><br>
+                来店予約
+              </div>
+            </div>
+          </div>
+
+          <div class="divider" style="width: 100%;"></div>
+
+          <div style="width: 100%; font-size: 0.75rem;">
+            <b>BOOKING_INFO（入力フォーム）:</b>
+            <div style="margin-top: 0.3rem;">
+              <div><span style="color: #f87171;">dispatch:</span> 名前, 電話, <u>現在地</u></div>
+              <div><span style="color: #fbbf24;">visit:</span> 名前, 電話, <u>希望日</u></div>
+            </div>
+          </div>
+
+          <div class="flow-arrow-down" style="height: 12px;"></div>
+          <div style="background: rgba(30,41,59,0.7); border: 1px solid #475569; border-radius: 6px; padding: 0.4rem; width: 100%; font-size: 0.72rem; text-align: center;">
+            BOOKING_CONFIRM → DONE
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="highlight-box purple mt-2" style="font-size: 0.82rem;">
+    <b>visit_urgency（来場緊急度）:</b> can_drive とは独立した軸。
+    <span style="color: #f87171;">immediate</span> = 今すぐ /
+    <span style="color: #fbbf24;">today</span> = 本日中 /
+    <span style="color: #60a5fa;">this_week</span> = 今週中 /
+    <span style="color: #34d399;">when_convenient</span> = ご都合の良い時に
+    — 例: can_drive=true でも visit_urgency="today"（警告灯点灯時）
+  </div>
+
+  <span class="slide-num">14</span>
+</div>
+
+<!-- ============================================ -->
+<!-- SLIDE 15 — Concrete Flow Examples -->
+<!-- ============================================ -->
+<div class="slide">
+  <span class="label label-green mb-1">Chat Flow</span>
+  <h2>具体的なフロー例 — <span class="accent-green">3パターンのシナリオ</span></h2>
+
+  <div class="cols cols-3 mt-2">
+    <!-- Example 1: Critical -->
+    <div class="card card-danger">
+      <h3><span class="urgency-dot critical"></span>例1: ブレーキ故障（critical）</h3>
+      <div style="display: flex; flex-direction: column; gap: 0; align-items: center; margin-top: 0.5rem;">
+        <div style="background: rgba(30,58,95,0.3); border-radius: 6px; padding: 0.4rem 0.6rem; width: 100%; font-size: 0.75rem;">
+          <span style="color: #60a5fa;">VEHICLE_ID</span> 車両選択
+        </div>
+        <div class="flow-arrow-down" style="height: 8px;"></div>
+        <div style="background: rgba(30,58,95,0.3); border-radius: 6px; padding: 0.4rem 0.6rem; width: 100%; font-size: 0.75rem;">
+          <span style="color: #60a5fa;">PHOTO_CONFIRM</span> →「はい」
+        </div>
+        <div class="flow-arrow-down" style="height: 8px;"></div>
+        <div style="background: rgba(120,53,15,0.2); border-radius: 6px; padding: 0.4rem 0.6rem; width: 100%; font-size: 0.75rem;">
+          <span style="color: #fbbf24;">FREE_TEXT</span><br>
+          <span class="small">「ブレーキを踏んでも止まらない」</span><br>
+          <span style="font-size: 0.7rem; color: #f87171;">→ keyword: CRITICAL</span>
+        </div>
+        <div class="flow-arrow-down" style="height: 8px;"></div>
+        <div style="background: rgba(127,29,29,0.3); border-radius: 6px; padding: 0.4rem 0.6rem; width: 100%; font-size: 0.75rem; color: #fca5a5;">
+          <b>RESERVATION</b> (skip DIAGNOSING)<br>
+          <span class="small">can_drive=false, dispatch</span>
+        </div>
+        <div class="flow-arrow-down" style="height: 8px;"></div>
+        <div style="background: rgba(127,29,29,0.2); border-radius: 6px; padding: 0.4rem 0.6rem; width: 100%; font-size: 0.75rem;">
+          <span style="color: #fca5a5;">BOOKING_INFO</span><br>
+          <span class="small">名前・電話・現在地を入力</span>
+        </div>
+        <div class="flow-arrow-down" style="height: 8px;"></div>
+        <div style="background: rgba(6,78,59,0.2); border-radius: 6px; padding: 0.3rem 0.6rem; width: 100%; font-size: 0.75rem; color: #34d399;">
+          DONE
+        </div>
+      </div>
+      <div class="highlight-box red mt-1" style="font-size: 0.72rem; padding: 0.5rem 0.8rem;">
+        DIAGNOSINGを完全にスキップ。最短2ステップで予約画面到達。
+      </div>
+    </div>
+
+    <!-- Example 2: Normal Diagnostic -->
+    <div class="card card-warning">
+      <h3><span class="urgency-dot high"></span>例2: エンジン警告灯（high）</h3>
+      <div style="display: flex; flex-direction: column; gap: 0; align-items: center; margin-top: 0.5rem;">
+        <div style="background: rgba(30,58,95,0.3); border-radius: 6px; padding: 0.4rem 0.6rem; width: 100%; font-size: 0.75rem;">
+          <span style="color: #60a5fa;">VEHICLE_ID</span> → <span style="color: #60a5fa;">PHOTO_CONFIRM</span>
+        </div>
+        <div class="flow-arrow-down" style="height: 8px;"></div>
+        <div style="background: rgba(120,53,15,0.2); border-radius: 6px; padding: 0.4rem 0.6rem; width: 100%; font-size: 0.75rem;">
+          <span style="color: #fbbf24;">FREE_TEXT</span><br>
+          <span class="small">「エンジンの警告灯が点灯」</span><br>
+          <span style="font-size: 0.7rem; color: #fbbf24;">→ keyword: HIGH (SPEC skip)</span>
+        </div>
+        <div class="flow-arrow-down" style="height: 8px;"></div>
+        <div style="background: rgba(120,53,15,0.15); border: 1px solid #f59e0b; border-radius: 6px; padding: 0.4rem 0.6rem; width: 100%; font-size: 0.75rem;">
+          <b style="color: #fbbf24;">DIAGNOSING Turn 1</b><br>
+          <span class="small">Q: 「警告灯の色は？」🔶 アイコン表示</span>
+        </div>
+        <div class="flow-arrow-down" style="height: 8px;"></div>
+        <div style="background: rgba(120,53,15,0.15); border: 1px solid #f59e0b; border-radius: 6px; padding: 0.4rem 0.6rem; width: 100%; font-size: 0.75rem;">
+          <b style="color: #fbbf24;">DIAGNOSING Turn 2</b><br>
+          <span class="small">Q: 「いつから点灯していますか？」</span>
+        </div>
+        <div class="flow-arrow-down" style="height: 8px;"></div>
+        <div style="background: rgba(120,53,15,0.15); border: 1px solid #f59e0b; border-radius: 6px; padding: 0.4rem 0.6rem; width: 100%; font-size: 0.75rem;">
+          <b style="color: #fbbf24;">DIAGNOSING Turn 3-4</b><br>
+          <span class="small">confidence ≥ 0.7 → provide_answer</span><br>
+          <span style="font-size: 0.7rem; color: #f87171;">urgency_flag=high → RESERVATION</span>
+        </div>
+        <div class="flow-arrow-down" style="height: 8px;"></div>
+        <div style="background: rgba(127,29,29,0.2); border-radius: 6px; padding: 0.3rem 0.6rem; width: 100%; font-size: 0.75rem; color: #fca5a5;">
+          <b>RESERVATION</b> → visit予約
+        </div>
+      </div>
+      <div class="highlight-box amber mt-1" style="font-size: 0.72rem; padding: 0.5rem 0.8rem;">
+        2〜4ターンの問診後、高緊急度で予約導線。can_drive=true のため visit。
+      </div>
+    </div>
+
+    <!-- Example 3: Spec -->
+    <div class="card card-success">
+      <h3><span class="urgency-dot low"></span>例3: アイドリングストップ（spec）</h3>
+      <div style="display: flex; flex-direction: column; gap: 0; align-items: center; margin-top: 0.5rem;">
+        <div style="background: rgba(30,58,95,0.3); border-radius: 6px; padding: 0.4rem 0.6rem; width: 100%; font-size: 0.75rem;">
+          <span style="color: #60a5fa;">VEHICLE_ID</span> → <span style="color: #60a5fa;">PHOTO_CONFIRM</span>
+        </div>
+        <div class="flow-arrow-down" style="height: 8px;"></div>
+        <div style="background: rgba(120,53,15,0.2); border-radius: 6px; padding: 0.4rem 0.6rem; width: 100%; font-size: 0.75rem;">
+          <span style="color: #fbbf24;">FREE_TEXT</span><br>
+          <span class="small">「停車中にエンジンが止まる」</span><br>
+          <span style="font-size: 0.7rem; color: #34d399;">→ keyword: none, RAG: spec一致</span>
+        </div>
+        <div class="flow-arrow-down" style="height: 8px;"></div>
+        <div style="background: rgba(6,78,59,0.2); border: 1px solid #10b981; border-radius: 6px; padding: 0.4rem 0.6rem; width: 100%; font-size: 0.75rem;">
+          <b style="color: #34d399;">SPEC_CHECK Phase 1</b><br>
+          <span class="small">LLM判定: is_spec=true, confidence=high</span><br>
+          <span class="small">「アイドリングストップ機能の仕様です」</span>
+        </div>
+        <div class="flow-arrow-down" style="height: 8px;"></div>
+        <div style="background: rgba(6,78,59,0.2); border: 1px solid #10b981; border-radius: 6px; padding: 0.4rem 0.6rem; width: 100%; font-size: 0.75rem;">
+          <b style="color: #34d399;">SPEC_CHECK Phase 2</b><br>
+          <span class="small">ユーザー選択: 「解決しました」</span>
+        </div>
+        <div class="flow-arrow-down" style="height: 8px;"></div>
+        <div style="background: rgba(6,78,59,0.3); border-radius: 6px; padding: 0.3rem 0.6rem; width: 100%; font-size: 0.75rem; color: #34d399;">
+          <b>DONE</b> — 問診不要で完了
+        </div>
+      </div>
+      <div class="highlight-box green mt-1" style="font-size: 0.72rem; padding: 0.5rem 0.8rem;">
+        DIAGNOSINGに入らず仕様説明のみで完了。ユーザーの不安を即解消。
+      </div>
+    </div>
+  </div>
+
+  <div class="card mt-2" style="padding: 1rem;">
+    <div class="cols cols-4" style="gap: 1rem;">
+      <div style="text-align: center;">
+        <div style="font-size: 0.8rem; font-weight: 700; color: #f87171;">Critical パス</div>
+        <div class="small">最短: 3ステップ</div>
+        <div class="small">FREE_TEXT → RESERVATION → DONE</div>
+      </div>
+      <div style="text-align: center;">
+        <div style="font-size: 0.8rem; font-weight: 700; color: #34d399;">Spec パス</div>
+        <div class="small">最短: 4ステップ</div>
+        <div class="small">FREE_TEXT → SPEC → DONE</div>
+      </div>
+      <div style="text-align: center;">
+        <div style="font-size: 0.8rem; font-weight: 700; color: #fbbf24;">通常問診パス</div>
+        <div class="small">平均: 6-8ステップ</div>
+        <div class="small">FREE_TEXT → DIAG(2-4T) → 出口</div>
+      </div>
+      <div style="text-align: center;">
+        <div style="font-size: 0.8rem; font-weight: 700; color: #a78bfa;">最長パス</div>
+        <div class="small">最大: 12ステップ</div>
+        <div class="small">DIAG(8T) → URGENCY → BOOKING</div>
+      </div>
+    </div>
+  </div>
+
+  <span class="slide-num">15</span>
+</div>
+
+<!-- ============================================ -->
+<!-- SLIDE 16 — Prompt Approach Change -->
+<!-- ============================================ -->
+<div class="slide">
+  <span class="label label-purple mb-1">Prompt Update</span>
+  <h2>プロンプト方針転換 — <span class="accent-purple">原因診断型 → マニュアル案内型</span></h2>
+
+  <div class="cols cols-2 mt-2">
+    <div class="card card-danger">
+      <h3><span class="accent-red">Before:</span> 原因診断型</h3>
+      <div style="font-size: 0.82rem; margin-top: 0.5rem;">
+        <div class="highlight-box red" style="padding: 0.8rem;">
+          <div style="font-weight: 700; margin-bottom: 0.3rem;">役割: 「車両トラブル診断AI」</div>
+          <ul>
+            <li>AIが<b>原因を特定</b>する</li>
+            <li>一般的な自動車知識に基づいて回答</li>
+            <li>マニュアル外の推測も許容</li>
+            <li>provide_answer 後は固定3択:<br>
+              <span style="color: #94a3b8;">解決した / 解決してない / 予約したい</span></li>
+          </ul>
+        </div>
+        <div style="margin-top: 0.5rem; color: #fca5a5; font-size: 0.78rem;">
+          問題: マニュアルに無い情報を「でっちあげ」るリスク。ユーザーの状況に合わない固定選択肢。
+        </div>
+      </div>
+    </div>
+
+    <div class="card card-success">
+      <h3><span class="accent-green">After:</span> マニュアル案内型</h3>
+      <div style="font-size: 0.82rem; margin-top: 0.5rem;">
+        <div class="highlight-box green" style="padding: 0.8rem;">
+          <div style="font-weight: 700; margin-bottom: 0.3rem;">役割: 「オーナーズマニュアル案内AI」</div>
+          <ul>
+            <li>マニュアル記載事象に<b>ユーザーの症状を照合</b></li>
+            <li>ユーザーに<b>物理的確認アクション</b>を指示</li>
+            <li>マニュアル外は明示的にディーラー推奨</li>
+            <li>provide_answer 後はLLMが<b>動的選択肢</b>を生成</li>
+          </ul>
+        </div>
+        <div style="margin-top: 0.5rem; color: #34d399; font-size: 0.78rem;">
+          効果: Faithfulnessスコア向上。文脈に適した選択肢でUX改善。
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card mt-2">
+    <h3>確認アクション指示の例</h3>
+    <div class="cols cols-3" style="gap: 1rem; margin-top: 0.5rem;">
+      <div style="background: rgba(30,58,95,0.3); padding: 0.6rem; border-radius: 8px; font-size: 0.78rem;">
+        <div style="color: #60a5fa; font-weight: 600;">目視確認</div>
+        <div class="small mt-1">「ボンネットを開けて冷却水リザーブタンクの液面を確認してください」</div>
+      </div>
+      <div style="background: rgba(30,58,95,0.3); padding: 0.6rem; border-radius: 8px; font-size: 0.78rem;">
+        <div style="color: #34d399; font-weight: 600;">計器確認</div>
+        <div class="small mt-1">「メーター内の水温計の針がどの位置にあるか教えてください」</div>
+      </div>
+      <div style="background: rgba(30,58,95,0.3); padding: 0.6rem; border-radius: 8px; font-size: 0.78rem;">
+        <div style="color: #fbbf24; font-weight: 600;">操作確認</div>
+        <div class="small mt-1">「ブレーキペダルを踏んだときの感触を教えてください」</div>
+      </div>
+    </div>
+    <div class="highlight-box red mt-1" style="font-size: 0.78rem; padding: 0.5rem 0.8rem;">
+      <b>禁止事項:</b> ラジエーターキャップを開ける / 走行中にテスト / エンジンルーム内に手を入れる / ジャッキアップ
+    </div>
+  </div>
+
+  <span class="slide-num">16</span>
+</div>
+
+<!-- ============================================ -->
+<!-- SLIDE 17 — Dynamic Choices Flow -->
+<!-- ============================================ -->
+<div class="slide">
+  <span class="label label-green mb-1">Dynamic Choices</span>
+  <h2>動的選択肢フロー — <span class="accent-green">provide_answer 後の選択肢生成</span></h2>
+
+  <div class="cols cols-2 mt-2">
+    <div>
+      <div class="card card-blue">
+        <h3>動的選択肢の仕組み</h3>
+        <div style="display: flex; flex-direction: column; gap: 0; align-items: center; margin-top: 0.5rem;">
+          <div class="flow-node active" style="width: 100%;">
+            <b>LLM provide_answer</b><br>
+            <span class="small">マニュアルに基づく案内 + choices 生成</span>
+          </div>
+          <div style="display: flex; width: 100%; margin-top: 4px;">
+            <div style="flex: 1; display: flex; flex-direction: column; align-items: center;">
+              <div style="font-size: 0.68rem; color: #34d399; font-weight: 600;">choices あり</div>
+              <div class="flow-arrow-down" style="height: 14px;"></div>
+              <div class="flow-node success" style="width: 95%; font-size: 0.75rem;">
+                動的選択肢を表示<br>
+                <span class="small">followup_0, followup_1...</span>
+              </div>
+              <div class="flow-arrow-down" style="height: 14px;"></div>
+              <div class="flow-node" style="width: 95%; font-size: 0.75rem;">
+                <b>キーワード判定</b><br>
+                <span class="small">予約系 / 解決系 / その他</span>
+              </div>
+              <div style="display: flex; width: 100%; margin-top: 4px; gap: 2px;">
+                <div style="flex: 1; text-align: center; font-size: 0.62rem;">
+                  <span style="color: #f87171;">予約系</span><br>→ RESERVATION
+                </div>
+                <div style="flex: 1; text-align: center; font-size: 0.62rem;">
+                  <span style="color: #34d399;">解決系</span><br>→ DONE
+                </div>
+                <div style="flex: 1; text-align: center; font-size: 0.62rem;">
+                  <span style="color: #60a5fa;">その他</span><br>→ DIAGNOSING
+                </div>
+              </div>
+            </div>
+            <div style="flex: 1; display: flex; flex-direction: column; align-items: center;">
+              <div style="font-size: 0.68rem; color: #94a3b8; font-weight: 600;">choices = null</div>
+              <div class="flow-arrow-down" style="height: 14px;"></div>
+              <div class="flow-node" style="width: 95%; font-size: 0.75rem; border-color: #10b981; color: #34d399;">
+                最終回答<br>
+                <span class="small">→ 自動的に DONE</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <div class="card">
+        <h3>LLM生成選択肢の例</h3>
+        <table style="font-size: 0.82rem;">
+          <tr>
+            <th>状況</th>
+            <th>生成される選択肢</th>
+          </tr>
+          <tr>
+            <td class="small">対処手順の案内後</td>
+            <td><span class="cv-c">手順を試してみます</span> <span class="cv-c">ディーラーに相談したい</span></td>
+          </tr>
+          <tr>
+            <td class="small">危険度が高い場合</td>
+            <td><span class="cv-c">ロードサービスを呼ぶ</span> <span class="cv-c">ディーラーに持ち込む</span></td>
+          </tr>
+          <tr>
+            <td class="small">仕様説明の場合</td>
+            <td><span class="cv-c">理解しました</span> <span class="cv-c">もう少し詳しく知りたい</span></td>
+          </tr>
+          <tr>
+            <td class="small">最終回答</td>
+            <td><span style="color: #94a3b8;">null（会話終了）</span></td>
+          </tr>
+        </table>
+      </div>
+
+      <div class="card mt-2 card-warning">
+        <h3>キーワード検出ルール</h3>
+        <table style="font-size: 0.82rem;">
+          <tr>
+            <th>分類</th>
+            <th>検出キーワード</th>
+            <th>遷移先</th>
+          </tr>
+          <tr>
+            <td style="color: #f87171;">予約系</td>
+            <td class="small">予約, ディーラー, 持ち込, ロードサービス</td>
+            <td>RESERVATION</td>
+          </tr>
+          <tr>
+            <td style="color: #34d399;">解決系</td>
+            <td class="small">理解しました, 解決, 試してみ</td>
+            <td>DONE</td>
+          </tr>
+          <tr>
+            <td style="color: #60a5fa;">その他</td>
+            <td class="small">上記以外</td>
+            <td>DIAGNOSING 続行</td>
+          </tr>
+        </table>
+      </div>
+
+      <div class="highlight-box mt-1" style="font-size: 0.78rem;">
+        <b>後方互換:</b> 既存セッションの <code>yes</code> / <code>no</code> / <code>book</code> も引き続きサポート
+      </div>
+    </div>
+  </div>
+
+  <span class="slide-num">17</span>
+</div>
+
+<!-- ============================================ -->
+<!-- SLIDE 18 — E2E CRITICAL Tests (#1,#10,#11,#12,#13) -->
+<!-- ============================================ -->
+<div class="slide">
+  <span class="label label-red mb-1">E2E Test Results</span>
+  <h2>CRITICAL 即エスカレーション — <span class="accent-red">5/5 正常検出 (100%)</span></h2>
+  <p class="small mb-1">改修後システムでの実テスト結果。キーワード判定 → RESERVATION 直行パスの検証。全5件が正しくエスカレーションされた。</p>
+
+  <div class="cols cols-2 mt-1">
+    <!-- Shared flow pattern -->
+    <div class="card card-danger" style="padding:1rem;">
+      <h3 style="font-size:0.95rem;">共通フロー（全5件共通）</h3>
+
+      <div class="cv"><div class="cv-n">1</div><div class="cv-b" style="border-left:2px solid #475569;">
+        <div class="cv-l" style="color:#94a3b8;">VEHICLE_ID</div>
+        <div class="cv-s">「こんにちは！車両トラブル診断アシスタントです。お車の情報を教えてください。」</div>
+        <div class="cv-u">→ ホンダ アコード を検索・選択</div>
+      </div></div>
+
+      <div class="cv"><div class="cv-n">2</div><div class="cv-b" style="border-left:2px solid #475569;">
+        <div class="cv-l" style="color:#94a3b8;">PHOTO_CONFIRM</div>
+        <div class="cv-s">「2011年式 ホンダ アコード Z でお間違いないですか？」</div>
+        <div class="cv-p"><span class="cv-c sel">はい、この車です</span><span class="cv-c">いいえ、違います</span></div>
+        <div class="cv-u">→ 「はい、この車です」</div>
+      </div></div>
+
+      <div class="cv"><div class="cv-n">3</div><div class="cv-b" style="border-left:2px solid #f59e0b;">
+        <div class="cv-l" style="color:#fbbf24;">FREE_TEXT</div>
+        <div class="cv-s">「ホンダ アコード ですね。どのような症状やお困りごとがありますか？」</div>
+        <div class="cv-u">→ 症状を入力</div>
+        <div class="cv-r">keyword判定 → <span style="color:#f87171; font-weight:700;">CRITICAL</span></div>
+        <div class="cv-r">urgency=critical → DIAGNOSING スキップ</div>
+      </div></div>
+
+      <div class="cv"><div class="cv-n">4</div><div class="cv-b" style="border-left:2px solid #ef4444;">
+        <div class="cv-l" style="color:#fca5a5;">RESERVATION (escalate)</div>
+        <div class="cv-s">「🚨 今すぐロードサービスまたは来場が必要です。走行が危険な状態と判断されます。出張整備の手配をおすすめします。」</div>
+        <div class="cv-p"><span class="cv-c sel">はい、予約する</span><span class="cv-c">いいえ、今は予約しない</span></div>
+      </div></div>
+
+      <div class="cv-result" style="background:rgba(127,29,29,0.2); color:#fca5a5;">
+        結果: CRITICAL → reservation/escalate（DIAGNOSING 0ターン）
+      </div>
+    </div>
+
+    <!-- 5 Critical test cases -->
+    <div style="display:flex; flex-direction:column; gap:0.8rem;">
+      <div class="card card-danger" style="padding:0.8rem;">
+        <h3 style="font-size:0.85rem; margin-bottom:0.3rem;"><span class="urgency-dot critical"></span>#1 ブレーキ故障 <span class="badge badge-red">critical ✅</span></h3>
+        <div class="cv-symptom" style="font-size:0.78rem;"><span style="color:#fbbf24;">症状:</span> 「ブレーキを踏んでも止まらない感じがする」</div>
+        <div class="cv-r" style="font-size:0.7rem;">keyword: <code>ブレーキ...止まらない</code> → CRITICAL</div>
+        <div style="font-size:0.7rem; color:#94a3b8;">step=reservation, action=escalate, urgency=critical</div>
+      </div>
+
+      <div class="card card-danger" style="padding:0.8rem;">
+        <h3 style="font-size:0.85rem; margin-bottom:0.3rem;"><span class="urgency-dot critical"></span>#10 オーバーヒート <span class="badge badge-red">critical ✅</span></h3>
+        <div class="cv-symptom" style="font-size:0.78rem;"><span style="color:#fbbf24;">症状:</span> 「水温計が赤いところまで上がっている」</div>
+        <div class="cv-r" style="font-size:0.7rem;">keyword: <code>水温...赤</code> → CRITICAL</div>
+        <div style="font-size:0.7rem; color:#94a3b8;">step=reservation, action=escalate, urgency=critical</div>
+      </div>
+
+      <div class="card card-danger" style="padding:0.8rem;">
+        <h3 style="font-size:0.85rem; margin-bottom:0.3rem;"><span class="urgency-dot critical"></span>#11 煙の発生 <span class="badge badge-red">critical ✅</span></h3>
+        <div class="cv-symptom" style="font-size:0.78rem;"><span style="color:#fbbf24;">症状:</span> 「ボンネットから白い煙が出ている」</div>
+        <div class="cv-r" style="font-size:0.7rem;">keyword: <code>煙/白煙/黒煙</code> → CRITICAL</div>
+        <div style="font-size:0.7rem; color:#94a3b8;">step=reservation, action=escalate, urgency=critical</div>
+      </div>
+
+      <div class="card card-danger" style="padding:0.8rem;">
+        <h3 style="font-size:0.85rem; margin-bottom:0.3rem;"><span class="urgency-dot critical"></span>#12 火災兆候 <span class="badge badge-red">critical ✅</span></h3>
+        <div class="cv-symptom" style="font-size:0.78rem;"><span style="color:#fbbf24;">症状:</span> 「エンジンルームから火が見える」</div>
+        <div class="cv-r" style="font-size:0.7rem;">keyword: <code>発火/火/燃え</code> → CRITICAL</div>
+        <div style="font-size:0.7rem; color:#94a3b8;">step=reservation, action=escalate, urgency=critical</div>
+      </div>
+
+      <div class="card card-danger" style="padding:0.8rem;">
+        <h3 style="font-size:0.85rem; margin-bottom:0.3rem;"><span class="urgency-dot critical"></span>#13 冷却水漏れ <span class="badge badge-red">critical ✅</span></h3>
+        <div class="cv-symptom" style="font-size:0.78rem;"><span style="color:#fbbf24;">症状:</span> 「冷却水が減っている気がする」</div>
+        <div class="cv-r" style="font-size:0.7rem;">keyword: <code>冷却水+漏/減/なくな</code> → CRITICAL</div>
+        <div style="font-size:0.7rem; color:#94a3b8;">step=reservation, action=escalate, urgency=critical</div>
+      </div>
+    </div>
+  </div>
+  <span class="slide-num">18</span>
+</div>
+
+<!-- ============================================ -->
+<!-- SLIDE 19 — E2E DIAGNOSING Tests #2,#3,#4 -->
+<!-- ============================================ -->
+<div class="slide">
+  <span class="label label-amber mb-1">E2E Test Results</span>
+  <h2>DIAGNOSING 初回応答 #2 #3 #4 — <span class="accent-amber">マニュアル案内型レスポンス</span></h2>
+  <p class="small mb-1">改修後プロンプト（マニュアル案内型）による初回応答。E2Eテストでは症状入力→初回LLM応答まで検証。</p>
+
+  <div class="cols cols-3 mt-1">
+    <!-- Test #2 -->
+    <div class="card card-warning" style="padding:1rem;">
+      <h3 style="font-size:0.85rem;"><span class="urgency-dot high"></span>#2 エンジン警告灯 <span class="badge badge-amber">ask_question ✅</span></h3>
+      <div class="cv-symptom" style="font-size:0.78rem;"><span style="color:#fbbf24;">症状:</span> 「エンジンの警告灯が点灯している」</div>
+      <div style="margin:8px 0;">
+        <span class="label label-amber" style="font-size:0.6rem;">partially_covered</span>
+      </div>
+
+      <div class="cv"><div class="cv-n">4</div><div class="cv-b" style="border-left:2px solid #3b82f6;">
+        <div class="cv-l" style="color:#60a5fa; font-size:0.75rem;">DIAGNOSING Turn 1</div>
+        <div class="cv-s" style="font-size:0.78rem;">「警告灯は何色ですか？（赤またはオレンジ）」</div>
+      </div></div>
+
+      <div class="cv-result" style="background:rgba(120,53,15,0.15); color:#fbbf24; font-size:0.75rem;">
+        ✅ action=ask_question, coverage=partially_covered<br>
+        簡潔な確認質問（80字以内ルール準拠）
+      </div>
+    </div>
+
+    <!-- Test #3 -->
+    <div class="card card-blue" style="padding:1rem;">
+      <h3 style="font-size:0.85rem;"><span class="urgency-dot high"></span>#3 走行中異音 <span class="badge badge-amber">ask_question ✅</span></h3>
+      <div class="cv-symptom" style="font-size:0.78rem;"><span style="color:#fbbf24;">症状:</span> 「走行中にガタガタと異音がする」</div>
+      <div style="margin:8px 0;">
+        <span class="label label-green" style="font-size:0.6rem;">covered</span>
+      </div>
+
+      <div class="cv"><div class="cv-n">4</div><div class="cv-b" style="border-left:2px solid #3b82f6;">
+        <div class="cv-l" style="color:#60a5fa; font-size:0.75rem;">DIAGNOSING Turn 1</div>
+        <div class="cv-s" style="font-size:0.78rem;">「走行中にガタガタと異音がする場合、タイヤやブレーキに問題がある可能性があります。以下の手順を試してみてください。1. 安全な場所に停車する…」</div>
+      </div></div>
+
+      <div class="cv-result" style="background:rgba(30,58,95,0.2); color:#60a5fa; font-size:0.75rem;">
+        ✅ action=ask_question, coverage=covered<br>
+        ⚠️ LLMが初回でマニュアル手順を提示（provide_answer的な内容だが ask_question で返却）
+      </div>
+    </div>
+
+    <!-- Test #4 -->
+    <div class="card card-blue" style="padding:1rem;">
+      <h3 style="font-size:0.85rem;"><span class="urgency-dot medium"></span>#4 エアコン不調 <span class="badge badge-amber">ask_question ✅</span></h3>
+      <div class="cv-symptom" style="font-size:0.78rem;"><span style="color:#fbbf24;">症状:</span> 「エアコンから冷たい風が出ない」</div>
+      <div style="margin:8px 0;">
+        <span class="label label-purple" style="font-size:0.6rem;">coverage: null</span>
+      </div>
+
+      <div class="cv"><div class="cv-n">4</div><div class="cv-b" style="border-left:2px solid #3b82f6;">
+        <div class="cv-l" style="color:#60a5fa; font-size:0.75rem;">DIAGNOSING Turn 1</div>
+        <div class="cv-s" style="font-size:0.78rem;">「症状について詳しくお伺いします。」</div>
+      </div></div>
+
+      <div class="cv-result" style="background:rgba(30,58,95,0.2); color:#60a5fa; font-size:0.75rem;">
+        ✅ action=ask_question, coverage=null<br>
+        RAGヒットなし → 追加情報収集から開始
+      </div>
+    </div>
+  </div>
+  <span class="slide-num">19</span>
+</div>
+
+<!-- ============================================ -->
+<!-- SLIDE 20 — E2E DIAGNOSING Tests #5,#6,#7 -->
+<!-- ============================================ -->
+<div class="slide">
+  <span class="label label-amber mb-1">E2E Test Results</span>
+  <h2>DIAGNOSING 初回応答 #5 #6 #7 — <span class="accent-amber">マニュアル確認指示パターン</span></h2>
+
+  <div class="cols cols-3 mt-1">
+    <!-- Test #5 -->
+    <div class="card card-warning" style="padding:1rem;">
+      <h3 style="font-size:0.85rem;"><span class="urgency-dot high"></span>#5 エンジン始動不良 <span class="badge badge-amber">ask_question ✅</span></h3>
+      <div class="cv-symptom" style="font-size:0.78rem;"><span style="color:#fbbf24;">症状:</span> 「エンジンがかからない」</div>
+      <div style="margin:8px 0;">
+        <span class="label label-green" style="font-size:0.6rem;">covered</span>
+      </div>
+
+      <div class="cv"><div class="cv-n">4</div><div class="cv-b" style="border-left:2px solid #3b82f6;">
+        <div class="cv-l" style="color:#60a5fa; font-size:0.75rem;">DIAGNOSING Turn 1</div>
+        <div class="cv-s" style="font-size:0.78rem;">「スターターは全く回りませんか、それとも回るが遅いですか？」</div>
+      </div></div>
+
+      <div class="cv-result" style="background:rgba(120,53,15,0.15); color:#fbbf24; font-size:0.75rem;">
+        ✅ coverage=covered, 操作確認型の質問<br>
+        ユーザーに操作結果の確認を促す
+      </div>
+    </div>
+
+    <!-- Test #6 -->
+    <div class="card card-blue" style="padding:1rem;">
+      <h3 style="font-size:0.85rem;"><span class="urgency-dot high"></span>#6 オイル漏れ <span class="badge badge-amber">ask_question ✅</span></h3>
+      <div class="cv-symptom" style="font-size:0.78rem;"><span style="color:#fbbf24;">症状:</span> 「駐車場の地面に油のシミがある」</div>
+      <div style="margin:8px 0;">
+        <span class="label label-green" style="font-size:0.6rem;">covered</span>
+      </div>
+
+      <div class="cv"><div class="cv-n">4</div><div class="cv-b" style="border-left:2px solid #3b82f6;">
+        <div class="cv-l" style="color:#60a5fa; font-size:0.75rem;">DIAGNOSING Turn 1</div>
+        <div class="cv-s" style="font-size:0.78rem;">「駐車場の地面に油のシミはオイル漏れの可能性があります。以下の手順で確認してください。1. 車を安全な場所に停める 2. エンジンを切る 3. オイルの色を確認する…」</div>
+      </div></div>
+
+      <div class="cv-result" style="background:rgba(30,58,95,0.2); color:#60a5fa; font-size:0.75rem;">
+        ✅ coverage=covered<br>
+        ⚠️ 初回で詳細手順を提示（#3同様 provide_answer的な内容）
+      </div>
+    </div>
+
+    <!-- Test #7 -->
+    <div class="card card-blue" style="padding:1rem;">
+      <h3 style="font-size:0.85rem;"><span class="urgency-dot medium"></span>#7 タイヤ空気圧 <span class="badge badge-amber">ask_question ✅</span></h3>
+      <div class="cv-symptom" style="font-size:0.78rem;"><span style="color:#fbbf24;">症状:</span> 「タイヤの空気圧警告灯がついた」</div>
+      <div style="margin:8px 0;">
+        <span class="label label-green" style="font-size:0.6rem;">covered</span>
+      </div>
+
+      <div class="cv"><div class="cv-n">4</div><div class="cv-b" style="border-left:2px solid #3b82f6;">
+        <div class="cv-l" style="color:#60a5fa; font-size:0.75rem;">DIAGNOSING Turn 1</div>
+        <div class="cv-s" style="font-size:0.78rem;">「タイヤの空気圧警告灯が点灯したとのことですね。以下の手順で対処してください。」</div>
+      </div></div>
+
+      <div class="cv-result" style="background:rgba(30,58,95,0.2); color:#60a5fa; font-size:0.75rem;">
+        ✅ coverage=covered<br>
+        マニュアル記載の対処手順を案内
+      </div>
+    </div>
+  </div>
+  <span class="slide-num">20</span>
+</div>
+
+<!-- ============================================ -->
+<!-- SLIDE 21 — E2E DIAGNOSING Tests #8,#9,#14 -->
+<!-- ============================================ -->
+<div class="slide">
+  <span class="label label-amber mb-1">E2E Test Results</span>
+  <h2>DIAGNOSING 初回応答 #8 #9 #14 — <span class="accent-amber">確認質問 + SPEC判定</span></h2>
+
+  <div class="cols cols-3 mt-1">
+    <!-- Test #8 -->
+    <div class="card card-blue" style="padding:1rem;">
+      <h3 style="font-size:0.85rem;"><span class="urgency-dot medium"></span>#8 ハンドル重い <span class="badge badge-amber">ask_question ✅</span></h3>
+      <div class="cv-symptom" style="font-size:0.78rem;"><span style="color:#fbbf24;">症状:</span> 「ハンドルが急に重くなった」</div>
+      <div style="margin:8px 0;">
+        <span class="label label-green" style="font-size:0.6rem;">covered</span>
+      </div>
+
+      <div class="cv"><div class="cv-n">4</div><div class="cv-b" style="border-left:2px solid #3b82f6;">
+        <div class="cv-l" style="color:#60a5fa; font-size:0.75rem;">DIAGNOSING Turn 1</div>
+        <div class="cv-s" style="font-size:0.78rem;">「エンジンはかかっていますか？」</div>
+      </div></div>
+
+      <div class="cv-result" style="background:rgba(30,58,95,0.2); color:#60a5fa; font-size:0.75rem;">
+        ✅ coverage=covered<br>
+        簡潔な状況確認（パワステ系の切り分け）
+      </div>
+    </div>
+
+    <!-- Test #9 (FAIL) -->
+    <div class="card" style="padding:1rem; border-color:#f59e0b; background:rgba(120,53,15,0.15);">
+      <h3 style="font-size:0.85rem;"><span class="urgency-dot low"></span>#9 仕様確認系 <span class="badge badge-red">ask_question ❌</span></h3>
+      <div class="cv-symptom" style="font-size:0.78rem;"><span style="color:#fbbf24;">症状:</span> 「停車中にエンジンが止まることがある」</div>
+      <div style="margin:8px 0;">
+        <span class="label label-green" style="font-size:0.6rem;">covered</span>
+        <span class="label label-red" style="font-size:0.6rem; margin-left:4px;">expected: spec_answer</span>
+      </div>
+
+      <div class="cv"><div class="cv-n">4</div><div class="cv-b" style="border-left:2px solid #f59e0b;">
+        <div class="cv-l" style="color:#fbbf24; font-size:0.75rem;">DIAGNOSING Turn 1</div>
+        <div class="cv-s" style="font-size:0.78rem;">「停車中にエンジンが止まることがある場合、以下の手順を試してください。」</div>
+      </div></div>
+
+      <div class="cv-result" style="background:rgba(127,29,29,0.15); color:#fca5a5; font-size:0.75rem;">
+        ❌ expected=spec_answer, actual=ask_question<br>
+        SPEC_CHECK ルーティング正常だが LLM が仕様説明ではなく追加質問を返却
+      </div>
+
+      <div class="highlight-box amber" style="font-size:0.68rem; padding:0.4rem 0.6rem; margin-top:8px;">
+        <b>分析:</b> アイドリングストップ仕様の説明が期待されるケース。SPEC_CHECK への
+        ルーティング自体は正常だが、LLMが「マニュアル案内」として手順を示す方向に判断。
+        プロンプトで spec_answer の優先度を上げる調整が必要。
+      </div>
+    </div>
+
+    <!-- Test #14 -->
+    <div class="card card-blue" style="padding:1rem;">
+      <h3 style="font-size:0.85rem;"><span class="urgency-dot high"></span>#14 走行中振動 <span class="badge badge-amber">ask_question ✅</span></h3>
+      <div class="cv-symptom" style="font-size:0.78rem;"><span style="color:#fbbf24;">症状:</span> 「走行中にブルブル振動する」</div>
+      <div style="margin:8px 0;">
+        <span class="label label-green" style="font-size:0.6rem;">covered</span>
+        <span class="label label-purple" style="font-size:0.6rem; margin-left:4px;">NEW</span>
+      </div>
+
+      <div class="cv"><div class="cv-n">4</div><div class="cv-b" style="border-left:2px solid #3b82f6;">
+        <div class="cv-l" style="color:#60a5fa; font-size:0.75rem;">DIAGNOSING Turn 1</div>
+        <div class="cv-s" style="font-size:0.78rem;">「走行中にブルブル振動するのは、タイヤやフロアマットの問題かもしれません。以下の手順を試してください。1. 安全な場所に停車する 2. タイヤの状態を確認する…」</div>
+      </div></div>
+
+      <div class="cv-result" style="background:rgba(30,58,95,0.2); color:#60a5fa; font-size:0.75rem;">
+        ✅ coverage=covered<br>
+        物理的確認アクション指示（タイヤ目視確認）
+      </div>
+    </div>
+  </div>
+  <span class="slide-num">21</span>
+</div>
+
+<!-- ============================================ -->
+<!-- SLIDE 22 — E2E DIAGNOSING Tests #15,#16,#17,#18 -->
+<!-- ============================================ -->
+<div class="slide">
+  <span class="label label-purple mb-1">E2E Test Results — New Cases</span>
+  <h2>DIAGNOSING 初回応答 #15 #16 #17 #18 — <span class="accent-purple">追加テストケース</span></h2>
+  <p class="small mb-1">キーワード緊急度ルールのカバー漏れを埋める追加テストケース。全件正常応答。</p>
+
+  <div class="cols cols-2 mt-1">
+    <!-- Test #15 -->
+    <div class="card card-blue" style="padding:1rem;">
+      <h3 style="font-size:0.85rem;"><span class="urgency-dot high"></span>#15 異臭 <span class="badge badge-amber">ask_question ✅</span></h3>
+      <div class="cv-symptom" style="font-size:0.78rem;"><span style="color:#fbbf24;">症状:</span> 「ゴム焦げた臭いがする」</div>
+      <div style="margin:8px 0;">
+        <span class="label label-green" style="font-size:0.6rem;">covered</span>
+        <span class="label label-purple" style="font-size:0.6rem; margin-left:4px;">NEW</span>
+      </div>
+
+      <div class="cv"><div class="cv-n">4</div><div class="cv-b" style="border-left:2px solid #3b82f6;">
+        <div class="cv-l" style="color:#60a5fa; font-size:0.75rem;">DIAGNOSING Turn 1</div>
+        <div class="cv-s" style="font-size:0.78rem;">「ゴムが焦げたような臭いは、排気システムやタイヤの異常が考えられます。」</div>
+      </div></div>
+
+      <div class="cv-result" style="background:rgba(30,58,95,0.2); color:#60a5fa; font-size:0.75rem;">
+        ✅ coverage=covered<br>
+        keyword: <code>焦げ+臭+ゴム</code> → HIGH
+      </div>
+    </div>
+
+    <!-- Test #16 -->
+    <div class="card card-blue" style="padding:1rem;">
+      <h3 style="font-size:0.85rem;"><span class="urgency-dot high"></span>#16 ABS警告灯 <span class="badge badge-amber">ask_question ✅</span></h3>
+      <div class="cv-symptom" style="font-size:0.78rem;"><span style="color:#fbbf24;">症状:</span> 「ABSランプが点灯している」</div>
+      <div style="margin:8px 0;">
+        <span class="label label-green" style="font-size:0.6rem;">covered</span>
+        <span class="label label-purple" style="font-size:0.6rem; margin-left:4px;">NEW</span>
+      </div>
+
+      <div class="cv"><div class="cv-n">4</div><div class="cv-b" style="border-left:2px solid #3b82f6;">
+        <div class="cv-l" style="color:#60a5fa; font-size:0.75rem;">DIAGNOSING Turn 1</div>
+        <div class="cv-s" style="font-size:0.78rem;">「ABSランプが点灯している場合、システムに異常がある可能性があります。以下の手順で対処してください。1. エンジンを切る 2. エンジンスイッチをONにする 3. 運転中の点灯を確認する…」</div>
+      </div></div>
+
+      <div class="cv-result" style="background:rgba(30,58,95,0.2); color:#60a5fa; font-size:0.75rem;">
+        ✅ coverage=covered<br>
+        keyword: <code>ABS+点灯</code> → HIGH, マニュアル手順をステップバイステップ案内
+      </div>
+    </div>
+
+    <!-- Test #17 -->
+    <div class="card card-blue" style="padding:1rem;">
+      <h3 style="font-size:0.85rem;"><span class="urgency-dot medium"></span>#17 燃費悪化 <span class="badge badge-amber">ask_question ✅</span></h3>
+      <div class="cv-symptom" style="font-size:0.78rem;"><span style="color:#fbbf24;">症状:</span> 「最近ガソリンの減りが早い」</div>
+      <div style="margin:8px 0;">
+        <span class="label label-amber" style="font-size:0.6rem;">partially_covered</span>
+        <span class="label label-purple" style="font-size:0.6rem; margin-left:4px;">NEW</span>
+      </div>
+
+      <div class="cv"><div class="cv-n">4</div><div class="cv-b" style="border-left:2px solid #3b82f6;">
+        <div class="cv-l" style="color:#60a5fa; font-size:0.75rem;">DIAGNOSING Turn 1</div>
+        <div class="cv-s" style="font-size:0.78rem;">「最近の運転スタイルについて教えてください。」</div>
+      </div></div>
+
+      <div class="cv-result" style="background:rgba(30,58,95,0.2); color:#60a5fa; font-size:0.75rem;">
+        ✅ coverage=partially_covered<br>
+        keyword: <code>ガソリン+減</code> → MEDIUM, 運転スタイルの確認から開始
+      </div>
+    </div>
+
+    <!-- Test #18 -->
+    <div class="card card-blue" style="padding:1rem;">
+      <h3 style="font-size:0.85rem;"><span class="urgency-dot medium"></span>#18 ワイパー故障 <span class="badge badge-amber">ask_question ✅</span></h3>
+      <div class="cv-symptom" style="font-size:0.78rem;"><span style="color:#fbbf24;">症状:</span> 「ワイパーが動かない」</div>
+      <div style="margin:8px 0;">
+        <span class="label label-green" style="font-size:0.6rem;">covered</span>
+        <span class="label label-purple" style="font-size:0.6rem; margin-left:4px;">NEW</span>
+      </div>
+
+      <div class="cv"><div class="cv-n">4</div><div class="cv-b" style="border-left:2px solid #3b82f6;">
+        <div class="cv-l" style="color:#60a5fa; font-size:0.75rem;">DIAGNOSING Turn 1</div>
+        <div class="cv-s" style="font-size:0.78rem;">「ワイパーが動かない場合の対処手順です。」</div>
+      </div></div>
+
+      <div class="cv-result" style="background:rgba(30,58,95,0.2); color:#60a5fa; font-size:0.75rem;">
+        ✅ coverage=covered<br>
+        keyword: <code>ワイパー+動かない</code> → MEDIUM, マニュアル対処手順の案内
+      </div>
+    </div>
+  </div>
+  <span class="slide-num">22</span>
+</div>
+
+<!-- ============================================ -->
+<!-- SLIDE 23 — E2E Test Summary -->
+<!-- ============================================ -->
+<div class="slide">
+  <span class="label label-purple mb-1">E2E Test Summary</span>
+  <h2>E2Eテスト結果総括 — <span class="accent-purple">18件実行結果</span></h2>
+
+  <!-- Summary Stats -->
+  <div class="cols cols-4 mt-1" style="margin-bottom:1.5rem;">
+    <div class="card card-success" style="text-align:center; padding:0.8rem;">
+      <div style="font-size:2rem; font-weight:800; color:#34d399;">18/18</div>
+      <div style="font-size:0.82rem; font-weight:600;">API成功率</div>
+      <div class="small">全件エラーなし完了</div>
+    </div>
+    <div class="card card-success" style="text-align:center; padding:0.8rem;">
+      <div style="font-size:2rem; font-weight:800; color:#34d399;">17/18</div>
+      <div style="font-size:0.82rem; font-weight:600;">Action一致率</div>
+      <div class="small" style="color:#fbbf24;">94.4% (#9 FAIL)</div>
+    </div>
+    <div class="card card-success" style="text-align:center; padding:0.8rem;">
+      <div style="font-size:2rem; font-weight:800; color:#34d399;">5/5</div>
+      <div style="font-size:0.82rem; font-weight:600;">CRITICAL検出率</div>
+      <div class="small">100% 全件 escalate</div>
+    </div>
+    <div class="card" style="text-align:center; padding:0.8rem;">
+      <div style="font-size:2rem; font-weight:800; color:#fbbf24;">5/18</div>
+      <div style="font-size:0.82rem; font-weight:600;">Urgency一致率</div>
+      <div class="small" style="color:#94a3b8;">27.8%（初回のみ判定のため）</div>
+    </div>
+  </div>
+
+  <!-- Result Table -->
+  <table style="font-size:0.72rem;">
+    <thead>
+      <tr>
+        <th style="width:24px;">#</th>
+        <th style="width:100px;">カテゴリ</th>
+        <th style="width:60px;">step</th>
+        <th style="width:60px;">urgency</th>
+        <th style="width:80px;">action</th>
+        <th style="width:80px;">coverage</th>
+        <th style="width:36px;">結果</th>
+        <th>初回応答（抜粋）</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr style="background:rgba(127,29,29,0.1);">
+        <td>1</td><td>ブレーキ故障</td>
+        <td style="color:#fca5a5;">reservation</td>
+        <td><span style="color:#f87171; font-weight:700;">critical</span></td>
+        <td><span class="badge badge-red">escalate</span></td>
+        <td style="color:#94a3b8;">—</td>
+        <td style="color:#34d399;">✅</td>
+        <td class="small">🚨 今すぐロードサービスまたは来場が必要です</td>
+      </tr>
+      <tr>
+        <td>2</td><td>エンジン警告灯</td>
+        <td style="color:#60a5fa;">diagnosing</td>
+        <td style="color:#94a3b8;">—</td>
+        <td><span class="badge badge-amber">ask_question</span></td>
+        <td><span style="color:#fbbf24;">partial</span></td>
+        <td style="color:#34d399;">✅</td>
+        <td class="small">警告灯は何色ですか？（赤またはオレンジ）</td>
+      </tr>
+      <tr>
+        <td>3</td><td>走行中異音</td>
+        <td style="color:#60a5fa;">diagnosing</td>
+        <td style="color:#94a3b8;">—</td>
+        <td><span class="badge badge-amber">ask_question</span></td>
+        <td><span style="color:#34d399;">covered</span></td>
+        <td style="color:#34d399;">✅</td>
+        <td class="small">タイヤやブレーキに問題がある可能性があります…</td>
+      </tr>
+      <tr>
+        <td>4</td><td>エアコン不調</td>
+        <td style="color:#60a5fa;">diagnosing</td>
+        <td style="color:#94a3b8;">—</td>
+        <td><span class="badge badge-amber">ask_question</span></td>
+        <td style="color:#94a3b8;">—</td>
+        <td style="color:#34d399;">✅</td>
+        <td class="small">症状について詳しくお伺いします。</td>
+      </tr>
+      <tr>
+        <td>5</td><td>始動不良</td>
+        <td style="color:#60a5fa;">diagnosing</td>
+        <td style="color:#94a3b8;">—</td>
+        <td><span class="badge badge-amber">ask_question</span></td>
+        <td><span style="color:#34d399;">covered</span></td>
+        <td style="color:#34d399;">✅</td>
+        <td class="small">スターターは全く回りませんか、それとも回るが遅い…</td>
+      </tr>
+      <tr>
+        <td>6</td><td>オイル漏れ</td>
+        <td style="color:#60a5fa;">diagnosing</td>
+        <td style="color:#94a3b8;">—</td>
+        <td><span class="badge badge-amber">ask_question</span></td>
+        <td><span style="color:#34d399;">covered</span></td>
+        <td style="color:#34d399;">✅</td>
+        <td class="small">オイル漏れの可能性があります。以下の手順で確認…</td>
+      </tr>
+      <tr>
+        <td>7</td><td>タイヤ空気圧</td>
+        <td style="color:#60a5fa;">diagnosing</td>
+        <td style="color:#94a3b8;">—</td>
+        <td><span class="badge badge-amber">ask_question</span></td>
+        <td><span style="color:#34d399;">covered</span></td>
+        <td style="color:#34d399;">✅</td>
+        <td class="small">以下の手順で対処してください。</td>
+      </tr>
+      <tr>
+        <td>8</td><td>ハンドル重い</td>
+        <td style="color:#60a5fa;">diagnosing</td>
+        <td style="color:#94a3b8;">—</td>
+        <td><span class="badge badge-amber">ask_question</span></td>
+        <td><span style="color:#34d399;">covered</span></td>
+        <td style="color:#34d399;">✅</td>
+        <td class="small">エンジンはかかっていますか？</td>
+      </tr>
+      <tr style="background:rgba(127,29,29,0.08);">
+        <td>9</td><td>仕様確認系</td>
+        <td style="color:#60a5fa;">diagnosing</td>
+        <td style="color:#94a3b8;">—</td>
+        <td><span class="badge badge-red">ask_question</span></td>
+        <td><span style="color:#34d399;">covered</span></td>
+        <td style="color:#f87171;">❌</td>
+        <td class="small">⚠ expected: spec_answer</td>
+      </tr>
+      <tr style="background:rgba(127,29,29,0.1);">
+        <td>10</td><td>オーバーヒート</td>
+        <td style="color:#fca5a5;">reservation</td>
+        <td><span style="color:#f87171; font-weight:700;">critical</span></td>
+        <td><span class="badge badge-red">escalate</span></td>
+        <td style="color:#94a3b8;">—</td>
+        <td style="color:#34d399;">✅</td>
+        <td class="small">🚨 今すぐロードサービスまたは来場が必要です</td>
+      </tr>
+      <tr style="background:rgba(139,92,246,0.05);">
+        <td>11</td><td>煙の発生</td>
+        <td style="color:#fca5a5;">reservation</td>
+        <td><span style="color:#f87171; font-weight:700;">critical</span></td>
+        <td><span class="badge badge-red">escalate</span></td>
+        <td style="color:#94a3b8;">—</td>
+        <td style="color:#34d399;">✅</td>
+        <td class="small">🚨 今すぐロードサービスまたは来場が必要です</td>
+      </tr>
+      <tr style="background:rgba(139,92,246,0.05);">
+        <td>12</td><td>火災兆候</td>
+        <td style="color:#fca5a5;">reservation</td>
+        <td><span style="color:#f87171; font-weight:700;">critical</span></td>
+        <td><span class="badge badge-red">escalate</span></td>
+        <td style="color:#94a3b8;">—</td>
+        <td style="color:#34d399;">✅</td>
+        <td class="small">🚨 今すぐロードサービスまたは来場が必要です</td>
+      </tr>
+      <tr style="background:rgba(139,92,246,0.05);">
+        <td>13</td><td>冷却水漏れ</td>
+        <td style="color:#fca5a5;">reservation</td>
+        <td><span style="color:#f87171; font-weight:700;">critical</span></td>
+        <td><span class="badge badge-red">escalate</span></td>
+        <td style="color:#94a3b8;">—</td>
+        <td style="color:#34d399;">✅</td>
+        <td class="small">🚨 今すぐロードサービスまたは来場が必要です</td>
+      </tr>
+      <tr style="background:rgba(139,92,246,0.05);">
+        <td>14</td><td>走行中振動</td>
+        <td style="color:#60a5fa;">diagnosing</td>
+        <td style="color:#94a3b8;">—</td>
+        <td><span class="badge badge-amber">ask_question</span></td>
+        <td><span style="color:#34d399;">covered</span></td>
+        <td style="color:#34d399;">✅</td>
+        <td class="small">タイヤやフロアマットの問題かもしれません…</td>
+      </tr>
+      <tr style="background:rgba(139,92,246,0.05);">
+        <td>15</td><td>異臭</td>
+        <td style="color:#60a5fa;">diagnosing</td>
+        <td style="color:#94a3b8;">—</td>
+        <td><span class="badge badge-amber">ask_question</span></td>
+        <td><span style="color:#34d399;">covered</span></td>
+        <td style="color:#34d399;">✅</td>
+        <td class="small">排気システムやタイヤの異常が考えられます。</td>
+      </tr>
+      <tr style="background:rgba(139,92,246,0.05);">
+        <td>16</td><td>ABS警告灯</td>
+        <td style="color:#60a5fa;">diagnosing</td>
+        <td style="color:#94a3b8;">—</td>
+        <td><span class="badge badge-amber">ask_question</span></td>
+        <td><span style="color:#34d399;">covered</span></td>
+        <td style="color:#34d399;">✅</td>
+        <td class="small">システムに異常がある可能性があります…</td>
+      </tr>
+      <tr style="background:rgba(139,92,246,0.05);">
+        <td>17</td><td>燃費悪化</td>
+        <td style="color:#60a5fa;">diagnosing</td>
+        <td style="color:#94a3b8;">—</td>
+        <td><span class="badge badge-amber">ask_question</span></td>
+        <td><span style="color:#fbbf24;">partial</span></td>
+        <td style="color:#34d399;">✅</td>
+        <td class="small">最近の運転スタイルについて教えてください。</td>
+      </tr>
+      <tr style="background:rgba(139,92,246,0.05);">
+        <td>18</td><td>ワイパー故障</td>
+        <td style="color:#60a5fa;">diagnosing</td>
+        <td style="color:#94a3b8;">—</td>
+        <td><span class="badge badge-amber">ask_question</span></td>
+        <td><span style="color:#34d399;">covered</span></td>
+        <td style="color:#34d399;">✅</td>
+        <td class="small">ワイパーが動かない場合の対処手順です。</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- Coverage & Findings -->
+  <div class="cols cols-3 mt-2">
+    <div class="card" style="padding:0.8rem;">
+      <h3 style="font-size:0.85rem; color:#34d399;">Manual Coverage 分布</h3>
+      <div style="font-size:0.78rem; line-height:2;">
+        <span class="label label-green">covered</span> 11件 (61%)<br>
+        <span class="label label-amber">partially_covered</span> 2件 (11%)<br>
+        <span style="color:#94a3b8;">null (未判定)</span> 5件 (28% — CRITICAL即エスカ)
+      </div>
+    </div>
+    <div class="card" style="padding:0.8rem;">
+      <h3 style="font-size:0.85rem; color:#fbbf24;">LLM応答パターン</h3>
+      <div style="font-size:0.78rem; line-height:2;">
+        <b>確認質問型</b>: #2,#4,#5,#8,#17 (5件)<br>
+        <b>手順案内型</b>: #3,#6,#7,#14,#16,#18 (6件)<br>
+        <b>概要説明型</b>: #9,#15 (2件)<br>
+        <b>即エスカレ</b>: #1,#10-13 (5件)
+      </div>
+    </div>
+    <div class="card card-warning" style="padding:0.8rem;">
+      <h3 style="font-size:0.85rem; color:#fbbf24;">改善ポイント</h3>
+      <div style="font-size:0.78rem; line-height:1.8;">
+        1. <b>#9 spec_answer</b>: SPEC_CHECK 優先度調整<br>
+        2. <b>初回の情報過多</b>: #3,#6,#14 は初回で手順提示（ask_question なのに provide_answer的）<br>
+        3. <b>urgency 不一致</b>: 初回のみでは urgency が null になる傾向
+      </div>
+    </div>
+  </div>
+
+  <span class="slide-num">23</span>
 </div>
 
 </body>

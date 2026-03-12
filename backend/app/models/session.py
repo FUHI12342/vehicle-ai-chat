@@ -31,7 +31,7 @@ class SessionState(BaseModel):
     created_at: float = 0.0
     updated_at: float = 0.0
     diagnostic_turn: int = 0
-    max_diagnostic_turns: int = 8
+    max_diagnostic_turns: int = 12
     collected_symptoms: list[str] = []
     urgency_level: str | None = None
     can_drive: bool | None = None
