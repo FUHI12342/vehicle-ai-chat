@@ -92,7 +92,7 @@ export function ChatContainer() {
   };
 
   const handleDiagnosingChoice = (value: string, label: string) => {
-    if (value === "yes" || value === "no" || value === "book") {
+    if (value === "yes" || value === "no" || value === "book" || value === "guide_start") {
       sendAction("resolved", value, label);
     } else {
       sendMessage(label);

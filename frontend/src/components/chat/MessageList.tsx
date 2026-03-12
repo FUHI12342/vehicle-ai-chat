@@ -66,7 +66,7 @@ export function MessageList({ messages, currentStep, onRewind }: MessageListProp
               <div className="max-w-[90%]">
                 <details className="text-xs text-gray-400">
                   <summary className="cursor-pointer hover:text-gray-600">
-                    参照元 ({msg.rag_sources.length}件)
+                    マニュアル記載ページ ({msg.rag_sources.length}件)
                   </summary>
                   <div className="mt-1 space-y-1 pl-2 border-l-2 border-gray-200">
                     {msg.rag_sources.map((src, i) => (

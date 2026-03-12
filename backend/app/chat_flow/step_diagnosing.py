@@ -187,6 +187,22 @@ def _build_additional_instructions(session: SessionState, user_input: str, candi
             "次に可能性の高い別の該当事象を探し、手順ガイドモードで案内してください。"
         )
 
+    # ガイドモード指示
+    if session.guide_phase == "guiding":
+        if user_input == "わからない":
+            parts.append(
+                "\n\n【重要】ユーザーが前のステップについて「わからない」と回答しました。"
+                "同じステップをより分かりやすく、具体的な場所や見た目の特徴を含めて再説明してください。"
+                "新しいステップに進まないでください。"
+            )
+        else:
+            parts.append(
+                "\n\n【手順ガイドモード有効】マニュアルの対処手順を1ステップずつ "
+                "ask_question で案内してください。"
+            )
+            if session.identified_issue:
+                parts.append(f"特定済みの事象: {session.identified_issue[:100]}")
+
     # 重複防止: 過去の質問をプロンプトに含める
     if session.last_questions:
         recent_qs = session.last_questions[-6:]  # 直近6件
@@ -294,6 +310,7 @@ async def handle_diagnosing(session: SessionState, request: ChatRequest) -> Chat
         elif request.action_value == "no":
             # 後方互換
             session.solutions_tried += 1
+            session.guide_phase = "identifying"
             # 3回解決策を試しても解決しない場合 → 専門家へ
             if session.solutions_tried >= 3:
                 session.current_step = ChatStep.URGENCY_CHECK
@@ -307,6 +324,10 @@ async def handle_diagnosing(session: SessionState, request: ChatRequest) -> Chat
             session.current_step = ChatStep.RESERVATION
             from app.chat_flow.step_reservation import handle_reservation
             return await handle_reservation(session, request)
+        elif request.action_value == "guide_start":
+            session.guide_phase = "guiding"
+            request.message = f"「{session.identified_issue[:80]}」の解決手順を教えてください"
+            return await handle_diagnosing(session, request)
         elif request.action_value and request.action_value.startswith("followup_"):
             # 動的選択肢: ユーザーの選択テキストを次の入力として処理
             selected_label = request.message or request.action_value
@@ -606,33 +627,36 @@ async def handle_diagnosing(session: SessionState, request: ChatRequest) -> Chat
         )
 
     # ---------------------------------------------------------------
-    # 10b. provide_answer 早期使用ガード
+    # 10b. provide_answer フェーズ遷移ロジック
     # ---------------------------------------------------------------
-    if (action == "provide_answer"
-            and session.last_confidence < 0.9
-            and session.diagnostic_turn <= 3):
-        logger.warning(
-            f"Early provide_answer blocked (confidence={session.last_confidence:.2f}, "
-            f"turn={session.diagnostic_turn})"
-        )
-        retry_prompt = (
-            diagnostic_prompt
-            + "\n\n【重要】まだ手順ガイドが完了していません。confidence が0.9未満のため、"
-            "provide_answer は使えません。マニュアルの対処手順がある場合は、"
-            "最初の1ステップを ask_question で案内してください。"
-        )
-        try:
-            result = await _llm_call(provider, retry_prompt)
-            action = result.get("action", "ask_question")
-            message = result.get("message", message)
-            urgency_flag = result.get("urgency_flag", urgency_flag)
-            choices = result.get("choices")
-            can_drive_llm = result.get("can_drive", can_drive_llm)
-            session.rewritten_query = result.get("rewritten_query", session.rewritten_query)
-            session.last_confidence = result.get("confidence_to_answer", session.last_confidence)
-            question_topic = result.get("question_topic", "")
-        except Exception as e:
-            logger.warning(f"Early provide_answer guard re-call failed: {e}")
+    if action == "provide_answer" and session.guide_phase == "identifying":
+        if session.diagnostic_turn <= 1 and session.last_confidence < 0.5:
+            # Turn 1で情報不足 → ask_question にリトライ
+            logger.warning(
+                f"Early provide_answer blocked (confidence={session.last_confidence:.2f}, "
+                f"turn={session.diagnostic_turn})"
+            )
+            retry_prompt = (
+                diagnostic_prompt
+                + "\n\n【重要】まだ情報が不足しています。"
+                "マニュアルの該当事象を絞り込むための確認を ask_question で行ってください。"
+            )
+            try:
+                result = await _llm_call(provider, retry_prompt)
+                action = result.get("action", "ask_question")
+                message = result.get("message", message)
+                urgency_flag = result.get("urgency_flag", urgency_flag)
+                choices = result.get("choices")
+                can_drive_llm = result.get("can_drive", can_drive_llm)
+                session.rewritten_query = result.get("rewritten_query", session.rewritten_query)
+                session.last_confidence = result.get("confidence_to_answer", session.last_confidence)
+                question_topic = result.get("question_topic", "")
+            except Exception as e:
+                logger.warning(f"Early provide_answer guard re-call failed: {e}")
+        else:
+            # 事象特定 → 遷移選択肢へ
+            session.identified_issue = message
+            session.guide_phase = "guide_offered"
 
     if action == "provide_answer":
         # F3: manual_coverage warnings
@@ -640,6 +664,28 @@ async def handle_diagnosing(session: SessionState, request: ChatRequest) -> Chat
             message += "\n\n⚠️ マニュアルに記載のない症状のため、ディーラーでの点検を推奨します。"
         elif manual_coverage == "partially_covered":
             message += "\n\nℹ️ マニュアルに完全一致する情報はありません。上記は一般的な知識に基づく回答です。"
+
+        # guide_offered → ハードコード遷移選択肢（high/criticalより先に判定）
+        if session.guide_phase == "guide_offered":
+            session.rag_answer = message
+            session.conversation_history.append({"role": "assistant", "content": message})
+            transition_choices = [
+                {"value": "guide_start", "label": "解決手順を教えてください"},
+                {"value": "yes", "label": "解決しました"},
+                {"value": "no", "label": "試してみたが解決しなかった"},
+            ]
+            return ChatResponse(
+                session_id=session.session_id,
+                current_step=ChatStep.DIAGNOSING.value,
+                prompt=PromptInfo(
+                    type="single_choice",
+                    message=message,
+                    choices=transition_choices,
+                ),
+                rag_sources=rag_sources,
+                manual_coverage=session.manual_coverage,
+                diagnostic_turn=session.diagnostic_turn,
+            )
 
         session.rag_answer = message
         session.conversation_history.append({"role": "assistant", "content": message})
@@ -687,7 +733,7 @@ async def handle_diagnosing(session: SessionState, request: ChatRequest) -> Chat
                 diagnostic_turn=session.diagnostic_turn,
             )
 
-        # low/medium/none → LLM生成の動的選択肢
+        # guiding or fallback → LLM生成の動的選択肢（最終結論）
         llm_choices = result.get("choices")
         if llm_choices:
             # LLMが生成した選択肢を使用
