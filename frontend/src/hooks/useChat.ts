@@ -4,11 +4,19 @@ import { useState, useCallback, useRef } from "react";
 import { sendChat } from "@/lib/api";
 import type { ChatMessage, ChatResponse } from "@/lib/types";
 
+const MAX_RETRY = 2;
+const RETRY_DELAY_MS = 1500;
+
+function sleep(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 export function useChat() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [currentStep, setCurrentStep] = useState<string>("vehicle_id");
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [latestResponse, setLatestResponse] = useState<ChatResponse | null>(null);
   const idCounter = useRef(0);
 
@@ -34,20 +42,31 @@ export function useChat() {
 
   const startSession = useCallback(async () => {
     setIsLoading(true);
-    try {
-      const response = await sendChat({
-        session_id: null,
-        message: null,
-        action: null,
-        action_value: null,
-      });
-      setSessionId(response.session_id);
-      setCurrentStep(response.current_step);
-      setLatestResponse(response);
-      addAssistantMessage(response);
-    } finally {
-      setIsLoading(false);
+    setError(null);
+    for (let attempt = 0; attempt <= MAX_RETRY; attempt++) {
+      try {
+        const response = await sendChat({
+          session_id: null,
+          message: null,
+          action: null,
+          action_value: null,
+        });
+        setSessionId(response.session_id);
+        setCurrentStep(response.current_step);
+        setLatestResponse(response);
+        addAssistantMessage(response);
+        setIsLoading(false);
+        return;
+      } catch (err) {
+        if (attempt < MAX_RETRY) {
+          await sleep(RETRY_DELAY_MS * (attempt + 1));
+        } else {
+          const msg = err instanceof Error ? err.message : "サーバーに接続できません";
+          setError(msg);
+        }
+      }
     }
+    setIsLoading(false);
   }, [addAssistantMessage]);
 
   const sendMessage = useCallback(
@@ -61,6 +80,7 @@ export function useChat() {
       };
       setMessages((prev) => [...prev, userMsg]);
       setIsLoading(true);
+      setError(null);
       try {
         const response = await sendChat({
           session_id: sessionId,
@@ -68,10 +88,18 @@ export function useChat() {
           action: null,
           action_value: null,
         });
+        if (response.current_step === "expired") {
+          setError(response.prompt.message);
+          setIsLoading(false);
+          return;
+        }
         setSessionId(response.session_id);
         setCurrentStep(response.current_step);
         setLatestResponse(response);
         addAssistantMessage(response);
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : "サーバーに接続できません";
+        setError(msg);
       } finally {
         setIsLoading(false);
       }
@@ -92,6 +120,7 @@ export function useChat() {
         setMessages((prev) => [...prev, userMsg]);
       }
       setIsLoading(true);
+      setError(null);
       try {
         const response = await sendChat({
           session_id: sessionId,
@@ -99,10 +128,18 @@ export function useChat() {
           action,
           action_value: actionValue,
         });
+        if (response.current_step === "expired") {
+          setError(response.prompt.message);
+          setIsLoading(false);
+          return;
+        }
         setSessionId(response.session_id);
         setCurrentStep(response.current_step);
         setLatestResponse(response);
         addAssistantMessage(response);
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : "サーバーに接続できません";
+        setError(msg);
       } finally {
         setIsLoading(false);
       }
@@ -113,6 +150,7 @@ export function useChat() {
   const rewindToTurn = useCallback(
     async (turn: number) => {
       setIsLoading(true);
+      setError(null);
       try {
         const response = await sendChat({
           session_id: sessionId,
@@ -139,6 +177,9 @@ export function useChat() {
             return prev;
           });
         }
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : "サーバーに接続できません";
+        setError(msg);
       } finally {
         setIsLoading(false);
       }
@@ -151,6 +192,7 @@ export function useChat() {
     setSessionId(null);
     setCurrentStep("vehicle_id");
     setLatestResponse(null);
+    setError(null);
     idCounter.current = 0;
   }, []);
 
@@ -159,6 +201,7 @@ export function useChat() {
     sessionId,
     currentStep,
     isLoading,
+    error,
     latestResponse,
     startSession,
     sendMessage,

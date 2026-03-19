@@ -45,6 +45,7 @@ export function ChatContainer() {
     messages,
     currentStep,
     isLoading,
+    error,
     latestResponse,
     startSession,
     sendMessage,
@@ -68,7 +69,7 @@ export function ChatContainer() {
   }, [currentStep]);
 
   const prompt = latestResponse?.prompt;
-  const isDone = currentStep === "done" || currentStep === "expired";
+  const isDone = currentStep === "done";
   const isDiagnosing = currentStep === "diagnosing";
   const isSpecCheck = currentStep === "spec_check";
   const isInputGuardEnabled = isDiagnosing || currentStep === "free_text";
@@ -316,6 +317,22 @@ export function ChatContainer() {
               disabled={isLoading}
             />
           </>
+        )}
+
+        {error && (
+          <div className="bg-red-50 border border-red-200 rounded-xl px-4 py-3 text-sm space-y-2">
+            <p className="text-red-800">{error}</p>
+            <Button
+              size="sm"
+              variant="primary"
+              onClick={() => {
+                resetChat();
+                startSession();
+              }}
+            >
+              {ja.chat.newSession}
+            </Button>
+          </div>
         )}
 
         {isDone && (
