@@ -121,27 +121,36 @@ async def run_multi_turn_flow(
             result["final_action"] = "spec_answer"
             return result
 
+        # Transition choice values that require action/action_value
+        _TRANSITION_VALUES = {"guide_start", "yes", "no"}
+
         # マルチターン: 選択肢の最初を自動選択して会話を進行
         for turn in range(2, max_turns + 1):
             choices = data.get("prompt", {}).get("choices")
             prompt_msg = data.get("prompt", {}).get("message", "")
 
+            request_body: dict = {"session_id": session_id}
+
             if not choices:
                 # 選択肢なし → 自由入力で「はい」と回答
                 user_msg = "はい"
+                request_body["message"] = user_msg
             else:
-                # 最初の選択肢を自動選択
-                if isinstance(choices[0], dict):
-                    user_msg = choices[0].get("label", choices[0].get("text", "はい"))
+                first_choice = choices[0] if isinstance(choices[0], dict) else {"label": str(choices[0])}
+                user_msg = first_choice.get("label", first_choice.get("text", "はい"))
+                choice_value = first_choice.get("value", "")
+
+                # Transition choices (guide_start/yes/no) → send as action
+                if choice_value in _TRANSITION_VALUES:
+                    request_body["message"] = user_msg
+                    request_body["action"] = "resolved"
+                    request_body["action_value"] = choice_value
                 else:
-                    user_msg = str(choices[0])
+                    request_body["message"] = user_msg
 
             resp = await client.post(
                 f"{BASE_URL}/chat",
-                json={
-                    "session_id": session_id,
-                    "message": user_msg,
-                },
+                json=request_body,
             )
             resp.raise_for_status()
             data = resp.json()

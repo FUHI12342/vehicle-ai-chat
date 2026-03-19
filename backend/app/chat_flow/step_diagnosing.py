@@ -9,6 +9,7 @@ from app.llm.prompts import SYSTEM_PROMPT, DIAGNOSTIC_PROMPT, CONVERSATION_SUMMA
 from app.llm.schemas import DIAGNOSTIC_SCHEMA
 from app.services.rag_service import rag_service
 from app.services.urgency_assessor import keyword_urgency_check
+from app.utils.fabrication_patterns import detect_fabrications
 
 logger = logging.getLogger(__name__)
 
@@ -17,6 +18,8 @@ _WAITING_PATTERN = re.compile(r"まとめ|整理|お待ち|確認.{0,5}させ|�
 
 # マルチステップダンプ検出パターン（番号付きリストが2行以上）
 _MULTI_STEP_PATTERN = re.compile(r"(?:\d+[.、）]\s.*\n){2,}", re.UNICODE)
+
+# Fix 2: 捏造検出は共通ライブラリ (app.utils.fabrication_patterns) に統合済み
 
 
 # A) ask_question / clarify_term の末尾に必ず追加するデフォルト選択肢
@@ -106,6 +109,25 @@ def _is_duplicate_question(message: str, last_questions: list[str]) -> bool:
     return False
 
 
+def _is_repeated_response(message: str, conversation_history: list[dict]) -> bool:
+    """直近3件のアシスタント応答と内容が類似しているか判定"""
+    recent_assistant = [
+        e["content"] for e in conversation_history[-6:]
+        if e["role"] == "assistant"
+    ][-3:]
+    norm_new = _normalize_question(message)
+    for prev in recent_assistant:
+        norm_prev = _normalize_question(prev)
+        if not norm_prev or not norm_new:
+            continue
+        if norm_new == norm_prev:
+            return True
+        shorter, longer = sorted([norm_new, norm_prev], key=len)
+        if len(shorter) >= 10 and shorter in longer:
+            return True
+    return False
+
+
 # ---------------------------------------------------------------------------
 # トピック関連性ガード
 # ---------------------------------------------------------------------------
@@ -160,6 +182,29 @@ def _build_additional_instructions(session: SessionState, user_input: str, candi
     """条件付き指示を一括構築して返す。"""
     parts: list[str] = []
 
+    # Fix 1: Critical safety pending — 安全手順を先に案内
+    if session.critical_safety_pending:
+        symptom = (session.symptom_text or "").lower()
+        is_fire = any(kw in symptom for kw in ("火", "燃", "煙", "焦げ"))
+        if is_fire:
+            parts.append(
+                "\n\n【緊急・火災】この症状は火災の兆候です。"
+                "以下の順序で案内してください:\n"
+                "1. 「直ちに車両から離れてください（車外に避難）」と伝える\n"
+                "2. 「119番に通報してください」と伝える\n"
+                "3. action: \"escalate\" でロードサービス/販売店連絡を案内する\n"
+                "消火手順を案内してはいけません。一般知識で手順を補完しないこと。"
+            )
+        else:
+            parts.append(
+                "\n\n【緊急】この症状はcriticalレベルと判定されています。"
+                "以下の順序で案内してください:\n"
+                "1. まず「安全な場所に停車してください」と伝える\n"
+                "2. マニュアルの該当安全手順を1ステップずつ案内する（例: ブレーキ液確認、ペダル感触確認）\n"
+                "3. 2〜3ステップの安全確認後、action: \"escalate\" でロードサービス/販売店連絡を案内する\n"
+                "一般知識で手順を補完しないこと。マニュアルの記載のみ使用すること。"
+            )
+
     # 改善C: Spec hint injection
     if session.spec_hint:
         parts.append(
@@ -189,7 +234,13 @@ def _build_additional_instructions(session: SessionState, user_input: str, candi
 
     # ガイドモード指示
     if session.guide_phase == "guiding":
-        if user_input == "わからない":
+        guide_turns = session.diagnostic_turn - session.guide_start_turn
+        if guide_turns >= 6:
+            parts.append(
+                "\n\n【重要】手順案内が6ステップに達しました。"
+                "残りの手順があれば1文で要約し、provide_answer で最終結論を案内してください。"
+            )
+        elif user_input == "わからない":
             parts.append(
                 "\n\n【重要】ユーザーが前のステップについて「わからない」と回答しました。"
                 "同じステップをより分かりやすく、具体的な場所や見た目の特徴を含めて再説明してください。"
@@ -252,6 +303,32 @@ async def _llm_call(provider, diagnostic_prompt: str) -> dict:
         response_format={"type": "json_schema", "json_schema": DIAGNOSTIC_SCHEMA},
     )
     return json.loads(response.content)
+
+
+def _validate_manual_coverage(
+    llm_claimed: str,
+    rag_sources: list[RAGSource],
+) -> str:
+    """LLMの自己申告coverage値をRAGスコアで外部検証する。
+
+    - RAGソースなし → not_covered（LLMの判断を信頼しない）
+    - max_score < 0.55 → not_covered（関連度が低すぎる）
+    - max_score < 0.70 → partially_covered（中間的）
+    - それ以外 → LLMの判断を信頼
+    """
+    if not rag_sources:
+        if llm_claimed == "covered":
+            logger.info("No RAG sources but LLM claims covered — overriding to not_covered")
+            return "not_covered"
+        return llm_claimed
+    max_score = max(s.score for s in rag_sources)
+    if max_score < 0.55 and llm_claimed == "covered":
+        logger.info("RAG max_score=%.2f < 0.55 — overriding covered to not_covered", max_score)
+        return "not_covered"
+    if max_score < 0.70 and llm_claimed == "covered":
+        logger.info("RAG max_score=%.2f < 0.70 — overriding covered to partially_covered", max_score)
+        return "partially_covered"
+    return llm_claimed
 
 
 async def handle_diagnosing(session: SessionState, request: ChatRequest) -> ChatResponse:
@@ -328,6 +405,7 @@ async def handle_diagnosing(session: SessionState, request: ChatRequest) -> Chat
             return await handle_reservation(session, request)
         elif request.action_value == "guide_start":
             session.guide_phase = "guiding"
+            session.guide_start_turn = session.diagnostic_turn
             request.message = f"「{session.identified_issue[:80]}」の解決手順を教えてください"
             request.action = None
             request.action_value = None
@@ -394,12 +472,16 @@ async def handle_diagnosing(session: SessionState, request: ChatRequest) -> Chat
     if len(session.state_snapshots) > session.max_diagnostic_turns:
         session.state_snapshots = session.state_snapshots[-session.max_diagnostic_turns:]
 
-    # 2. Keyword-based urgency check (fast path for critical)
+    # 2. Keyword-based urgency check (set flag, don't skip safety steps)
     all_symptoms = " ".join(session.collected_symptoms)
     keyword_result = keyword_urgency_check(all_symptoms)
     if keyword_result and keyword_result["level"] == "critical":
         session.urgency_level = "critical"
         session.can_drive = False
+        session.critical_safety_pending = True
+
+    # 2b. Critical safety auto-escalate after safety steps (4+ turns)
+    if session.critical_safety_pending and session.diagnostic_turn >= 4:
         session.current_step = ChatStep.RESERVATION
         from app.chat_flow.step_reservation import handle_reservation
         return await handle_reservation(session, request)
@@ -415,9 +497,14 @@ async def handle_diagnosing(session: SessionState, request: ChatRequest) -> Chat
             make=session.vehicle_make or "",
             model=session.vehicle_model or "",
             year=session.vehicle_year or 0,
+            n_results=10,
         )
         if results["sources"]:
-            rag_context = results["answer"]
+            # 生チャンクを直接プロンプトに注入（LLM要約を経由しない）
+            rag_context = "\n\n---\n\n".join(
+                f"【{s['section'] or 'マニュアル'}（p.{s['page']}）】スコア:{s['score']:.2f}\n{s['content']}"
+                for s in results["sources"]
+            )
             rag_sources = [
                 RAGSource(
                     content=s["content"],
@@ -487,14 +574,92 @@ async def handle_diagnosing(session: SessionState, request: ChatRequest) -> Chat
     choices = result.get("choices")
     can_drive_llm: bool | None = result.get("can_drive")
 
+    # Fix: Hard enforce provide_answer at max turns
+    if session.diagnostic_turn >= session.max_diagnostic_turns and action == "ask_question":
+        logger.warning("Max turns reached but LLM returned ask_question, forcing provide_answer")
+        action = "provide_answer"
+
     # 8. Save rewritten_query, confidence, and manual_coverage
     session.rewritten_query = result.get("rewritten_query", "")
     session.last_confidence = result.get("confidence_to_answer", 0.0)
     question_topic = result.get("question_topic", "")
 
-    # F3: manual_coverage
-    manual_coverage = result.get("manual_coverage", "covered")
+    # F3: manual_coverage — RAGスコアベース検証で上書き
+    manual_coverage = _validate_manual_coverage(
+        llm_claimed=result.get("manual_coverage", "covered"),
+        rag_sources=rag_sources,
+    )
+
+    # Fix 2: Fabrication detection — immediately escalate when fabrication patterns found
+    matched = detect_fabrications(message)
+    fabrication_detected = len(matched) > 0
+    if fabrication_detected:
+        logger.warning(
+            "Fabrication detected in LLM response: patterns=%s, message=%s",
+            [m.description for m in matched], message[:80],
+        )
+        manual_coverage = "not_covered"
+
+    if fabrication_detected:
+        session.manual_coverage = "not_covered"
+        session.current_step = ChatStep.RESERVATION
+        msg = "マニュアルに該当する記載が見つかりませんでした。Honda販売店またはディーラーでの点検をお勧めします。"
+        session.conversation_history.append({"role": "assistant", "content": msg})
+        from app.chat_flow.step_reservation import handle_reservation
+        return await handle_reservation(session, request)
+
     session.manual_coverage = manual_coverage
+
+    # Fix 2: not_covered consecutive detection (non-fabrication case)
+    if manual_coverage == "not_covered":
+        session.not_covered_count += 1
+    else:
+        session.not_covered_count = 0
+
+    # Fix A: 1回not_covered + 2ターン以上経過で即escalate（初回は質問許可）
+    if session.not_covered_count >= 1 and session.diagnostic_turn >= 2:
+        session.current_step = ChatStep.RESERVATION
+        msg = "マニュアルに該当する記載が見つかりませんでした。Honda販売店またはディーラーでの点検をお勧めします。"
+        session.conversation_history.append({"role": "assistant", "content": msg})
+        from app.chat_flow.step_reservation import handle_reservation
+        return await handle_reservation(session, request)
+
+    # Fix A2 (Phase5-3): identifyingフェーズ4ターン強制遷移
+    # 4ターン以上ask_questionを続けているidentifyingフェーズを強制終了
+    if (action == "ask_question"
+            and session.diagnostic_turn >= 4
+            and session.guide_phase == "identifying"
+            and not session.critical_safety_pending):
+        if manual_coverage in ("not_covered", "partially_covered"):
+            # not_covered/partially → escalate
+            logger.info(
+                "Identifying phase turn limit: forcing escalate "
+                "(turn=%d, coverage=%s)", session.diagnostic_turn, manual_coverage
+            )
+            session.current_step = ChatStep.RESERVATION
+            msg = (
+                "お伺いした症状についてマニュアルに明確な対処方法が見つかりませんでした。"
+                "Honda販売店またはディーラーでの点検をお勧めします。"
+            )
+            session.conversation_history.append({"role": "assistant", "content": msg})
+            from app.chat_flow.step_reservation import handle_reservation
+            return await handle_reservation(session, request)
+        else:
+            # covered → provide_answerに昇格して手順ガイドへ
+            logger.info(
+                "Identifying phase turn limit: promoting to provide_answer "
+                "(turn=%d, confidence=%.2f)", session.diagnostic_turn, session.last_confidence
+            )
+            action = "provide_answer"
+
+    # Fix B: COVERED高信頼度ケースの早期結論
+    # manual_coverage==covered かつ confidence>=0.8 かつ 2ターン以上 → ask_question を provide_answer に上書き
+    if (action == "ask_question"
+            and manual_coverage == "covered"
+            and session.last_confidence >= 0.8
+            and session.diagnostic_turn >= 2):
+        logger.info("High-confidence covered case: overriding ask_question → provide_answer")
+        action = "provide_answer"
 
     # F2: visit_urgency
     visit_urgency_llm = result.get("visit_urgency")
@@ -505,6 +670,21 @@ async def handle_diagnosing(session: SessionState, request: ChatRequest) -> Chat
         f"Diagnostic action={action}, urgency={urgency_flag}, "
         f"confidence={session.last_confidence:.2f}, topic={question_topic!r}, reasoning={reasoning}"
     )
+
+    # Fix 3: Loop detection — 同じ応答の繰り返し検出
+    if _is_repeated_response(message, session.conversation_history):
+        session.repeated_response_count += 1
+        if session.repeated_response_count >= 2:
+            session.current_step = ChatStep.RESERVATION
+            msg = (
+                "同じご案内を繰り返してしまい申し訳ございません。"
+                "この症状についてはディーラーでの直接点検をお勧めします。"
+            )
+            session.conversation_history.append({"role": "assistant", "content": msg})
+            from app.chat_flow.step_reservation import handle_reservation
+            return await handle_reservation(session, request)
+    else:
+        session.repeated_response_count = 0
 
     # 8b. Topic relevance guard: reject questions on topics absent from symptom text
     if action == "ask_question" and question_topic:
@@ -588,10 +768,12 @@ async def handle_diagnosing(session: SessionState, request: ChatRequest) -> Chat
         urgency_flag = "medium"
 
     # 10. Check urgency_flag from LLM
+    # Fix 1: Block instant escalation when critical_safety_pending is active
+    _block_escalate = session.critical_safety_pending and session.diagnostic_turn < 4
     if urgency_flag in ("high", "critical"):
         session.urgency_level = urgency_flag
         session.can_drive = can_drive_llm if can_drive_llm is not None else (urgency_flag != "critical")
-        if urgency_flag == "critical":
+        if urgency_flag == "critical" and not _block_escalate:
             session.current_step = ChatStep.RESERVATION
             session.conversation_history.append({"role": "assistant", "content": message})
             from app.chat_flow.step_reservation import handle_reservation
@@ -599,12 +781,21 @@ async def handle_diagnosing(session: SessionState, request: ChatRequest) -> Chat
 
     # 11. Dispatch based on action
     if action == "escalate":
-        session.urgency_level = urgency_flag if urgency_flag in ("high", "critical") else "high"
-        session.can_drive = session.urgency_level != "critical"
-        session.conversation_history.append({"role": "assistant", "content": message})
-        session.current_step = ChatStep.RESERVATION
-        from app.chat_flow.step_reservation import handle_reservation
-        return await handle_reservation(session, request)
+        if _block_escalate:
+            # Override: deliver safety message as ask_question instead of escalating
+            action = "ask_question"
+            if "停車" not in message and "安全な場所" not in message:
+                message = "安全な場所に停車してください。\n\n" + message
+            if not choices:
+                choices = ["はい、停車しました", "まだ走行中です"]
+            logger.info("Blocked instant escalate for critical_safety_pending (turn=%d)", session.diagnostic_turn)
+        else:
+            session.urgency_level = urgency_flag if urgency_flag in ("high", "critical") else "high"
+            session.can_drive = session.urgency_level != "critical"
+            session.conversation_history.append({"role": "assistant", "content": message})
+            session.current_step = ChatStep.RESERVATION
+            from app.chat_flow.step_reservation import handle_reservation
+            return await handle_reservation(session, request)
 
     # 改善C: spec_answer — redirect to SPEC_CHECK flow
     if action == "spec_answer":
@@ -697,7 +888,11 @@ async def handle_diagnosing(session: SessionState, request: ChatRequest) -> Chat
         session.conversation_history.append({"role": "assistant", "content": message})
 
         # C) high/critical → 強い警告 + 予約導線（reservation_choice）
-        if urgency_flag in ("high", "critical"):
+        # Fix 1: Block when critical_safety_pending is active (safety steps first)
+        # Fix Phase5-2: ガイド未開始(identifying)なら手順案内を経由させる
+        if (urgency_flag in ("high", "critical")
+                and not _block_escalate
+                and session.guide_phase != "identifying"):
             effective_can_drive = can_drive_llm if can_drive_llm is True else False
             session.urgency_level = urgency_flag
             session.can_drive = effective_can_drive

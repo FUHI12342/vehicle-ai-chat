@@ -170,9 +170,8 @@ async def handle_free_text(session: SessionState, request: ChatRequest) -> ChatR
     if keyword_result and keyword_result["level"] == "critical":
         session.urgency_level = "critical"
         session.can_drive = False
-        session.current_step = ChatStep.RESERVATION
-        from app.chat_flow.step_reservation import handle_reservation
-        return await handle_reservation(session, request)
+        session.critical_safety_pending = True
+        # RESERVATION に飛ばず、DIAGNOSING で安全手順を案内してから escalate
 
     # 2. RAG search
     rag_results = await _rag_search(symptom, session.vehicle_id)

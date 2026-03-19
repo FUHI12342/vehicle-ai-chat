@@ -51,3 +51,7 @@ class SessionState(BaseModel):
     manual_coverage: str | None = None
     visit_urgency: str | None = None
     state_snapshots: list[dict] = []
+    critical_safety_pending: bool = False
+    not_covered_count: int = 0
+    repeated_response_count: int = 0
+    guide_start_turn: int = 0

@@ -10,6 +10,8 @@ ID 11-18: キーワード緊急度ルールカバー漏れ補完
 
 v3.0: ground_truthをオーナーズマニュアル(30TA06210_web.pdf)の実際の記載内容から再作成。
       手順ありケースにはmanual_stepsを追加。
+v4.0: max_expected_turns, expected_final_action, expected_coverage, forbidden_terms を追加。
+      not_coveredケースの期待動作を明確化。
 """
 
 VEHICLE_ID = "30TA06210_web"
@@ -25,6 +27,9 @@ TEST_CASES = [
         "vehicle_id": VEHICLE_ID,
         "expected_urgency": "critical",
         "expected_action": "escalate",
+        "expected_coverage": "covered",
+        "max_expected_turns": 4,
+        "expected_final_action": "escalate",
         "ground_truth": (
             "マニュアルP.153「フットブレーキ」: ブレーキの効きが悪いと感じたときは"
             "Honda販売店で点検を受けてください。"
@@ -51,6 +56,9 @@ TEST_CASES = [
         "vehicle_id": VEHICLE_ID,
         "expected_urgency": "high",
         "expected_action": "ask_question",
+        "expected_coverage": "covered",
+        "max_expected_turns": 5,
+        "expected_final_action": "provide_answer",
         "ground_truth": (
             "マニュアルP.51「PGM-FI警告灯」: エンジンやオートマチックトランスミッションの"
             "排気ガス制御システムに関連する警告灯です。"
@@ -67,6 +75,10 @@ TEST_CASES = [
         "vehicle_id": VEHICLE_ID,
         "expected_urgency": "medium",
         "expected_action": "ask_question",
+        "expected_coverage": "not_covered",
+        "max_expected_turns": 2,
+        "expected_final_action": "escalate",
+        "forbidden_terms": ["サスペンション交換", "ドライブシャフト"],
         "ground_truth": (
             "マニュアルに走行中の一般的な異音に関する該当記載なし。"
             "P.153にブレーキを踏んだ時に異音がする場合はHonda販売店で点検との記載あり。"
@@ -82,6 +94,10 @@ TEST_CASES = [
         "vehicle_id": VEHICLE_ID,
         "expected_urgency": "low",
         "expected_action": "ask_question",
+        "expected_coverage": "not_covered",
+        "max_expected_turns": 2,
+        "expected_final_action": "escalate",
+        "forbidden_terms": ["冷媒ガス補充", "コンプレッサー交換"],
         "ground_truth": (
             "マニュアルにエアコンの故障・不調に関する該当記載なし。"
             "マニュアルにはエアコンの操作方法（温度設定、風量、内気循環/外気導入の"
@@ -96,16 +112,20 @@ TEST_CASES = [
         "vehicle_id": VEHICLE_ID,
         "expected_urgency": "high",
         "expected_action": "ask_question",
+        "expected_coverage": "covered",
+        "max_expected_turns": 8,
+        "expected_final_action": "provide_answer",
         "ground_truth": (
             "マニュアルP.206「エンジンが始動しないとき」: "
             "スターターが回らない場合はバッテリー上がりの可能性があります。"
             "ジャンプスタートの手順はP.208を参照してください。"
             "スターターが回る場合は、エンジンの始動手順（P.141）を再度確認してください。"
-            "イモビライザーシステムの異常で始動できない場合もあります。"
-            "燃料が十分にあるか確認してください。ヒューズの確認はP.215を参照。"
+            "イモビライザーシステムの異常で始動できない場合もあります（P.89参照）。"
+            "燃料が十分にあるか確認してください（燃料計 P.62）。"
+            "ヒューズの点検と交換はP.218を参照。"
             "P.141: エンジンの始動手順 - パーキングブレーキがかかっていることを確認し、"
             "セレクトレバーがPにあることを確認し、ブレーキペダルを踏みながら"
-            "エンジンスイッチをIIに回してください。"
+            "エンジンスイッチを押してください。"
         ),
         "manual_steps": [
             "スターターが回るか確認する",
@@ -113,9 +133,10 @@ TEST_CASES = [
             "スターターが回る場合: エンジンの始動手順を再確認する",
             "パーキングブレーキがかかっていることを確認する",
             "セレクトレバーがPにあることを確認する",
-            "ブレーキペダルを踏みながらエンジンスイッチをIIに回す",
-            "イモビライザーシステムの異常がないか確認する",
-            "燃料が十分にあるか確認する",
+            "ブレーキペダルを踏みながらエンジンスイッチを押す",
+            "イモビライザーシステムの異常がないか確認する（P.89参照）",
+            "燃料が十分にあるか確認する（燃料計 P.62参照）",
+            "ヒューズを点検する（P.218参照）",
         ],
     },
     {
@@ -125,6 +146,9 @@ TEST_CASES = [
         "vehicle_id": VEHICLE_ID,
         "expected_urgency": "high",
         "expected_action": "ask_question",
+        "expected_coverage": "covered",
+        "max_expected_turns": 7,
+        "expected_final_action": "provide_answer",
         "ground_truth": (
             "マニュアルP.213「油圧警告灯が点灯したとき」: "
             "安全な場所に停車し、エンジンを止めて1分以上待ってから"
@@ -154,6 +178,10 @@ TEST_CASES = [
         "vehicle_id": VEHICLE_ID,
         "expected_urgency": "medium",
         "expected_action": "ask_question",
+        "expected_coverage": "not_covered",
+        "max_expected_turns": 2,
+        "expected_final_action": "escalate",
+        "forbidden_terms": ["空気圧の数値", "TPMS", "リセット"],
         "ground_truth": (
             "マニュアルにタイヤ空気圧警告灯（TPMS）の記載なし。"
             "2011年式ホンダ アコード（日本仕様）のオーナーズマニュアルには"
@@ -169,6 +197,10 @@ TEST_CASES = [
         "vehicle_id": VEHICLE_ID,
         "expected_urgency": "medium",
         "expected_action": "ask_question",
+        "expected_coverage": "not_covered",
+        "max_expected_turns": 2,
+        "expected_final_action": "escalate",
+        "forbidden_terms": ["パワステオイル補充", "EPS修理"],
         "ground_truth": (
             "マニュアルにパワーステアリングの故障・不調に関する該当記載なし。"
             "P.54にVSA（ビークルスタビリティアシスト）警告灯の記載はあるが、"
@@ -183,7 +215,11 @@ TEST_CASES = [
         "symptom": "停車中にエンジンが止まることがある",
         "vehicle_id": VEHICLE_ID,
         "expected_urgency": "low",
-        "expected_action": "spec_answer",
+        "expected_action": "escalate",  # マニュアル記載なし → ディーラー誘導
+        "expected_coverage": "not_covered",
+        "max_expected_turns": 2,
+        "expected_final_action": "escalate",
+        "forbidden_terms": ["アイドリングストップ機能", "ECUリセット"],
         "ground_truth": (
             "マニュアルにアイドリングストップ機能の記載なし。"
             "2011年式ホンダ アコード（日本仕様）のオーナーズマニュアルには"
@@ -200,6 +236,9 @@ TEST_CASES = [
         "vehicle_id": VEHICLE_ID,
         "expected_urgency": "critical",
         "expected_action": "escalate",
+        "expected_coverage": "covered",
+        "max_expected_turns": 9,
+        "expected_final_action": "escalate",
         "ground_truth": (
             "マニュアルP.62「水温計」: 水温計がH（高温）のマークを示した場合、"
             "エンジンがオーバーヒートしています。安全な場所に停車してください（P.211参照）。"
@@ -233,6 +272,9 @@ TEST_CASES = [
         "vehicle_id": VEHICLE_ID,
         "expected_urgency": "critical",
         "expected_action": "escalate",
+        "expected_coverage": "covered",
+        "max_expected_turns": 3,
+        "expected_final_action": "escalate",
         "ground_truth": (
             "マニュアルP.211「オーバーヒートしたとき」: "
             "ボンネットから蒸気が出ている場合はオーバーヒートの兆候です。"
@@ -249,6 +291,10 @@ TEST_CASES = [
         "vehicle_id": VEHICLE_ID,
         "expected_urgency": "critical",
         "expected_action": "escalate",
+        "expected_coverage": "not_covered",
+        "max_expected_turns": 1,
+        "expected_final_action": "escalate",
+        "forbidden_terms": ["消火器", "消火手順"],
         "ground_truth": (
             "マニュアルにエンジンルームからの火災に関する該当記載なし。"
             "車両火災に関するトラブルシューティングはオーナーズマニュアルには"
@@ -264,6 +310,9 @@ TEST_CASES = [
         "vehicle_id": VEHICLE_ID,
         "expected_urgency": "critical",
         "expected_action": "escalate",
+        "expected_coverage": "covered",
+        "max_expected_turns": 6,
+        "expected_final_action": "escalate",
         "ground_truth": (
             "マニュアルP.211-212「オーバーヒートしたとき」: "
             "冷却水量の確認手順が記載されています。リザーバータンクの液面を確認し、"
@@ -289,6 +338,10 @@ TEST_CASES = [
         "vehicle_id": VEHICLE_ID,
         "expected_urgency": "high",
         "expected_action": "ask_question",
+        "expected_coverage": "not_covered",
+        "max_expected_turns": 2,
+        "expected_final_action": "escalate",
+        "forbidden_terms": ["ホイールバランス調整", "アライメント"],
         "ground_truth": (
             "マニュアルに走行中の振動に関する該当記載なし。"
             "P.154にABS作動時のブレーキペダルの振動や音は正常な動作との記載あり。"
@@ -303,6 +356,10 @@ TEST_CASES = [
         "vehicle_id": VEHICLE_ID,
         "expected_urgency": "high",
         "expected_action": "ask_question",
+        "expected_coverage": "not_covered",
+        "max_expected_turns": 2,
+        "expected_final_action": "escalate",
+        "forbidden_terms": ["ベルト交換", "クラッチ交換"],
         "ground_truth": (
             "マニュアルに異臭に関する該当記載なし。"
             "ゴムが焦げた臭いに関するトラブルシューティングは"
@@ -317,6 +374,9 @@ TEST_CASES = [
         "vehicle_id": VEHICLE_ID,
         "expected_urgency": "high",
         "expected_action": "ask_question",
+        "expected_coverage": "covered",
+        "max_expected_turns": 4,
+        "expected_final_action": "provide_answer",
         "ground_truth": (
             "マニュアルP.53「ABS（アンチロックブレーキシステム）警告灯」: "
             "常時点灯、あるいは全く点灯しない場合は、ただちにHonda販売店で"
@@ -335,6 +395,10 @@ TEST_CASES = [
         "vehicle_id": VEHICLE_ID,
         "expected_urgency": "medium",
         "expected_action": "ask_question",
+        "expected_coverage": "not_covered",
+        "max_expected_turns": 2,
+        "expected_final_action": "escalate",
+        "forbidden_terms": ["燃料フィルター交換", "インジェクター洗浄"],
         "ground_truth": (
             "マニュアルに燃費悪化に関する該当記載なし。"
             "P.53に燃料残量警告灯の記載あり（点灯したら早めに給油してください。"
@@ -350,6 +414,9 @@ TEST_CASES = [
         "vehicle_id": VEHICLE_ID,
         "expected_urgency": "medium",
         "expected_action": "ask_question",
+        "expected_coverage": "covered",
+        "max_expected_turns": 5,
+        "expected_final_action": "provide_answer",
         "ground_truth": (
             "マニュアルP.100「ワイパー/ウォッシャー」: ワイパースイッチの操作方法"
             "（OFF/LO/HI/AUTO/MIST）が記載されています。"
