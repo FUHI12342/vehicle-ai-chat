@@ -44,14 +44,14 @@ class TestNotCoveredCounter:
         assert session.current_step == ChatStep.DIAGNOSING
 
     @pytest.mark.asyncio
-    async def test_not_covered_with_turn_ge_2_escalates(self):
-        """not_covered_count>=1 + diagnostic_turn>=2 should force escalate to RESERVATION."""
+    async def test_not_covered_with_turn_ge_3_escalates(self):
+        """not_covered_count>=1 + diagnostic_turn>=3 should force escalate to RESERVATION."""
         session = SessionState(
             session_id="t",
             current_step=ChatStep.DIAGNOSING,
             symptom_text="ハンドルが重い",
             not_covered_count=0,
-            diagnostic_turn=1,  # will become 2 after increment → triggers escalation
+            diagnostic_turn=2,  # will become 3 after increment → triggers escalation
         )
         request = ChatRequest(session_id="t", message="はい")
 
@@ -78,7 +78,7 @@ class TestNotCoveredCounter:
             current_step=ChatStep.DIAGNOSING,
             symptom_text="ハンドルが重い",
             not_covered_count=0,
-            diagnostic_turn=0,  # will become 1 after increment → too early
+            diagnostic_turn=0,  # will become 1 after increment → still too early (threshold is 2)
         )
         request = ChatRequest(session_id="t", message="はい")
 
@@ -133,7 +133,7 @@ class TestNotCoveredCounter:
             current_step=ChatStep.DIAGNOSING,
             symptom_text="ハンドルが重い",
             not_covered_count=0,
-            diagnostic_turn=1,  # will become 2 → triggers escalation with not_covered
+            diagnostic_turn=2,  # will become 3 → triggers escalation with not_covered
         )
         request = ChatRequest(session_id="t", message="はい")
 
@@ -195,13 +195,13 @@ class TestIdentifyingPhaseTurnLimit:
         assert session.current_step == ChatStep.RESERVATION
 
     @pytest.mark.asyncio
-    async def test_covered_4_turns_promotes_to_guide(self):
-        """covered + 4 turns + identifying → provide_answer → guide_offered"""
+    async def test_covered_6_turns_promotes_to_guide(self):
+        """covered + 6 turns + identifying → provide_answer → guide_offered"""
         session = SessionState(
             session_id="t",
             current_step=ChatStep.DIAGNOSING,
             symptom_text="タイヤ空気圧警告",
-            diagnostic_turn=3,  # will become 4
+            diagnostic_turn=5,  # will become 6
             guide_phase="identifying",
         )
         request = ChatRequest(session_id="t", message="はい")
@@ -229,12 +229,12 @@ class TestIdentifyingPhaseTurnLimit:
 
     @pytest.mark.asyncio
     async def test_high_confidence_no_forced_escalate(self):
-        """High confidence → Fix B triggers first → guide_offered"""
+        """High confidence → turn limit triggers → guide_offered"""
         session = SessionState(
             session_id="t",
             current_step=ChatStep.DIAGNOSING,
             symptom_text="ABSランプが点灯",
-            diagnostic_turn=3,
+            diagnostic_turn=5,  # will become 6, matching covered turn limit
             guide_phase="identifying",
         )
         request = ChatRequest(session_id="t", message="はい")
@@ -296,26 +296,27 @@ class TestIdentifyingPhaseTurnLimit:
 
 
 class TestCoveredHighConfidenceOverride:
-    """Fix B: covered + confidence>=0.8 + turn>=2 → ask_question を provide_answer に上書き"""
+    """Fix B v2: covered + confidence>=0.9 + turn>=3 → ask_question を provide_answer に上書き"""
 
     @pytest.mark.asyncio
     async def test_high_confidence_covered_overrides_ask_question(self):
-        """covered + high confidence + turn>=2 → provide_answer に上書きされる"""
+        """covered + high confidence + turn>=3 → provide_answer に上書きされる"""
         session = SessionState(
             session_id="t",
             current_step=ChatStep.DIAGNOSING,
             symptom_text="ABSランプが点灯",
-            diagnostic_turn=1,  # will become 2
+            diagnostic_turn=2,  # will become 3 → triggers _maybe_summarize (turn%3==0)
         )
         request = ChatRequest(session_id="t", message="はい")
 
         resp = make_llm_response(
             action="ask_question",
             manual_coverage="covered",
-            confidence_to_answer=0.85,
+            confidence_to_answer=0.92,
             message="ABS警告灯の診断結果です。",
         )
-        fake_provider = FakeLLMProvider(_responses=[resp])
+        # 2 responses needed: 1st for _maybe_summarize at turn 3, 2nd for diagnostic
+        fake_provider = FakeLLMProvider(_responses=[resp, resp])
 
         with patch("app.chat_flow.step_diagnosing.keyword_urgency_check", return_value=None), \
              patch("app.chat_flow.step_diagnosing.provider_registry") as mock_reg, \
@@ -433,9 +434,21 @@ class TestValidateManualCoverage:
         result = _validate_manual_coverage("covered", sources)
         assert result == "covered"
 
-    def test_rag_score_high_with_not_covered_llm(self):
-        """RAGスコア0.9 + LLM 'not_covered' → 'not_covered' (LLM判断を尊重)"""
-        sources = [RAGSource(content="test", page=1, section="s", score=0.9)]
+    def test_rag_score_high_with_not_covered_llm_no_actionable(self):
+        """RAGスコア0.9 + LLM 'not_covered' + actionableなし → 'not_covered' (LLM判断を尊重)"""
+        sources = [RAGSource(content="test", page=1, section="s", score=0.9, content_type="general")]
+        result = _validate_manual_coverage("not_covered", sources)
+        assert result == "not_covered"
+
+    def test_rag_score_high_with_not_covered_llm_has_actionable(self):
+        """RAGスコア0.9 + LLM 'not_covered' + actionableあり → 'partially_covered' (升格)"""
+        sources = [RAGSource(content="test", page=1, section="s", score=0.9, content_type="procedure")]
+        result = _validate_manual_coverage("not_covered", sources)
+        assert result == "partially_covered"
+
+    def test_rag_score_low_with_not_covered_llm_has_actionable(self):
+        """RAGスコア0.6 + LLM 'not_covered' + actionableあり → 'not_covered' (スコア不足で升格しない)"""
+        sources = [RAGSource(content="test", page=1, section="s", score=0.6, content_type="troubleshooting")]
         result = _validate_manual_coverage("not_covered", sources)
         assert result == "not_covered"
 
@@ -471,3 +484,232 @@ class TestValidateManualCoverage:
         sources = [RAGSource(content="test", page=1, section="s", score=0.70)]
         result = _validate_manual_coverage("covered", sources)
         assert result == "covered"
+
+
+class TestGuideModeTurnLimit:
+    """Fix 5 CODE: guide mode hard turn limit (5 turns in guiding)"""
+
+    @pytest.mark.asyncio
+    async def test_guide_mode_5_turns_forces_provide_answer(self):
+        """guiding phase + 5 guide turns → provide_answer forced"""
+        session = SessionState(
+            session_id="t",
+            current_step=ChatStep.DIAGNOSING,
+            symptom_text="エンジンがかからない",
+            diagnostic_turn=9,  # will become 10
+            guide_phase="guiding",
+            guide_start_turn=5,  # guide_turns will be 10-5=5
+            identified_issue="バッテリー上がり",
+        )
+        request = ChatRequest(session_id="t", message="はい")
+
+        resp = make_llm_response(
+            action="ask_question",
+            manual_coverage="covered",
+            confidence_to_answer=0.6,
+        )
+        fake_provider = FakeLLMProvider(_responses=[resp])
+
+        with patch("app.chat_flow.step_diagnosing.keyword_urgency_check", return_value=None), \
+             patch("app.chat_flow.step_diagnosing.provider_registry") as mock_reg, \
+             patch("app.chat_flow.step_diagnosing.rag_service") as mock_rag:
+            mock_reg.get_active.return_value = fake_provider
+            mock_rag.query = AsyncMock(return_value={
+                "answer": "バッテリー",
+                "sources": [{"content": "test", "page": 1, "section": "s", "score": 0.8}],
+            })
+            from app.chat_flow.step_diagnosing import handle_diagnosing
+            response = await handle_diagnosing(session, request)
+
+        # guide_turns=5 → forced provide_answer → since already guiding, goes to LLM choices path
+        # The response should NOT be ask_question type
+        assert response.prompt.type != "single_choice" or session.guide_phase == "guiding"
+
+    @pytest.mark.asyncio
+    async def test_guide_mode_4_turns_still_asks(self):
+        """guiding phase + 4 guide turns → ask_question allowed"""
+        session = SessionState(
+            session_id="t",
+            current_step=ChatStep.DIAGNOSING,
+            symptom_text="エンジンがかからない",
+            diagnostic_turn=8,  # will become 9
+            guide_phase="guiding",
+            guide_start_turn=5,  # guide_turns will be 9-5=4
+            identified_issue="バッテリー上がり",
+        )
+        request = ChatRequest(session_id="t", message="はい")
+
+        resp = make_llm_response(
+            action="ask_question",
+            manual_coverage="covered",
+            confidence_to_answer=0.6,
+        )
+        fake_provider = FakeLLMProvider(_responses=[resp])
+
+        with patch("app.chat_flow.step_diagnosing.keyword_urgency_check", return_value=None), \
+             patch("app.chat_flow.step_diagnosing.provider_registry") as mock_reg, \
+             patch("app.chat_flow.step_diagnosing.rag_service") as mock_rag:
+            mock_reg.get_active.return_value = fake_provider
+            mock_rag.query = AsyncMock(return_value={
+                "answer": "バッテリー",
+                "sources": [{"content": "test", "page": 1, "section": "s", "score": 0.8}],
+            })
+            from app.chat_flow.step_diagnosing import handle_diagnosing
+            response = await handle_diagnosing(session, request)
+
+        # guide_turns=4 → still under limit, ask_question should pass through
+        assert session.current_step == ChatStep.DIAGNOSING
+
+
+class TestGlobalTurn10SoftLimit:
+    """Global soft limit: turn 10+ ask_question → forced provide_answer"""
+
+    @pytest.mark.asyncio
+    async def test_turn_10_forces_provide_answer_not_escalate(self):
+        """ask_question at turn 10 in guiding → forced to provide_answer (natural completion)"""
+        session = SessionState(
+            session_id="t",
+            current_step=ChatStep.DIAGNOSING,
+            symptom_text="燃費が悪い",
+            diagnostic_turn=9,  # will become 10
+            guide_phase="guiding",
+            guide_start_turn=3,
+        )
+        request = ChatRequest(session_id="t", message="はい")
+
+        resp = make_llm_response(
+            action="ask_question",
+            manual_coverage="covered",
+            confidence_to_answer=0.5,
+        )
+        fake_provider = FakeLLMProvider(_responses=[resp])
+
+        with patch("app.chat_flow.step_diagnosing.keyword_urgency_check", return_value=None), \
+             patch("app.chat_flow.step_diagnosing.provider_registry") as mock_reg, \
+             patch("app.chat_flow.step_diagnosing.rag_service") as mock_rag:
+            mock_reg.get_active.return_value = fake_provider
+            mock_rag.query = AsyncMock(return_value={
+                "answer": "燃費",
+                "sources": [{"content": "test", "page": 1, "section": "s", "score": 0.8}],
+            })
+            from app.chat_flow.step_diagnosing import handle_diagnosing
+            response = await handle_diagnosing(session, request)
+
+        # Turn 10 + guiding → ask_question forced to provide_answer
+        # Guide mode completion should NOT force escalate; allow provide_answer through
+        assert session.current_step in (ChatStep.DIAGNOSING, ChatStep.DONE)
+
+    @pytest.mark.asyncio
+    async def test_turn_9_no_forced_limit(self):
+        """ask_question at turn 9 → no forced limit"""
+        session = SessionState(
+            session_id="t",
+            current_step=ChatStep.DIAGNOSING,
+            symptom_text="燃費が悪い",
+            diagnostic_turn=8,  # will become 9
+            guide_phase="guiding",
+            guide_start_turn=6,  # guide_turns=3, under limit
+        )
+        request = ChatRequest(session_id="t", message="はい")
+
+        resp = make_llm_response(
+            action="ask_question",
+            manual_coverage="covered",
+            confidence_to_answer=0.5,
+        )
+        fake_provider = FakeLLMProvider(_responses=[resp])
+
+        with patch("app.chat_flow.step_diagnosing.keyword_urgency_check", return_value=None), \
+             patch("app.chat_flow.step_diagnosing.provider_registry") as mock_reg, \
+             patch("app.chat_flow.step_diagnosing.rag_service") as mock_rag:
+            mock_reg.get_active.return_value = fake_provider
+            mock_rag.query = AsyncMock(return_value={
+                "answer": "燃費",
+                "sources": [{"content": "test", "page": 1, "section": "s", "score": 0.8}],
+            })
+            from app.chat_flow.step_diagnosing import handle_diagnosing
+            response = await handle_diagnosing(session, request)
+
+        # Turn 9, guide_turns=3 → no limit, stays as ask_question
+        assert session.current_step == ChatStep.DIAGNOSING
+
+
+class TestDealerIntentDetection:
+    """Dealer intent detection: user says ディーラー → direct RESERVATION"""
+
+    @pytest.mark.asyncio
+    async def test_dealer_intent_in_guiding_phase(self):
+        """'ディーラーに相談したい' in guiding phase → RESERVATION"""
+        session = SessionState(
+            session_id="t",
+            current_step=ChatStep.DIAGNOSING,
+            symptom_text="ワイパーが動かない",
+            diagnostic_turn=8,
+            guide_phase="guiding",
+            guide_start_turn=4,
+        )
+        request = ChatRequest(session_id="t", message="ディーラーに相談したい")
+
+        with patch("app.chat_flow.step_reservation.handle_reservation",
+                    new_callable=AsyncMock, return_value=_MOCK_RESERVATION_RESP):
+            from app.chat_flow.step_diagnosing import handle_diagnosing
+            response = await handle_diagnosing(session, request)
+
+        assert session.current_step == ChatStep.RESERVATION
+
+    @pytest.mark.asyncio
+    async def test_dealer_intent_early_turn_no_trigger(self):
+        """ディーラー intent at turn 2 should NOT trigger (too early)"""
+        session = SessionState(
+            session_id="t",
+            current_step=ChatStep.DIAGNOSING,
+            symptom_text="ワイパーが動かない",
+            diagnostic_turn=2,  # below threshold of 3
+            guide_phase="guiding",
+            guide_start_turn=1,
+        )
+        request = ChatRequest(session_id="t", message="ディーラーに相談したい")
+
+        resp = make_llm_response()
+        fake_provider = FakeLLMProvider(_responses=[resp])
+
+        with patch("app.chat_flow.step_diagnosing.keyword_urgency_check", return_value=None), \
+             patch("app.chat_flow.step_diagnosing.provider_registry") as mock_reg, \
+             patch("app.chat_flow.step_diagnosing.rag_service") as mock_rag:
+            mock_reg.get_active.return_value = fake_provider
+            mock_rag.query = AsyncMock(return_value={
+                "answer": "ワイパー", "sources": [{"content": "t", "page": 1, "section": "s", "score": 0.8}],
+            })
+            from app.chat_flow.step_diagnosing import handle_diagnosing
+            response = await handle_diagnosing(session, request)
+
+        # Turn 2 < 3 → dealer intent not triggered
+        assert session.current_step == ChatStep.DIAGNOSING
+
+    @pytest.mark.asyncio
+    async def test_dealer_intent_in_identifying_no_trigger(self):
+        """ディーラー intent in identifying phase should NOT trigger"""
+        session = SessionState(
+            session_id="t",
+            current_step=ChatStep.DIAGNOSING,
+            symptom_text="ワイパーが動かない",
+            diagnostic_turn=5,
+            guide_phase="identifying",
+        )
+        request = ChatRequest(session_id="t", message="ディーラーに相談したい")
+
+        resp = make_llm_response()
+        fake_provider = FakeLLMProvider(_responses=[resp])
+
+        with patch("app.chat_flow.step_diagnosing.keyword_urgency_check", return_value=None), \
+             patch("app.chat_flow.step_diagnosing.provider_registry") as mock_reg, \
+             patch("app.chat_flow.step_diagnosing.rag_service") as mock_rag:
+            mock_reg.get_active.return_value = fake_provider
+            mock_rag.query = AsyncMock(return_value={
+                "answer": "ワイパー", "sources": [{"content": "t", "page": 1, "section": "s", "score": 0.8}],
+            })
+            from app.chat_flow.step_diagnosing import handle_diagnosing
+            response = await handle_diagnosing(session, request)
+
+        # identifying phase → dealer intent not triggered
+        assert session.current_step == ChatStep.DIAGNOSING

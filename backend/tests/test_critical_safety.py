@@ -86,15 +86,26 @@ class TestFreeTextCriticalFlag:
 # ---------------------------------------------------------------------------
 
 class TestCriticalSafetyInstructions:
-    def test_critical_safety_pending_injects_instruction(self):
+    def test_critical_safety_pending_cant_drive_injects_instruction(self):
         session = SessionState(
             session_id="t",
             critical_safety_pending=True,
+            can_drive=False,
         )
         instructions = _build_additional_instructions(session, "テスト", False)
-        assert "【緊急】" in instructions
+        assert "【緊急・走行不能】" in instructions
         assert "安全な場所に停車してください" in instructions
         assert "マニュアルの記載のみ使用すること" in instructions
+
+    def test_critical_safety_pending_can_drive_injects_guide_instruction(self):
+        session = SessionState(
+            session_id="t",
+            critical_safety_pending=True,
+            can_drive=True,
+        )
+        instructions = _build_additional_instructions(session, "テスト", False)
+        assert "【緊急・走行可能】" in instructions
+        assert "全ステップ案内" in instructions
 
     def test_no_critical_safety_no_injection(self):
         session = SessionState(
@@ -102,7 +113,7 @@ class TestCriticalSafetyInstructions:
             critical_safety_pending=False,
         )
         instructions = _build_additional_instructions(session, "テスト", False)
-        assert "【緊急】" not in instructions
+        assert "【緊急" not in instructions
 
 
 # ---------------------------------------------------------------------------

@@ -33,14 +33,53 @@ _DOMAIN_KEYWORDS = frozenset({
     "空気圧", "パンク", "ペダル",
 })
 
+# 口語表現・オノマトペ → 診断キーワードのマッピング
+# クエリ中にキー文字列が含まれる場合、値リストの用語をキーワードとして追加する
+_IMPLICIT_KEYWORDS: dict[str, list[str]] = {
+    # オノマトペ → 部品/症状
+    "キュルキュル": ["スターター", "ベルト"],
+    "ガタガタ": ["振動", "サスペンション"],
+    "カタカタ": ["異音"],
+    "ゴリゴリ": ["ベアリング", "ブレーキ"],
+    "キーキー": ["ブレーキ", "ベルト"],
+    "ブーン": ["異音"],
+    "ガリガリ": ["ブレーキ", "異音"],
+    "キュッ": ["ブレーキ", "ベルト"],
+    # 症状の口語表現 → 部品/系統（具体的→汎用の順序で登録、先に一致したものが優先）
+    "シミ": ["オイル", "漏れ"],
+    "漏れ": ["オイル", "冷却水"],
+    "かからない": ["スターター", "バッテリー", "イモビライザー"],
+    "かかりにくい": ["スターター", "バッテリー"],
+    "かかり": ["スターター", "バッテリー"],
+    "効かない": ["ブレーキ", "エアコン"],
+    "効きが悪い": ["ブレーキ", "エアコン"],
+    "止まらない": ["ブレーキ"],
+    "ワイパーが動かない": ["ヒューズ", "ワイパー"],
+    "ワイパー動かない": ["ヒューズ", "ワイパー"],
+    "動かない": ["バッテリー", "スターター"],
+    "燃費": ["燃料"],
+    "曇る": ["デフロスター", "エアコン"],
+    "曇り": ["デフロスター", "エアコン"],
+    "拭き": ["ワイパー"],
+    "拭け": ["ワイパー"],
+}
+
+# 汎用すぎるキーワード: 100+チャンクにヒットするためノイズ源になる
+# 他に具体的なキーワードがある場合は除外する
+_GENERIC_KEYWORDS = frozenset({"エンジン"})
+
 
 def extract_keywords(query: str, max_keywords: int = 5) -> list[str]:
     """クエリから検索用キーワードを抽出する。
 
     優先順位:
-    1. ドメインキーワード辞書にマッチする語
-    2. カタカナ複合語（2文字以上）
-    3. 漢字複合語（2文字以上）
+    1. 暗黙キーワードマッピング（オノマトペ・口語表現→診断用語）
+    2. ドメインキーワード辞書にマッチする語
+    3. カタカナ複合語（2文字以上）
+    4. 漢字複合語（2文字以上）
+
+    汎用キーワード（エンジン等）は他に具体的なキーワードがある場合、
+    リスト末尾に移動してノイズを抑制する。
 
     Returns:
         重要度順のキーワードリスト（最大max_keywords個）
@@ -48,7 +87,15 @@ def extract_keywords(query: str, max_keywords: int = 5) -> list[str]:
     keywords: list[str] = []
     seen: set[str] = set()
 
-    # 1. ドメインキーワード辞書マッチ（最優先）
+    # 0. 暗黙キーワードマッピング（最優先）
+    for trigger, implicit_kws in _IMPLICIT_KEYWORDS.items():
+        if trigger in query:
+            for kw in implicit_kws:
+                if kw not in seen:
+                    keywords.append(kw)
+                    seen.add(kw)
+
+    # 1. ドメインキーワード辞書マッチ
     for kw in _DOMAIN_KEYWORDS:
         if kw in query and kw not in seen:
             keywords.append(kw)
@@ -67,5 +114,11 @@ def extract_keywords(query: str, max_keywords: int = 5) -> list[str]:
         if word not in seen and word not in _STOPWORDS and len(word) >= 2:
             keywords.append(word)
             seen.add(word)
+
+    # 4. 汎用キーワード抑制: 他に具体的なキーワードがある場合は末尾に移動
+    specific = [kw for kw in keywords if kw not in _GENERIC_KEYWORDS]
+    generic = [kw for kw in keywords if kw in _GENERIC_KEYWORDS]
+    if specific and generic:
+        keywords = specific + generic
 
     return keywords[:max_keywords]

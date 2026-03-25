@@ -69,12 +69,22 @@ async def handle_reservation(session: SessionState, request: ChatRequest) -> Cha
 
     # Initial display: show urgency and ask about booking
     urgency_info = UrgencyInfo(
-        level=session.urgency_level or "high",
-        requires_visit=True,
+        level=session.urgency_level or "none",
+        requires_visit=session.urgency_level in ("high", "critical"),
         reasons=[],
     )
 
-    visit_urgency = session.visit_urgency or "today"
+    # visit_urgencyがセッションに設定されていない場合、urgency_levelから推定
+    if session.visit_urgency:
+        visit_urgency = session.visit_urgency
+    elif session.urgency_level == "critical":
+        visit_urgency = "immediate"
+    elif session.urgency_level == "high":
+        visit_urgency = "today"
+    elif session.urgency_level == "medium":
+        visit_urgency = "this_week"
+    else:
+        visit_urgency = "when_convenient"
     if session.booking_type == "dispatch":
         message = (
             "🚨 今すぐロードサービスまたは来場が必要です。\n\n"
@@ -94,10 +104,17 @@ async def handle_reservation(session: SessionState, request: ChatRequest) -> Cha
             "早めにディーラーまたは整備工場での点検をおすすめします。\n\n"
             "来店予約を行いますか？"
         )
-    else:
+    elif visit_urgency == "this_week":
         message = (
             "⚠️ 今週中の来場をおすすめします。\n\n"
             "ディーラーまたは整備工場での点検をおすすめします。\n\n"
+            "来店予約を行いますか？"
+        )
+    else:
+        # when_convenient or none/low urgency
+        message = (
+            "ご都合の良いタイミングでの点検をおすすめします。\n\n"
+            "症状が続く場合や心配な場合は、ディーラーまたは整備工場にご相談ください。\n\n"
             "来店予約を行いますか？"
         )
 

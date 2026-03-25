@@ -36,8 +36,20 @@ def _reciprocal_rank_fusion(
             docs[content_key] = doc
 
     sorted_keys = sorted(scores, key=lambda x: scores[x], reverse=True)
+
+    # Phase 3-2: content_type ブースト
+    # troubleshooting/procedure: ×1.3（診断手順を優先）
+    # specification: ×1.15（ヒューズ表等の仕様情報も軽くブースト）
+    _BOOST_FACTORS: dict[str, float] = {
+        "troubleshooting": 1.3,
+        "procedure": 1.3,
+        "specification": 1.15,
+    }
     return [
-        {**docs[key], "score": min(scores[key] * 60, 1.0)}  # RRFスコアを正規化
+        {
+            **docs[key],
+            "score": scores[key] * 60 * _BOOST_FACTORS.get(docs[key].get("content_type", ""), 1.0),
+        }
         for key in sorted_keys
         if key in docs
     ]

@@ -3,20 +3,20 @@ from app.llm.prompts import DIAGNOSTIC_PROMPT
 
 
 class TestNotCoveredStrictness:
-    def test_strict_not_covered_criteria_present(self):
-        assert "not_covered の判定は厳格に行うこと" in DIAGNOSTIC_PROMPT
-
-    def test_rag_specific_guidance(self):
-        assert "RAGの検索結果に「元の症状」の具体的な診断手順・対処法が含まれていない場合は not_covered" in DIAGNOSTIC_PROMPT
-
-    def test_spec_only_rag_is_not_covered(self):
-        assert "RAG結果が一般的な仕様説明のみで、トラブルシューティング手順がない場合も not_covered" in DIAGNOSTIC_PROMPT
+    def test_not_covered_definition_present(self):
+        assert "not_covered: 該当する記載が一切ない" in DIAGNOSTIC_PROMPT
 
     def test_no_general_knowledge_for_not_covered(self):
         assert "not_covered の場合は一般知識で診断手順を作成してはならない" in DIAGNOSTIC_PROMPT
 
     def test_escalate_instruction_for_not_covered(self):
         assert 'action: "escalate"' in DIAGNOSTIC_PROMPT
+
+    def test_not_covered_immediate_escalate(self):
+        assert "即座に action" in DIAGNOSTIC_PROMPT
+
+    def test_forbidden_examples_present(self):
+        assert "禁止例" in DIAGNOSTIC_PROMPT
 
 
 class TestLoopPreventionPrompt:
@@ -29,8 +29,19 @@ class TestLoopPreventionPrompt:
     def test_different_angle_instruction(self):
         assert "別の角度からの確認に切り替えるか、escalateすること" in DIAGNOSTIC_PROMPT
 
-    def test_dealer_suggestion_on_no_progress(self):
-        assert "ディーラーでの点検を提案すること" in DIAGNOSTIC_PROMPT
+
+class TestPhaseDesign:
+    def test_two_phase_system_described(self):
+        assert "2フェーズ制" in DIAGNOSTIC_PROMPT
+
+    def test_phase1_choices_restriction(self):
+        assert "choices に対処手順を入れないこと" in DIAGNOSTIC_PROMPT
+
+    def test_phase2_system_controlled(self):
+        assert "システムが切り替え時に追加指示で通知" in DIAGNOSTIC_PROMPT
+
+    def test_provide_answer_no_detailed_steps(self):
+        assert "provide_answer で手順の詳細" in DIAGNOSTIC_PROMPT
 
 
 class TestAdditionalInstructionsPlaceholder:

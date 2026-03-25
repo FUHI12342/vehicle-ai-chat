@@ -55,3 +55,6 @@ class SessionState(BaseModel):
     not_covered_count: int = 0
     repeated_response_count: int = 0
     guide_start_turn: int = 0
+    guide_turn_limit: int = 5  # 動的に更新される
+    guide_cached_steps: list[str] = []  # ガイド開始時にRAGから抽出した手順リスト
+    diagnostic_path: list[dict] = []  # [{"q": "質問", "a": "回答", "branch": "確定分岐"}]

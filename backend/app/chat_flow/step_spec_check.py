@@ -84,7 +84,7 @@ async def _classify_and_respond(session: SessionState, request: ChatRequest) -> 
         result = json.loads(response.content)
     except Exception as e:
         logger.error(f"Spec classification LLM call failed: {e}")
-        return _fallthrough_to_diagnosing(session)
+        return await _fallthrough_to_diagnosing(session, request)
 
     is_spec = result.get("is_spec_behavior", False)
     confidence = result.get("confidence", "low")

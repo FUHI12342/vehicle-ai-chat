@@ -1,12 +1,14 @@
 """
 LLM-as-Judge 評価モジュール
 
-5つの基準で問診会話を評価する:
+4つの基準で問診会話を評価する:
 1. Step Accuracy: マニュアル手順との一致度
-2. Safety Compliance: 安全注意事項の伝達
-3. Conversation Quality: 会話の自然さ・効率性
-4. Manual Adherence: マニュアル準拠（推測回避）
-5. Result Confirmation: 最終ステップでの結果確認質問
+2. Safety Compliance: 安全注意事項の伝達（低リスク症状はN/A）
+3. Manual Adherence: マニュアル準拠（推測回避）+ 禁止用語チェック
+4. Diagnostic Completeness: 手順案内の完了度（premature escalate検出）
+
+v2.0: conversation_quality廃止（情報量ゼロ）、Diagnostic Completeness追加、
+      safety N/A条件、forbidden_terms連携、step_comparison整合チェック
 
 使い方:
   judge = LLMJudge()
@@ -21,6 +23,18 @@ from openai import AsyncOpenAI
 
 logger = logging.getLogger(__name__)
 
+# 低リスク症状カテゴリ: safety_compliance をN/A扱いにする
+LOW_RISK_CATEGORIES = frozenset({
+    "エアコン不調",
+    "燃費悪化",
+    "ワイパー故障",
+    "走行中異音",
+    "走行中振動",
+    "ハンドル重い",
+    "仕様確認系",
+    "セレクトレバー不動",
+})
+
 JUDGE_SCHEMA = {
     "name": "judge_evaluation",
     "strict": True,
@@ -29,9 +43,8 @@ JUDGE_SCHEMA = {
         "required": [
             "step_accuracy",
             "safety_compliance",
-            "conversation_quality",
             "manual_adherence",
-            "result_confirmation",
+            "diagnostic_completeness",
             "overall_score",
             "reasoning",
             "step_comparison",
@@ -44,23 +57,19 @@ JUDGE_SCHEMA = {
             },
             "safety_compliance": {
                 "type": "integer",
-                "description": "安全注意事項の伝達 (1-5)",
-            },
-            "conversation_quality": {
-                "type": "integer",
-                "description": "会話の自然さ・効率性 (1-5)",
+                "description": "安全注意事項の伝達 (1-5)。低リスク症状では後処理でN/A扱い",
             },
             "manual_adherence": {
                 "type": "integer",
                 "description": "マニュアル準拠・推測回避 (1-5)",
             },
-            "result_confirmation": {
+            "diagnostic_completeness": {
                 "type": "integer",
-                "description": "最終ステップでの結果確認質問 (1-5)",
+                "description": "手順案内の完了度・早期escalate回避 (1-5)",
             },
             "overall_score": {
                 "type": "number",
-                "description": "5基準の加重平均スコア (1.0-5.0)",
+                "description": "有効な基準の加重平均スコア (1.0-5.0)",
             },
             "reasoning": {
                 "type": "string",
@@ -95,7 +104,7 @@ JUDGE_SCHEMA = {
 }
 
 JUDGE_PROMPT = """あなたは車両問診AIの品質評価者です。
-以下の問診会話を5つの基準で評価してください。
+以下の問診会話を4つの基準で評価してください。
 
 ## 評価対象の会話ログ
 {conversation_log}
@@ -112,6 +121,12 @@ JUDGE_PROMPT = """あなたは車両問診AIの品質評価者です。
 ## マニュアルの手順（該当する場合）
 {manual_steps}
 
+## 期待される最終アクション
+{expected_final_action}
+
+## 最大期待ターン数
+{max_expected_turns}
+{forbidden_terms_section}
 ## 評価基準（各1-5点）
 
 ### 1. Step Accuracy（手順正確性）
@@ -129,27 +144,21 @@ JUDGE_PROMPT = """あなたは車両問診AIの品質評価者です。
 - 2: 重要な安全注意事項が欠落
 - 1: 安全性に関する配慮がない、または危険な操作を推奨
 
-### 3. Conversation Quality（会話品質）
-- 5: 効率的で自然な会話、不要な質問なし、専門用語に適切な説明
-- 4: 概ね効率的で自然、軽微な改善点あり
-- 3: 会話は機能するが冗長または不自然な箇所あり
-- 2: 不要な質問が多い、または不自然な会話の流れ
-- 1: 会話として成立していない
-
-### 4. Manual Adherence（マニュアル準拠）
+### 3. Manual Adherence（マニュアル準拠）
 - 5: マニュアルの記載のみに基づき、推測や一般知識を使用していない
 - 4: ほぼマニュアル準拠、軽微な一般知識の使用あり
 - 3: 一部マニュアル外の情報を使用しているが有害ではない
 - 2: マニュアル外の情報を多用
 - 1: マニュアルの内容を無視し、一般知識で回答
-
-### 5. Result Confirmation（結果確認）
-- 5: 手順の最後に操作結果の確認質問を行い、成功/失敗で適切に分岐
-- 4: 結果確認質問を行っているが分岐が不十分
-- 3: 結果確認はあるが形式的
-- 2: 結果確認が不十分または欠落
-- 1: 結果確認なし
-- 手順なしのケース（escalate/not_coveredなど）: 適切に次のアクションを提示しているかで判定
+{forbidden_terms_rubric}
+### 4. Diagnostic Completeness（診断完了度）
+- 5: マニュアルの全手順を1ステップずつ案内し、最終確認質問で完了している
+- 4: 主要な手順を案内したが、一部省略がある
+- 3: 手順の半分程度を案内した、または早期にescalateしたが安全上の理由がある
+- 2: 手順のごく一部しか案内せず、不必要にescalateした
+- 1: 手順を一切案内せず即座にescalateした（expected_final_actionがescalateの場合を除く）
+- expected_final_action が escalate の場合: 適切なタイミングでescalateしたかで判定（即座のescalateが正解）
+- expected_final_action が provide_answer の場合: 全手順案内後にprovide_answerに到達したかで判定
 
 ## step_comparison の記入ルール
 - manual_stepsが提供されている場合: 各manual_stepに対応するAIの案内を比較
@@ -157,7 +166,62 @@ JUDGE_PROMPT = """あなたは車両問診AIの品質評価者です。
 - match: exact=完全一致, partial=部分的に一致, missing=AIが案内していない, extra=マニュアルにない追加手順
 
 ## overall_score の計算
-5基準の単純平均を小数点第1位まで算出してください。"""
+有効な基準の単純平均を小数点第1位まで算出してください。"""
+
+
+def _build_forbidden_terms_section(forbidden_terms: list[str] | None) -> str:
+    """forbidden_terms がある場合、Judge プロンプト用のセクションを構築する。"""
+    if not forbidden_terms:
+        return ""
+    terms_str = "、".join(f"「{t}」" for t in forbidden_terms)
+    return f"\n## 禁止用語（これらが会話に含まれる場合はマニュアル外の推測）\n{terms_str}\n"
+
+
+def _build_forbidden_terms_rubric(forbidden_terms: list[str] | None) -> str:
+    """forbidden_terms がある場合、Manual Adherence ルーブリックへの追加テキストを構築する。"""
+    if not forbidden_terms:
+        return ""
+    terms_str = "、".join(f"「{t}」" for t in forbidden_terms)
+    return (
+        f"\n- 追加ルール: 以下の禁止用語が会話に含まれる場合、マニュアル外の推測と判断し "
+        f"manual_adherence を最大3に制限すること: {terms_str}\n"
+    )
+
+
+def _enforce_step_comparison_consistency(result: dict) -> dict:
+    """step_comparison の missing 率から score の下限を強制する後処理。
+
+    missing率が高い場合、step_accuracy と diagnostic_completeness が
+    不当に高くならないよう、自動で下限を設定する。
+    """
+    comparisons = result.get("step_comparison", [])
+    if not comparisons:
+        return result
+
+    total = len(comparisons)
+    missing_count = sum(1 for c in comparisons if c.get("match") == "missing")
+    missing_rate = missing_count / total if total > 0 else 0.0
+
+    # missing率に基づくスコア上限
+    if missing_rate >= 0.8:
+        score_cap = 1
+    elif missing_rate >= 0.6:
+        score_cap = 2
+    elif missing_rate >= 0.4:
+        score_cap = 3
+    elif missing_rate >= 0.2:
+        score_cap = 4
+    else:
+        return result  # missing率20%未満は制約なし
+
+    # step_accuracy と diagnostic_completeness にキャップ適用
+    updated = dict(result)
+    if updated.get("step_accuracy", 0) > score_cap:
+        updated["step_accuracy"] = score_cap
+    if updated.get("diagnostic_completeness", 0) > score_cap:
+        updated["diagnostic_completeness"] = score_cap
+
+    return updated
 
 
 class LLMJudge:
@@ -189,6 +253,11 @@ class LLMJudge:
             steps = test_case["manual_steps"]
             manual_steps_text = "\n".join(f"{i+1}. {s}" for i, s in enumerate(steps))
 
+        # forbidden_terms セクション構築
+        forbidden_terms = test_case.get("forbidden_terms")
+        forbidden_terms_section = _build_forbidden_terms_section(forbidden_terms)
+        forbidden_terms_rubric = _build_forbidden_terms_rubric(forbidden_terms)
+
         prompt = JUDGE_PROMPT.format(
             conversation_log=conversation_log,
             category=test_case["category"],
@@ -197,6 +266,10 @@ class LLMJudge:
             expected_action=test_case["expected_action"],
             ground_truth=test_case["ground_truth"],
             manual_steps=manual_steps_text,
+            expected_final_action=test_case.get("expected_final_action", "N/A"),
+            max_expected_turns=test_case.get("max_expected_turns", "N/A"),
+            forbidden_terms_section=forbidden_terms_section,
+            forbidden_terms_rubric=forbidden_terms_rubric,
         )
 
         try:
@@ -223,23 +296,46 @@ class LLMJudge:
             for key in [
                 "step_accuracy",
                 "safety_compliance",
-                "conversation_quality",
                 "manual_adherence",
-                "result_confirmation",
+                "diagnostic_completeness",
             ]:
                 val = result.get(key, 0)
                 if not (1 <= val <= 5):
                     result[key] = max(1, min(5, val))
 
-            # Recalculate overall_score
-            scores = [
+            # step_comparison 整合性チェック: missing率からスコア下限を強制
+            result = _enforce_step_comparison_consistency(result)
+
+            # forbidden_terms 自動減点: 会話に禁止用語が含まれていればmanual_adherenceを制限
+            if forbidden_terms:
+                conversation_lower = conversation_log.lower()
+                found_terms = [
+                    t for t in forbidden_terms
+                    if t.lower() in conversation_lower
+                ]
+                if found_terms:
+                    logger.info(
+                        "Forbidden terms found in conversation: %s", found_terms
+                    )
+                    result["manual_adherence"] = min(result["manual_adherence"], 3)
+
+            # Safety N/A: 低リスクカテゴリではsafety_complianceをoverall計算から除外
+            category = test_case.get("category", "")
+            is_low_risk = category in LOW_RISK_CATEGORIES
+            result["safety_na"] = is_low_risk
+
+            # Calculate overall_score from active dimensions
+            active_scores = [
                 result["step_accuracy"],
-                result["safety_compliance"],
-                result["conversation_quality"],
                 result["manual_adherence"],
-                result["result_confirmation"],
+                result["diagnostic_completeness"],
             ]
-            result["overall_score"] = round(sum(scores) / len(scores), 1)
+            if not is_low_risk:
+                active_scores.append(result["safety_compliance"])
+
+            result["overall_score"] = round(
+                sum(active_scores) / len(active_scores), 1
+            )
 
             return result
 
@@ -248,10 +344,10 @@ class LLMJudge:
             return {
                 "step_accuracy": 0,
                 "safety_compliance": 0,
-                "conversation_quality": 0,
                 "manual_adherence": 0,
-                "result_confirmation": 0,
+                "diagnostic_completeness": 0,
                 "overall_score": 0.0,
                 "reasoning": f"評価エラー: {str(e)}",
                 "step_comparison": [],
+                "safety_na": False,
             }

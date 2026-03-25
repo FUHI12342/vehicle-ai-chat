@@ -267,10 +267,10 @@ class UrgencyAssessor:
 
     def _default_assessment(self) -> dict:
         return {
-            "level": "medium",
+            "level": "low",
             "requires_visit": False,
             "can_drive": True,
-            "visit_urgency": "this_week",
+            "visit_urgency": "when_convenient",
             "reasons": ["自動判定ができませんでした。症状が続く場合はディーラーにご相談ください。"],
             "recommendation": "症状が続く場合は、お近くのディーラーにご相談ください。",
             "keyword_matched": False,

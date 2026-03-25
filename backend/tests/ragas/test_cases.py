@@ -1,5 +1,5 @@
 """
-18種問診テストケース定義
+21種問診テストケース定義
 
 車両: ホンダ アコード 2011年式 (vehicle_id: 30TA06210_web)
 各テストケースは、症状テキスト・期待urgency・期待action・ground_truthを含む。
@@ -7,11 +7,15 @@ RAGAS評価およびE2Eチャットテストの両方で使用する。
 
 ID 1-10: 初期テストケース
 ID 11-18: キーワード緊急度ルールカバー漏れ補完
+ID 19-21: 追加ケース（セレクトレバー、ブレーキ異音、エンジン始動不良バリエーション）
 
 v3.0: ground_truthをオーナーズマニュアル(30TA06210_web.pdf)の実際の記載内容から再作成。
       手順ありケースにはmanual_stepsを追加。
 v4.0: max_expected_turns, expected_final_action, expected_coverage, forbidden_terms を追加。
       not_coveredケースの期待動作を明確化。
+v5.0: ID 19-21 を追加。
+v5.1: expected_coverageを実態に合わせて修正。
+      マニュアルに関連情報があるが直接的な手順がないケースは partially_covered に変更。
 """
 
 VEHICLE_ID = "30TA06210_web"
@@ -75,7 +79,7 @@ TEST_CASES = [
         "vehicle_id": VEHICLE_ID,
         "expected_urgency": "medium",
         "expected_action": "ask_question",
-        "expected_coverage": "not_covered",
+        "expected_coverage": "partially_covered",  # ブレーキ異音(P.153)、ABS音(P.154)の関連記載あり
         "max_expected_turns": 2,
         "expected_final_action": "escalate",
         "forbidden_terms": ["サスペンション交換", "ドライブシャフト"],
@@ -94,7 +98,7 @@ TEST_CASES = [
         "vehicle_id": VEHICLE_ID,
         "expected_urgency": "low",
         "expected_action": "ask_question",
-        "expected_coverage": "not_covered",
+        "expected_coverage": "partially_covered",  # エアコン操作ページあり、故障TSなし
         "max_expected_turns": 2,
         "expected_final_action": "escalate",
         "forbidden_terms": ["冷媒ガス補充", "コンプレッサー交換"],
@@ -138,6 +142,10 @@ TEST_CASES = [
             "燃料が十分にあるか確認する（燃料計 P.62参照）",
             "ヒューズを点検する（P.218参照）",
         ],
+        "user_response_overrides": {
+            "かかりますか": "いいえ、かかりません",
+            "始動しますか": "いいえ、始動しません",
+        },
     },
     {
         "id": 6,
@@ -145,30 +153,19 @@ TEST_CASES = [
         "symptom": "駐車場の地面に油のシミがある",
         "vehicle_id": VEHICLE_ID,
         "expected_urgency": "high",
-        "expected_action": "ask_question",
-        "expected_coverage": "covered",
-        "max_expected_turns": 7,
-        "expected_final_action": "provide_answer",
+        "expected_action": "escalate",
+        "expected_coverage": "partially_covered",  # 油圧警告灯(P.213)の関連記載あり
+        "max_expected_turns": 3,
+        "expected_final_action": "escalate",
         "ground_truth": (
-            "マニュアルP.213「油圧警告灯が点灯したとき」: "
-            "安全な場所に停車し、エンジンを止めて1分以上待ってから"
-            "ボンネットを開けてエンジンオイルの量を確認してください。"
-            "オイルが不足している場合は補給してください。"
-            "補給後にエンジンをかけ、油圧警告灯が10秒以内に消灯しない場合は"
-            "エンジンを止めてHonda販売店に連絡してください。"
-            "P.51: 油圧警告灯が走行中に点灯した場合は安全な場所に停車し、"
-            "対処してください（P.213参照）。"
-            "地面の油のシミについての直接的な記載はないが、"
-            "オイル量の確認手順が該当します。"
+            "マニュアルに「地面の油のシミ」に関する直接的な記載はない。"
+            "油圧警告灯の手順（P.213）は警告灯点灯時の対処であり、"
+            "地面の油シミとは異なるシナリオ。"
+            "マニュアルに記載のない症状のため、Honda販売店での点検を案内する。"
         ),
         "manual_steps": [
-            "安全な場所に停車する",
-            "エンジンを止めて1分以上待つ",
-            "ボンネットを開ける",
-            "エンジンオイルの量を確認する",
-            "オイルが不足している場合は補給する",
-            "エンジンをかけて油圧警告灯が10秒以内に消灯するか確認する",
-            "消灯しない場合はエンジンを止めてHonda販売店に連絡する",
+            "マニュアルに該当する記載がないことを伝える",
+            "Honda販売店またはディーラーでの点検を案内する",
         ],
     },
     {
@@ -178,7 +175,7 @@ TEST_CASES = [
         "vehicle_id": VEHICLE_ID,
         "expected_urgency": "medium",
         "expected_action": "ask_question",
-        "expected_coverage": "not_covered",
+        "expected_coverage": "partially_covered",  # パンクしたとき(P.200)の関連記載あり
         "max_expected_turns": 2,
         "expected_final_action": "escalate",
         "forbidden_terms": ["空気圧の数値", "TPMS", "リセット"],
@@ -197,7 +194,7 @@ TEST_CASES = [
         "vehicle_id": VEHICLE_ID,
         "expected_urgency": "medium",
         "expected_action": "ask_question",
-        "expected_coverage": "not_covered",
+        "expected_coverage": "partially_covered",  # VSA警告灯(P.54)の関連記載あり
         "max_expected_turns": 2,
         "expected_final_action": "escalate",
         "forbidden_terms": ["パワステオイル補充", "EPS修理"],
@@ -216,7 +213,7 @@ TEST_CASES = [
         "vehicle_id": VEHICLE_ID,
         "expected_urgency": "low",
         "expected_action": "escalate",  # マニュアル記載なし → ディーラー誘導
-        "expected_coverage": "not_covered",
+        "expected_coverage": "partially_covered",  # エンジン関連記載が広く存在
         "max_expected_turns": 2,
         "expected_final_action": "escalate",
         "forbidden_terms": ["アイドリングストップ機能", "ECUリセット"],
@@ -338,7 +335,7 @@ TEST_CASES = [
         "vehicle_id": VEHICLE_ID,
         "expected_urgency": "high",
         "expected_action": "ask_question",
-        "expected_coverage": "not_covered",
+        "expected_coverage": "partially_covered",  # ABS振動(P.154)、タイヤ関連記載あり
         "max_expected_turns": 2,
         "expected_final_action": "escalate",
         "forbidden_terms": ["ホイールバランス調整", "アライメント"],
@@ -356,7 +353,7 @@ TEST_CASES = [
         "vehicle_id": VEHICLE_ID,
         "expected_urgency": "high",
         "expected_action": "ask_question",
-        "expected_coverage": "not_covered",
+        "expected_coverage": "partially_covered",  # エンジン/ベルト関連記載が間接的にヒット
         "max_expected_turns": 2,
         "expected_final_action": "escalate",
         "forbidden_terms": ["ベルト交換", "クラッチ交換"],
@@ -395,7 +392,7 @@ TEST_CASES = [
         "vehicle_id": VEHICLE_ID,
         "expected_urgency": "medium",
         "expected_action": "ask_question",
-        "expected_coverage": "not_covered",
+        "expected_coverage": "partially_covered",  # 燃料残量警告灯(P.53)の関連記載あり
         "max_expected_turns": 2,
         "expected_final_action": "escalate",
         "forbidden_terms": ["燃料フィルター交換", "インジェクター洗浄"],
@@ -435,5 +432,151 @@ TEST_CASES = [
             "ヒューズが切れていれば同じアンペア数のヒューズに交換する",
             "寒冷時はデフロスターでフロントガラスを温めてから再度試す",
         ],
+        # シミュレーションユーザー応答制御:
+        # 「ワイパーは動きますか？」に「はい」と答えると症状と矛盾するため上書き
+        "user_response_overrides": {
+            "動きますか": "いいえ、動きません",
+            "動作しますか": "いいえ、動きません",
+        },
+    },
+    # ── ID 19-21: 追加ケース ──
+    {
+        "id": 19,
+        "category": "セレクトレバー不動",
+        "symptom": "セレクトレバーが動かない",
+        "vehicle_id": VEHICLE_ID,
+        "expected_urgency": "medium",
+        "expected_action": "ask_question",
+        "expected_coverage": "covered",
+        "max_expected_turns": 8,
+        "expected_final_action": "provide_answer",
+        "ground_truth": (
+            "マニュアルP.210「セレクトレバーが動かないとき」: "
+            "シフトロック解除の手順が記載されている。"
+            "1. パーキングブレーキがかかっていることを確認する。"
+            "2. エンジンスイッチをオフにする。"
+            "3. 内蔵キーを取り出す。"
+            "4. マイナスドライバーに布を巻く。"
+            "5. シフトロック解除穴のカバーを外す。"
+            "6. 内蔵キーを解除穴に差し込み、押しながらセレクトレバーのボタンを押して操作する。"
+            "P.143: セレクトレバーの操作方法。ブレーキペダルを踏みながら操作する。"
+        ),
+        "manual_steps": [
+            "パーキングブレーキがかかっていることを確認する",
+            "ブレーキペダルを踏みながらセレクトレバーを操作してみる",
+            "エンジンがかかっているか確認する",
+            "改善しない場合: エンジンスイッチをオフにする",
+            "内蔵キーを取り出す",
+            "マイナスドライバーに布を巻く",
+            "シフトロック解除穴のカバーを外し、内蔵キーを差し込む",
+            "キーを押しながらセレクトレバーのボタンを押して操作する",
+        ],
+        # シミュレーションユーザー応答制御:
+        # ガイド完了後に「動きましたか？」と聞かれた場合、肯定応答で完了に導く
+        "user_response_overrides": {
+            "動きましたか": "はい、動きました。ありがとうございます",
+            "確認してください": "確認しました",
+            "動くかどうか": "はい、動くようになりました",
+        },
+    },
+    {
+        "id": 20,
+        "category": "ブレーキ異音",
+        "symptom": "ブレーキを踏むとキーキーと異音がする",
+        "vehicle_id": VEHICLE_ID,
+        "expected_urgency": "medium",
+        "expected_action": "ask_question",
+        "expected_coverage": "partially_covered",  # ブレーキ(P.153)、ABS音(P.154)の関連記載あり
+        "max_expected_turns": 3,
+        "expected_final_action": "escalate",
+        "ground_truth": (
+            "マニュアルにブレーキ異音に関する診断手順の記載なし。"
+            "P.153「フットブレーキ」には「効きが悪いときはHonda販売店で点検」とあるのみ。"
+            "P.154: ABS作動時の振動・作動音は正常との記載あり。"
+            "ブレーキ異音のトラブルシューティングはマニュアルに記載がないため、"
+            "Honda販売店での点検を案内する。"
+        ),
+        "manual_steps": [
+            "マニュアルにブレーキ異音の診断手順がないことを伝える",
+            "Honda販売店での点検を案内する",
+        ],
+    },
+    {
+        "id": 21,
+        "category": "エンジン始動不良2",
+        "symptom": "朝エンジンをかけようとしたが、キュルキュル音はするのにかからない",
+        "vehicle_id": VEHICLE_ID,
+        "expected_urgency": "high",
+        "expected_action": "ask_question",
+        "expected_coverage": "covered",
+        "max_expected_turns": 8,
+        "expected_final_action": "provide_answer",
+        "ground_truth": (
+            "マニュアルP.206「エンジンが始動しないとき」: "
+            "スターターが回る（キュルキュル音がする）場合は、"
+            "エンジンの始動手順（P.141）を再度確認してください。"
+            "P.141: パーキングブレーキがかかっていることを確認し、"
+            "セレクトレバーがPにあることを確認し、ブレーキペダルを踏みながら"
+            "エンジンスイッチを押してください。"
+            "イモビライザーシステムの異常で始動できない場合もあります（P.89参照）。"
+            "燃料が十分にあるか確認してください（燃料計 P.62）。"
+            "ヒューズの点検と交換はP.218を参照。"
+        ),
+        "manual_steps": [
+            "スターターが回っていることを確認する（キュルキュル音=スターター回転）",
+            "エンジンの始動手順を再確認する（P.141）",
+            "セレクトレバーがPにあることを確認する",
+            "ブレーキペダルを踏みながらエンジンスイッチを押す",
+            "燃料が十分にあるか確認する（燃料計 P.62参照）",
+            "イモビライザーシステムの異常がないか確認する（P.89参照）",
+            "ヒューズを点検する（P.218参照）",
+            "改善しない場合はHonda販売店に連絡またはロードサービスを手配する",
+        ],
+        # シミュレーションユーザー応答制御:
+        # 「スターターは回りますか？」→ 症状から回っている（キュルキュル音）
+        # 「エンジンはかかりますか？」→ かからない（症状そのもの）
+        "user_response_overrides": {
+            "回りますか": "はい、キュルキュルと音がして回ります",
+            "かかりますか": "いいえ、かかりません",
+            "始動しますか": "いいえ、始動しません",
+        },
+    },
+    {
+        "id": 22,
+        "category": "油圧警告灯",
+        "symptom": "油圧警告灯が点灯している",
+        "vehicle_id": VEHICLE_ID,
+        "expected_urgency": "critical",
+        "expected_action": "ask_question",
+        "expected_coverage": "covered",
+        "max_expected_turns": 7,
+        "expected_final_action": "provide_answer",
+        "ground_truth": (
+            "マニュアルP.213「油圧警告灯が点灯したとき」: "
+            "エンジン内部を潤滑しているオイルの油圧が低下すると点灯する。"
+            "1. ただちに車を安全な場所に停車する。"
+            "2. 非常点滅表示灯を点灯させる。"
+            "3. エンジンを止めて1分以上待つ。"
+            "4. ボンネットを開けてエンジンオイルの量を確認する。"
+            "5. オイルが不足している場合は補給する。"
+            "6. エンジンをかけて油圧警告灯が10秒以内に消灯するか確認する。"
+            "7. 消灯しない場合はエンジンを止めてHonda販売店に連絡する。"
+        ),
+        "manual_steps": [
+            "ただちに安全な場所に停車する",
+            "非常点滅表示灯を点灯させる",
+            "エンジンを止めて1分以上待つ",
+            "ボンネットを開ける",
+            "エンジンオイルの量を確認する",
+            "オイルが不足している場合は補給する",
+            "エンジンをかけて油圧警告灯が10秒以内に消灯するか確認する",
+            "消灯しない場合はエンジンを止めてHonda販売店に連絡する",
+        ],
+        # シミュレーションユーザー応答制御:
+        # 「消灯しましたか？」→ 消灯しない（ディーラー連絡が最終手順）
+        "user_response_overrides": {
+            "消灯しましたか": "いいえ、まだ点灯したままです",
+            "消えましたか": "いいえ、消えません",
+        },
     },
 ]

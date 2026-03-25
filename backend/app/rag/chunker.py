@@ -91,6 +91,9 @@ SPEC_KEYWORDS = [
 ]
 
 _RX_EXCLUDE_WARNING_LAMP = re.compile(r"(警告\s*灯|表示\s*灯)")
+
+# Diagnostic branch condition patterns (e.g. "スターターが回らない！", "正常に回るが…")
+_RX_DIAGNOSTIC_CONDITION = re.compile(r"(?:[！!]|…|\.{3,})\s*$")
 _RX_PAGE_REF = re.compile(r"(?:^|\s)(?:P\.|Ｐ\.)\s*\d+", re.IGNORECASE)
 _RX_DOTS_PAGE = re.compile(r"[\.．]{2,}\s*\d+\s*$")  # "...... 19" みたいな行
 _RX_QUICKGUIDE = re.compile(r"ク\s*イ\s*ッ\s*ク\s*ガ\s*イ\s*ド")
@@ -232,6 +235,48 @@ class AutomotiveChunker:
 
         return chunks
 
+    def _split_at_branch_boundary(self, text: str) -> list[str]:
+        """Split oversized text at diagnostic branch boundaries.
+
+        Detects condition lines ending with ！ or … (common in automotive
+        diagnostic flowcharts) and splits at the boundary closest to the
+        text midpoint, ensuring both parts are substantial (>= 150 chars).
+        """
+        lines = text.split("\n")
+        if len(lines) < 6:
+            return [text]
+
+        mid_char = len(text) // 2
+        candidates: list[tuple[int, int]] = []
+        char_pos = 0
+
+        for i, line in enumerate(lines):
+            stripped = line.strip()
+            if (i >= 3
+                    and stripped
+                    and len(stripped) >= 5
+                    and _RX_DIAGNOSTIC_CONDITION.search(stripped)):
+                before_len = char_pos
+                after_len = len(text) - char_pos
+                if before_len >= 150 and after_len >= 150:
+                    candidates.append((i, abs(char_pos - mid_char)))
+            char_pos += len(line) + 1  # +1 for \n
+
+        if not candidates:
+            return [text]
+
+        # Pick the candidate closest to the middle
+        candidates.sort(key=lambda x: x[1])
+        split_idx = candidates[0][0]
+
+        part1 = "\n".join(lines[:split_idx])
+        # Add 2 lines of overlap for context continuity
+        overlap_start = max(0, split_idx - 2)
+        overlap_lines = lines[overlap_start:split_idx]
+        part2 = "\n".join(overlap_lines + lines[split_idx:])
+
+        return [part1, part2]
+
     def _split_text(self, text: str, page_number: int) -> list[Chunk]:
         if not (text or "").strip():
             return []
@@ -246,6 +291,23 @@ class AutomotiveChunker:
             if not para:
                 continue
 
+            # Split oversized paragraphs at diagnostic branch boundaries
+            if len(para) > self.target_size and "\n" in para:
+                # Flush current accumulator first
+                if current_text.strip():
+                    chunks.append(self._make_chunk(current_text, page_number, current_section))
+                    current_text = ""
+
+                sub_paras = self._split_at_branch_boundary(para)
+                for sub in sub_paras:
+                    sub = sub.strip()
+                    if sub:
+                        section = _detect_section(sub)
+                        if section:
+                            current_section = section
+                        chunks.append(self._make_chunk(sub, page_number, current_section))
+                continue
+
             section = _detect_section(para)
             if section:
                 current_section = section
@@ -256,7 +318,7 @@ class AutomotiveChunker:
 
             if len(current_text) + len(para) > self.max_size and current_text:
                 chunks.append(self._make_chunk(current_text, page_number, current_section))
-                overlap_text = current_text[-self.overlap:] if len(current_text) > self.overlap else ""
+                overlap_text = self._sentence_aware_overlap(current_text)
                 current_text = overlap_text
 
             current_text += ("\n\n" if current_text else "") + para
@@ -269,6 +331,24 @@ class AutomotiveChunker:
             chunks.append(self._make_chunk(current_text, page_number, current_section))
 
         return chunks
+
+    def _sentence_aware_overlap(self, text: str) -> str:
+        """文境界でoverlapテキストを切り出す。
+
+        末尾から self.overlap 文字分を取り、その中で最も先頭に近い
+        文境界（。！？\n）の直後から開始する。文境界が見つからない場合は
+        段落境界（\n\n）で切る。
+        """
+        if len(text) <= self.overlap:
+            return ""
+        tail = text[-self.overlap:]
+        # 文境界を探す（末尾からoverlap文字内で最も古い文境界）
+        for sep in ("。\n", "。", "！", "？", "\n\n", "\n"):
+            pos = tail.find(sep)
+            if pos >= 0 and pos < len(tail) - len(sep):
+                return tail[pos + len(sep):].strip()
+        # 文境界が見つからない → 空（切断テキストを引き継がない）
+        return ""
 
     def _make_chunk(self, text: str, page: int, section: str) -> Chunk:
         txt = (text or "").strip()

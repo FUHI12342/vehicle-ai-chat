@@ -8,9 +8,16 @@ class ProviderRegistry:
         self.active_name: str = "openai"
 
     def initialize(self):
+        from app.config import settings
         self.providers = LLMProviderFactory.create_all()
-        if "openai" in self.providers and self.providers["openai"].is_configured():
+        # Use configured provider preference
+        preferred = settings.llm_provider
+        if preferred in self.providers and self.providers[preferred].is_configured():
+            self.active_name = preferred
+        elif "openai" in self.providers and self.providers["openai"].is_configured():
             self.active_name = "openai"
+        elif "bedrock" in self.providers and self.providers["bedrock"].is_configured():
+            self.active_name = "bedrock"
 
     def get_active(self) -> LLMProvider | None:
         return self.providers.get(self.active_name)

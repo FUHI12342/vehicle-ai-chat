@@ -14,6 +14,7 @@ class RAGSource(BaseModel):
     page: int = 0
     section: str = ""
     score: float = 0.0
+    content_type: str = ""
 
 
 class UrgencyInfo(BaseModel):

@@ -1,3 +1,4 @@
+import logging
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
@@ -7,6 +8,8 @@ from app.config import settings
 from app.api.router import api_router
 from app.llm.registry import provider_registry
 from app.rag.vector_store import vector_store
+
+logging.basicConfig(level=logging.INFO, format="%(levelname)s:%(name)s: %(message)s")
 
 
 @asynccontextmanager

@@ -7,10 +7,6 @@ gpt-4o-miniを使用して検索結果の関連度をスコアリングし、
 import json
 import logging
 
-from openai import AsyncOpenAI
-
-from app.config import settings
-
 logger = logging.getLogger(__name__)
 
 _RERANK_PROMPT = """以下の検索クエリに対する各文書の関連度を0-10で評価してください。
@@ -47,8 +43,10 @@ async def rerank(
     if len(chunks) <= top_n:
         return chunks
 
-    if not settings.openai_api_key:
-        logger.warning("OpenAI API key not configured, skipping rerank")
+    from app.llm.registry import provider_registry
+    provider = provider_registry.get_active()
+    if not provider:
+        logger.warning("No active LLM provider, skipping rerank")
         return chunks[:top_n]
 
     # 文書リストをフォーマット
@@ -63,14 +61,13 @@ async def rerank(
     prompt = _RERANK_PROMPT.format(query=query, documents=formatted_docs)
 
     try:
-        client = AsyncOpenAI(api_key=settings.openai_api_key)
-        response = await client.chat.completions.create(
-            model="gpt-4o-mini",
+        response = await provider.chat(
             messages=[{"role": "user", "content": prompt}],
             temperature=0,
             max_tokens=512,
+            json_mode=True,
         )
-        content = response.choices[0].message.content or "[]"
+        content = response.content or "[]"
 
         # JSON配列をパース
         scores = json.loads(content)
