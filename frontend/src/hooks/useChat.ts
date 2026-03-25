@@ -124,7 +124,7 @@ export function useChat() {
       try {
         const response = await sendChat({
           session_id: sessionId,
-          message: null,
+          message: displayText || null,
           action,
           action_value: actionValue,
         });

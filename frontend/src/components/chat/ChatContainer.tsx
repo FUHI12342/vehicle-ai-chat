@@ -94,7 +94,7 @@ export function ChatContainer() {
 
   const handleDiagnosingChoice = (value: string, label: string) => {
     const actionValues = ["yes", "no", "book", "guide_start", "resolved_yes", "resolved_no", "dealer"];
-    if (actionValues.includes(value)) {
+    if (actionValues.includes(value) || value.startsWith("followup_")) {
       sendAction("resolved", value, label);
     } else {
       sendMessage(label);
