@@ -18,7 +18,7 @@ v5.1: expected_coverageを実態に合わせて修正。
       マニュアルに関連情報があるが直接的な手順がないケースは partially_covered に変更。
 """
 
-VEHICLE_ID = "30TA06210_web"
+VEHICLE_ID = "honda_accord_2011"
 VEHICLE_MAKE = "ホンダ"
 VEHICLE_MODEL = "アコード"
 VEHICLE_YEAR = 2011

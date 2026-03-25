@@ -30,7 +30,7 @@ from tests.ragas.llm_judge import LLMJudge
 from tests.ragas.test_cases import TEST_CASES
 
 BASE_URL = os.environ.get("CHAT_API_URL", "http://localhost:8000/api")
-TIMEOUT = 30.0
+TIMEOUT = 120.0
 DEFAULT_MAX_TURNS = 12
 
 # ---------------------------------------------------------------------------
