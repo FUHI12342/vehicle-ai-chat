@@ -64,6 +64,62 @@ def _attach_icons(choices: list[dict], question_topic: str | None) -> list[dict]
 _FILTER_KEYWORDS = {"わからない", "わかりません", "不明", "自由入力", "自由回答", "その他"}
 
 
+def _count_procedure_steps(rag_sources: list[RAGSource]) -> int:
+    """RAGソースの中から procedure/troubleshooting チャンクの手順数を推定する。
+
+    content_type が 'procedure' または 'troubleshooting' のチャンクに含まれる
+    番号付きリスト行をカウントして、対処手順の総数を推定する。
+    """
+    step_count = 0
+    for source in rag_sources:
+        if source.content_type in ("procedure", "troubleshooting"):
+            # 番号付きリスト or 箇条書きをカウント
+            lines = source.content.split("\n")
+            for line in lines:
+                stripped = line.strip()
+                if re.match(r"^\d+[.、）]", stripped) or stripped.startswith("- "):
+                    step_count += 1
+    return step_count
+
+
+def _extract_procedure_steps(rag_sources: list[RAGSource]) -> list[str]:
+    """RAGソースから番号付き手順行を抽出する。ガイドモードで使用。"""
+    steps: list[str] = []
+    for source in rag_sources:
+        if source.content_type in ("procedure", "troubleshooting"):
+            for line in source.content.split("\n"):
+                stripped = line.strip()
+                if re.match(r"^\d+[.、）]", stripped) or stripped.startswith("- "):
+                    # 番号を除去して本文だけ取得
+                    text = re.sub(r"^[\d.、）\-\s]+", "", stripped).strip()
+                    if text and text not in steps:
+                        steps.append(text)
+    return steps
+
+
+def _format_guide_step_message(step_text: str) -> str:
+    """RAGの手順テキストを自然な日本語の指示文に整形する。
+    OCR由来のテキストは動詞の連用形で途切れることがあるため、
+    機械的に「してください」を付加せず文法に応じた整形を行う。
+    """
+    text = step_text.rstrip("。、,. \t")
+
+    # 既に完全な指示文（〜ください）
+    if text.endswith("ください"):
+        return f"{text}。完了しましたか？"
+
+    # て/で形 → 「ください」を付加
+    if text.endswith("て") or text.endswith("で"):
+        return f"{text}ください。完了しましたか？"
+
+    # 連用形「し」: particle+し, カタカナ語+し(セットし等), 漢語+し(確認し等)
+    if re.search(r'[\u3092\u306B\u3068\u30A0-\u30FF\u4E00-\u9FFF]し$', text):
+        return f"{text}てください。完了しましたか？"
+
+    # その他（辞書形「差し込む」、連用形「巻き」等）→ 引用形式で安全に表示
+    return f"次の操作を行ってください：\n「{text}」\n\n完了しましたか？"
+
+
 def _append_default_choices(choices: list[str] | None) -> list[dict]:
     """LLM が返した choices に「わからない」「自由入力」を末尾追加する（重複除外）。"""
     result: list[dict] = []
@@ -178,7 +234,47 @@ def _build_recent_turns(session: SessionState, n: int = 6) -> str:
     return "\n".join(lines) if lines else "(初回入力)"
 
 
-def _build_additional_instructions(session: SessionState, user_input: str, candidates_just_triggered: bool) -> str:
+def _record_diagnostic_path(session: SessionState, user_input: str) -> None:
+    """Record the diagnostic decision path (last AI question + user answer).
+
+    When the user's answer indicates a branch decision (e.g. choosing between
+    diagnostic conditions), record the branch as well.
+    """
+    # Find the last assistant message (the question that was asked)
+    last_q = ""
+    for entry in reversed(session.conversation_history):
+        if entry["role"] == "assistant":
+            last_q = entry["content"][:80]
+            break
+
+    if not last_q:
+        return
+
+    entry = {"q": last_q, "a": user_input[:50]}
+
+    # Detect branch decisions from the answer
+    answer_lower = user_input.lower()
+    if "正常" in answer_lower and ("回る" in answer_lower or "回" in answer_lower):
+        entry["branch"] = "スターター正常→始動手順/イモビ/燃料/ヒューズ確認"
+    elif "回らない" in answer_lower or "回転しない" in answer_lower:
+        entry["branch"] = "スターター不良→室内灯/バッテリー確認"
+    elif "暗い" in answer_lower or "点灯しない" in answer_lower:
+        entry["branch"] = "室内灯暗い→バッテリー上がり"
+    elif "問題ない" in answer_lower or "明るさに問題" in answer_lower:
+        entry["branch"] = "室内灯正常→ヒューズ確認"
+
+    session.diagnostic_path.append(entry)
+    # Keep only the last 8 entries
+    if len(session.diagnostic_path) > 8:
+        session.diagnostic_path = session.diagnostic_path[-8:]
+
+
+def _build_additional_instructions(
+    session: SessionState,
+    user_input: str,
+    candidates_just_triggered: bool,
+    rag_sources: list[RAGSource] | None = None,
+) -> str:
     """条件付き指示を一括構築して返す。"""
     parts: list[str] = []
 
@@ -195,13 +291,22 @@ def _build_additional_instructions(session: SessionState, user_input: str, candi
                 "3. action: \"escalate\" でロードサービス/販売店連絡を案内する\n"
                 "消火手順を案内してはいけません。一般知識で手順を補完しないこと。"
             )
-        else:
+        elif not session.can_drive:
+            # Phase 2-2: critical + 走行不能でもマニュアル手順があれば全案内
             parts.append(
-                "\n\n【緊急】この症状はcriticalレベルと判定されています。"
+                "\n\n【緊急・走行不能】この症状はcriticalレベルかつ走行不能と判定されています。"
                 "以下の順序で案内してください:\n"
                 "1. まず「安全な場所に停車してください」と伝える\n"
-                "2. マニュアルの該当安全手順を1ステップずつ案内する（例: ブレーキ液確認、ペダル感触確認）\n"
-                "3. 2〜3ステップの安全確認後、action: \"escalate\" でロードサービス/販売店連絡を案内する\n"
+                "2. マニュアルに該当する対処手順があれば全ステップを1つずつ案内する\n"
+                "3. 全手順完了後、またはマニュアルに手順がない場合は action: \"escalate\" で販売店連絡を案内する\n"
+                "一般知識で手順を補完しないこと。マニュアルの記載のみ使用すること。"
+            )
+        else:
+            # Phase 2-2: critical + 走行可能の場合は全手順案内
+            parts.append(
+                "\n\n【緊急・走行可能】この症状はcriticalレベルですが走行可能と判定されています。"
+                "安全確認を行いつつ、マニュアルの対処手順を全ステップ案内してください。\n"
+                "全手順完了後に provide_answer で最終結論を案内し、ディーラー点検を推奨してください。\n"
                 "一般知識で手順を補完しないこと。マニュアルの記載のみ使用すること。"
             )
 
@@ -235,10 +340,18 @@ def _build_additional_instructions(session: SessionState, user_input: str, candi
     # ガイドモード指示
     if session.guide_phase == "guiding":
         guide_turns = session.diagnostic_turn - session.guide_start_turn
-        if guide_turns >= 6:
+
+        # RAGから手順リストを抽出
+        procedure_steps = _extract_procedure_steps(rag_sources or [])
+        current_step_idx = guide_turns  # 0-indexed: guide_turn 0 = step 1
+
+        if guide_turns >= 4 and guide_turns >= session.guide_turn_limit - 1:
             parts.append(
-                "\n\n【重要】手順案内が6ステップに達しました。"
-                "残りの手順があれば1文で要約し、provide_answer で最終結論を案内してください。"
+                "\n\n【重要】手順案内が完了段階です。\n"
+                "provide_answer で「手順は以上です。セレクトレバーは動くようになりましたか？」と案内してください。\n"
+                "choices: [\"解決しました\", \"まだ動かない\"] にしてください。\n"
+                "手順で問題が解決した場合、ディーラー来店を推奨しないこと。\n"
+                "urgency_flag は実際の危険度に基づいて設定すること（手順で解決可能なら low）。"
             )
         elif user_input == "わからない":
             parts.append(
@@ -247,12 +360,42 @@ def _build_additional_instructions(session: SessionState, user_input: str, candi
                 "新しいステップに進まないでください。"
             )
         else:
+            # 手順リストとステップ番号を明示
+            steps_text = ""
+            if procedure_steps:
+                numbered = [f"  {i+1}. {s}" for i, s in enumerate(procedure_steps)]
+                steps_text = "\n".join(numbered)
+
+            step_instruction = ""
+            if procedure_steps and current_step_idx < len(procedure_steps):
+                target = procedure_steps[current_step_idx]
+                step_instruction = (
+                    f"\n今回案内すべきステップ: ステップ{current_step_idx + 1}「{target}」\n"
+                    f"このステップだけを案内してください。他のステップには触れないこと。"
+                )
+            elif procedure_steps and current_step_idx >= len(procedure_steps):
+                step_instruction = (
+                    "\n全ステップの案内が完了しました。"
+                    "provide_answer で「手順は以上です。問題は解決しましたか？」と案内してください。"
+                    "\nchoices: [\"解決しました\", \"まだ解決しない\"] にしてください。"
+                )
+
             parts.append(
-                "\n\n【手順ガイドモード有効】マニュアルの対処手順を1ステップずつ "
-                "ask_question で案内してください。"
+                "\n\n【手順ガイドモード】\n"
+                "あなたは今、マニュアルの対処手順を1ステップずつユーザーに案内しています。\n"
+                "ルール:\n"
+                "- action: \"ask_question\" を使うこと（provide_answer は全ステップ完了まで禁止）\n"
+                "- 1回のメッセージで案内するのは1つの物理的アクションだけ\n"
+                "- message: 「〜してください。完了しましたか？」の形式\n"
+                "- choices: そのアクションの結果（例: [\"できました\", \"うまくいかない\"]）\n"
+                "- 要約や概要は不要。具体的な指示だけ伝えること\n"
             )
+            if steps_text:
+                parts.append(f"\n【マニュアルの手順リスト】\n{steps_text}")
+            if step_instruction:
+                parts.append(step_instruction)
             if session.identified_issue:
-                parts.append(f"特定済みの事象: {session.identified_issue[:100]}")
+                parts.append(f"\n特定済みの事象: {session.identified_issue[:100]}")
 
     # 重複防止: 過去の質問をプロンプトに含める
     if session.last_questions:
@@ -260,6 +403,17 @@ def _build_additional_instructions(session: SessionState, user_input: str, candi
         qs_text = "\n".join(f"- {q}" for q in recent_qs)
         parts.append(
             f"\n\n【既に案内済みの内容（繰り返し禁止）】\n{qs_text}"
+        )
+
+    # 診断経路: 確定した分岐情報を注入（LLMが分岐を忘れないように）
+    if session.diagnostic_path:
+        path_lines = []
+        for entry in session.diagnostic_path[-5:]:  # 直近5件
+            path_lines.append(f"- Q: {entry.get('q', '')} → A: {entry.get('a', '')}")
+            if entry.get("branch"):
+                path_lines.append(f"  → 確定分岐: {entry['branch']}")
+        parts.append(
+            f"\n\n【診断経路（確定済み、変更不可）】\n" + "\n".join(path_lines)
         )
 
     return "".join(parts)
@@ -292,17 +446,96 @@ async def _maybe_summarize(session: SessionState, provider) -> None:
         logger.warning(f"Conversation summary failed: {e}")
 
 
-async def _llm_call(provider, diagnostic_prompt: str) -> dict:
-    """Call LLM with DIAGNOSTIC_SCHEMA and return parsed JSON."""
-    response = await provider.chat(
-        messages=[
-            {"role": "system", "content": SYSTEM_PROMPT},
-            {"role": "user", "content": diagnostic_prompt},
-        ],
-        temperature=0.3,
-        response_format={"type": "json_schema", "json_schema": DIAGNOSTIC_SCHEMA},
-    )
-    return json.loads(response.content)
+def _unwrap_schema_response(result: dict) -> dict:
+    """Fix for Claude Haiku returning JSON schema with values instead of flat JSON.
+
+    When the prompt is long, Haiku sometimes outputs:
+        {"type": "object", "properties": {"action": "ask_question", "message": "..."}}
+    instead of:
+        {"action": "ask_question", "message": "..."}
+    """
+    if "properties" in result and "type" in result and not result.get("message"):
+        props = result["properties"]
+        # Check if properties contain actual values (strings) rather than schema definitions
+        if isinstance(props.get("action"), str) and isinstance(props.get("message"), str):
+            logger.warning("Unwrapping schema-like LLM response into flat JSON")
+            return props
+    return result
+
+
+async def _llm_call(provider, diagnostic_prompt: str, max_retries: int = 2) -> dict:
+    """Call LLM with DIAGNOSTIC_SCHEMA and return parsed JSON.
+
+    Retries once if the LLM returns an empty/incomplete response (common with
+    Claude Haiku on Bedrock when the prompt is long).
+    Falls back to a simplified prompt if all retries fail.
+    """
+    for attempt in range(max_retries):
+        try:
+            response = await provider.chat(
+                messages=[
+                    {"role": "system", "content": SYSTEM_PROMPT},
+                    {"role": "user", "content": diagnostic_prompt},
+                ],
+                temperature=0.15,
+                response_format={"type": "json_schema", "json_schema": DIAGNOSTIC_SCHEMA},
+            )
+            raw = response.content
+            result = json.loads(raw)
+            # Fix: Claude Haiku sometimes returns the schema itself with values
+            # embedded under "properties" instead of a flat JSON object
+            result = _unwrap_schema_response(result)
+            if result.get("message"):
+                return result
+            logger.warning(
+                "LLM returned empty message (attempt %d/%d). Raw: %s",
+                attempt + 1, max_retries, raw[:500],
+            )
+        except (json.JSONDecodeError, KeyError) as e:
+            logger.warning(
+                "LLM returned invalid JSON (attempt %d/%d): %s. Raw: %s",
+                attempt + 1, max_retries, e, raw[:200] if 'raw' in dir() else "N/A",
+            )
+
+    # All retries failed — try with a shorter prompt (no RAG context)
+    logger.warning("All LLM retries returned empty, trying shortened prompt")
+    try:
+        # Remove the RAG context section to shorten the prompt
+        short_prompt = diagnostic_prompt
+        rag_marker = "【マニュアル関連情報】"
+        next_marker = "【最優先ルール】"
+        if rag_marker in short_prompt and next_marker in short_prompt:
+            rag_start = short_prompt.index(rag_marker)
+            rag_end = short_prompt.index(next_marker)
+            short_prompt = (
+                short_prompt[:rag_start]
+                + "【マニュアル関連情報】\n(情報量が多いため省略。症状に基づいて質問を続けてください)\n\n"
+                + short_prompt[rag_end:]
+            )
+        response = await provider.chat(
+            messages=[
+                {"role": "system", "content": SYSTEM_PROMPT},
+                {"role": "user", "content": short_prompt},
+            ],
+            temperature=0.15,
+            response_format={"type": "json_schema", "json_schema": DIAGNOSTIC_SCHEMA},
+        )
+        result = json.loads(response.content)
+        result = _unwrap_schema_response(result)
+        if result.get("message"):
+            logger.info("Shortened prompt succeeded")
+            return result
+    except Exception as e:
+        logger.warning("Shortened prompt also failed: %s", e)
+
+    # Ultimate fallback
+    return {
+        "action": "ask_question",
+        "message": "他に気になる症状や状況があれば教えてください。",
+        "choices": None,
+        "manual_coverage": "partially_covered",
+        "urgency_flag": "none",
+    }
 
 
 def _validate_manual_coverage(
@@ -314,6 +547,7 @@ def _validate_manual_coverage(
     - RAGソースなし → not_covered（LLMの判断を信頼しない）
     - max_score < 0.55 → not_covered（関連度が低すぎる）
     - max_score < 0.70 → partially_covered（中間的）
+    - content_type に troubleshooting/procedure がない → partially_covered 上限
     - それ以外 → LLMの判断を信頼
     """
     if not rag_sources:
@@ -321,13 +555,50 @@ def _validate_manual_coverage(
             logger.info("No RAG sources but LLM claims covered — overriding to not_covered")
             return "not_covered"
         return llm_claimed
+
     max_score = max(s.score for s in rag_sources)
+
+    # content_type チェック: troubleshooting/procedure がない場合は対処法なし
+    content_types = [s.content_type for s in rag_sources if s.content_type]
+    has_actionable = (
+        not content_types  # content_type 未設定ならこのチェックをスキップ
+        or any(ct in ("troubleshooting", "procedure") for ct in content_types)
+    )
+
     if max_score < 0.55 and llm_claimed == "covered":
         logger.info("RAG max_score=%.2f < 0.55 — overriding covered to not_covered", max_score)
         return "not_covered"
     if max_score < 0.70 and llm_claimed == "covered":
         logger.info("RAG max_score=%.2f < 0.70 — overriding covered to partially_covered", max_score)
         return "partially_covered"
+
+    # High score but no actionable content → cap at partially_covered
+    if llm_claimed == "covered" and not has_actionable:
+        logger.info(
+            "No troubleshooting/procedure content_type — overriding covered to partially_covered"
+        )
+        return "partially_covered"
+
+    # Upgrade: LLM claims not_covered but RAG has high-score actionable content
+    # LLMの過小申告を補正（RAGに根拠があるのに見落としている場合）
+    if llm_claimed == "not_covered" and max_score >= 0.70 and has_actionable:
+        logger.info(
+            "RAG has high-score actionable content (max=%.2f) but LLM claims not_covered "
+            "— upgrading to partially_covered",
+            max_score,
+        )
+        return "partially_covered"
+
+    # Upgrade: LLM claims partially_covered but RAG has very high-score actionable content
+    # Claude Haiku on Bedrock is more conservative than GPT-4o about claiming covered
+    if llm_claimed == "partially_covered" and max_score >= 0.80 and has_actionable:
+        logger.info(
+            "RAG has high-score actionable content (max=%.2f) and LLM claims partially_covered "
+            "— upgrading to covered",
+            max_score,
+        )
+        return "covered"
+
     return llm_claimed
 
 
@@ -369,6 +640,36 @@ async def handle_diagnosing(session: SessionState, request: ChatRequest) -> Chat
         else:
             logger.warning(f"Rewind target turn {target_turn} not found in snapshots")
 
+    # Handle guide_start from any action type (select_choice or resolved)
+    if request.action_value == "guide_start":
+        session.guide_phase = "guiding"
+        session.guide_start_turn = session.diagnostic_turn
+        request.message = f"「{session.identified_issue[:80]}」の解決手順を教えてください"
+        request.action = None
+        request.action_value = None
+        return await handle_diagnosing(session, request)
+
+    # Handle guide completion resolution choices
+    if request.action_value == "resolved_yes":
+        session.current_step = ChatStep.DONE
+        return ChatResponse(
+            session_id=session.session_id,
+            current_step=ChatStep.DONE.value,
+            prompt=PromptInfo(
+                type="text",
+                message="問題が解決して良かったです！\n他にご質問があれば、新しい問診を開始してください。\n安全運転をお願いいたします。",
+            ),
+            manual_coverage=session.manual_coverage,
+            diagnostic_turn=session.diagnostic_turn,
+        )
+    if request.action_value in ("resolved_no", "dealer"):
+        session.guide_phase = "identifying"
+        session.current_step = ChatStep.RESERVATION
+        session.urgency_level = session.urgency_level or "low"
+        session.can_drive = session.urgency_level != "critical"
+        from app.chat_flow.step_reservation import handle_reservation
+        return await handle_reservation(session, request)
+
     # Handle "resolved" action from provide_answer step
     if request.action == "resolved":
         if request.action_value == "yes":
@@ -403,18 +704,19 @@ async def handle_diagnosing(session: SessionState, request: ChatRequest) -> Chat
             session.current_step = ChatStep.RESERVATION
             from app.chat_flow.step_reservation import handle_reservation
             return await handle_reservation(session, request)
-        elif request.action_value == "guide_start":
-            session.guide_phase = "guiding"
-            session.guide_start_turn = session.diagnostic_turn
-            request.message = f"「{session.identified_issue[:80]}」の解決手順を教えてください"
-            request.action = None
-            request.action_value = None
-            return await handle_diagnosing(session, request)
         elif request.action_value and request.action_value.startswith("followup_"):
             # 動的選択肢: ユーザーの選択テキストを次の入力として処理
             selected_label = request.message or request.action_value
             # 予約系キーワード検出
-            if any(kw in selected_label for kw in ["予約", "ディーラー", "持ち込", "ロードサービス"]):
+            # Fix v2: ガイドモード完了後（guiding）の場合、provide_answer結論として
+            # DONEに遷移する（手順案内済みなので reservation ではなく完了扱い）
+            _is_dealer_intent = any(kw in selected_label for kw in ["予約", "ディーラー", "持ち込", "ロードサービス"])
+            if _is_dealer_intent and session.guide_phase == "guiding":
+                # ガイド完了後: urgency_check 経由で適切な reservation 導線へ
+                session.current_step = ChatStep.URGENCY_CHECK
+                from app.chat_flow.step_urgency import handle_urgency_check
+                return await handle_urgency_check(session, request)
+            elif _is_dealer_intent:
                 session.current_step = ChatStep.RESERVATION
                 from app.chat_flow.step_reservation import handle_reservation
                 return await handle_reservation(session, request)
@@ -460,11 +762,27 @@ async def handle_diagnosing(session: SessionState, request: ChatRequest) -> Chat
         )
 
     # ---------------------------------------------------------------
+    # 0b. Dealer intent detection: user explicitly wants dealer visit
+    # ---------------------------------------------------------------
+    _DEALER_INTENT_KW = ("ディーラー", "予約", "持ち込", "ロードサービス", "点検に行")
+    if (session.diagnostic_turn >= 3
+            and session.guide_phase in ("guiding", "guide_offered")
+            and any(kw in user_input for kw in _DEALER_INTENT_KW)):
+        logger.info("Dealer intent detected in user message: %s", user_input[:40])
+        session.conversation_history.append({"role": "user", "content": user_input})
+        session.current_step = ChatStep.RESERVATION
+        from app.chat_flow.step_reservation import handle_reservation
+        return await handle_reservation(session, request)
+
+    # ---------------------------------------------------------------
     # 1. Save user input + diagnostic_turn++
     # ---------------------------------------------------------------
     session.collected_symptoms.append(user_input)
     session.conversation_history.append({"role": "user", "content": user_input})
     session.diagnostic_turn += 1
+
+    # Record diagnostic path: pair last AI question with user's answer
+    _record_diagnostic_path(session, user_input)
 
     # F1: Save snapshot after turn increment
     snapshot = session.model_dump(exclude={"state_snapshots"})
@@ -480,8 +798,13 @@ async def handle_diagnosing(session: SessionState, request: ChatRequest) -> Chat
         session.can_drive = False
         session.critical_safety_pending = True
 
-    # 2b. Critical safety auto-escalate after safety steps (4+ turns)
-    if session.critical_safety_pending and session.diagnostic_turn >= 4:
+    # 2b. Phase 2-2: Critical safety auto-escalate only when can_drive=false
+    #     ガイドモード中はマニュアル手順の案内を続行させる
+    #     turn 6まで猶予を与えてguide mode進入の時間を確保
+    if (session.critical_safety_pending
+            and session.diagnostic_turn >= 6
+            and not session.can_drive
+            and session.guide_phase != "guiding"):
         session.current_step = ChatStep.RESERVATION
         from app.chat_flow.step_reservation import handle_reservation
         return await handle_reservation(session, request)
@@ -490,6 +813,11 @@ async def handle_diagnosing(session: SessionState, request: ChatRequest) -> Chat
     rag_query = session.rewritten_query if session.rewritten_query else all_symptoms
     rag_context = "関連するマニュアル情報はありません。"
     rag_sources: list[RAGSource] = []
+    logger.info(
+        "DIAG[%s] turn=%d vehicle=%s rag_query='%s'",
+        session.session_id[:8], session.diagnostic_turn,
+        session.vehicle_id, rag_query[:80],
+    )
     try:
         results = await rag_service.query(
             symptom=rag_query,
@@ -498,6 +826,10 @@ async def handle_diagnosing(session: SessionState, request: ChatRequest) -> Chat
             model=session.vehicle_model or "",
             year=session.vehicle_year or 0,
             n_results=10,
+        )
+        logger.info(
+            "DIAG[%s] RAG returned %d sources",
+            session.session_id[:8], len(results["sources"]),
         )
         if results["sources"]:
             # 生チャンクを直接プロンプトに注入（LLM要約を経由しない）
@@ -511,11 +843,65 @@ async def handle_diagnosing(session: SessionState, request: ChatRequest) -> Chat
                     page=s["page"],
                     section=s["section"],
                     score=s["score"],
+                    content_type=s.get("content_type", ""),
                 )
                 for s in results["sources"]
             ]
     except Exception as e:
         logger.warning(f"RAG query failed: {e}")
+
+    # 3b. Phase 2-3: 事前coverage判定 — RAGスコアでnot_coveredを検出し、
+    #     LLMへ渡す前にRAGコンテキストを除去して一般知識回答を防ぐ
+    pre_coverage = _validate_manual_coverage("covered", rag_sources)
+    if pre_coverage == "not_covered":
+        logger.info("Pre-LLM coverage check: not_covered — replacing RAG context")
+        rag_context = "関連するマニュアル情報はありません。"
+        # Pre-LLM bypass: turn >= 3 + not_covered → skip LLM, escalate directly
+        # ターン1-2は質問を許可（rewritten_queryでRAG再検索のチャンスを与える）
+        if session.diagnostic_turn >= 3:
+            logger.info(
+                "Pre-LLM not_covered bypass: escalating at turn %d",
+                session.diagnostic_turn,
+            )
+            session.not_covered_count += 1
+            session.manual_coverage = "not_covered"
+            session.current_step = ChatStep.RESERVATION
+            msg = (
+                "マニュアルに該当する記載が見つかりませんでした。"
+                "Honda販売店またはディーラーでの点検をお勧めします。"
+            )
+            session.conversation_history.append(
+                {"role": "assistant", "content": msg}
+            )
+            from app.chat_flow.step_reservation import handle_reservation
+            return await handle_reservation(session, request)
+
+    # 3c. partially_covered + no actionable content → turn >= 3 で bypass
+    if (pre_coverage == "partially_covered"
+            and session.diagnostic_turn >= 3
+            and not session.guide_phase == "guiding"):
+        # content_type が設定されている場合のみチェック
+        content_types = [s.content_type for s in rag_sources if s.content_type]
+        has_actionable = (
+            not content_types  # content_type未設定ならスキップ
+            or any(ct in ("troubleshooting", "procedure") for ct in content_types)
+        )
+        if not has_actionable:
+            logger.info(
+                "Pre-LLM partially_covered bypass: no actionable content at turn %d",
+                session.diagnostic_turn,
+            )
+            session.manual_coverage = "not_covered"
+            session.current_step = ChatStep.RESERVATION
+            msg = (
+                "お伺いした症状についてマニュアルに明確な対処方法が見つかりませんでした。"
+                "Honda販売店またはディーラーでの点検をお勧めします。"
+            )
+            session.conversation_history.append(
+                {"role": "assistant", "content": msg}
+            )
+            from app.chat_flow.step_reservation import handle_reservation
+            return await handle_reservation(session, request)
 
     # 4. Maybe summarize conversation (every 3 turns)
     provider = provider_registry.get_active()
@@ -538,7 +924,7 @@ async def handle_diagnosing(session: SessionState, request: ChatRequest) -> Chat
 
     # 6. Build prompt
     recent_turns = _build_recent_turns(session)
-    additional_instructions = _build_additional_instructions(session, user_input, candidates_just_triggered)
+    additional_instructions = _build_additional_instructions(session, user_input, candidates_just_triggered, rag_sources)
 
     diagnostic_prompt = DIAGNOSTIC_PROMPT.format(
         make=session.vehicle_make or "不明",
@@ -573,11 +959,62 @@ async def handle_diagnosing(session: SessionState, request: ChatRequest) -> Chat
     reasoning = result.get("reasoning", "")
     choices = result.get("choices")
     can_drive_llm: bool | None = result.get("can_drive")
+    logger.info(
+        "DIAG[%s] LLM action=%s coverage=%s msg='%s' choices=%s",
+        session.session_id[:8], action,
+        result.get("manual_coverage", "?"), message[:60],
+        choices,
+    )
 
     # Fix: Hard enforce provide_answer at max turns
     if session.diagnostic_turn >= session.max_diagnostic_turns and action == "ask_question":
         logger.warning("Max turns reached but LLM returned ask_question, forcing provide_answer")
         action = "provide_answer"
+
+    # Phase 2-1: guide mode dynamic turn limit based on procedure step count
+    if (session.guide_phase == "guiding"
+            and session.guide_start_turn > 0):
+        estimated_steps = _count_procedure_steps(rag_sources)
+        guide_turn_limit = max(5, min(estimated_steps + 2, 10))
+        session.guide_turn_limit = guide_turn_limit
+        guide_turns = session.diagnostic_turn - session.guide_start_turn
+
+        if action == "ask_question" and guide_turns >= guide_turn_limit:
+            logger.warning(
+                "Guide mode dynamic limit: forcing provide_answer "
+                "(guide_turns=%d, limit=%d, estimated_steps=%d)",
+                guide_turns, guide_turn_limit, estimated_steps,
+            )
+            action = "provide_answer"
+
+        # Guard: guiding中のprovide_answerをブロック
+        # guide_turn_limit未満では手順が完了していないはずなので、ask_questionに強制
+        # ただしユーザーが明確に解決を報告した場合は許可
+        # ガイドモード中の「できました」は手順ステップ完了であり問題解決ではない
+        _resolution_keywords = ("動きました", "解決し", "直りました", "治りました")
+        _user_resolved = any(kw in user_input for kw in _resolution_keywords)
+        if (action == "provide_answer"
+                and guide_turns < guide_turn_limit
+                and not _user_resolved):
+            logger.warning(
+                "Guide mode guard: LLM returned provide_answer on guide_turn=%d "
+                "(limit=%d), forcing ask_question for step-by-step",
+                guide_turns, guide_turn_limit,
+            )
+            action = "ask_question"
+            # LLMが要約を返した場合、RAGから該当ステップを抽出してメッセージを書き換え
+            procedure_steps = _extract_procedure_steps(rag_sources)
+            step_idx = guide_turns  # 0-indexed
+            if procedure_steps and step_idx < len(procedure_steps):
+                target_step = procedure_steps[step_idx]
+                message = _format_guide_step_message(target_step)
+                choices = ["できました", "うまくいかない"]
+                logger.info(
+                    "Guide guard: rewrote message to step %d: %s",
+                    step_idx + 1, target_step,
+                )
+            elif not choices:
+                choices = ["確認しました", "わからない"]
 
     # 8. Save rewritten_query, confidence, and manual_coverage
     session.rewritten_query = result.get("rewritten_query", "")
@@ -591,7 +1028,12 @@ async def handle_diagnosing(session: SessionState, request: ChatRequest) -> Chat
     )
 
     # Fix 2: Fabrication detection — immediately escalate when fabrication patterns found
-    matched = detect_fabrications(message)
+    # ただし manual_coverage が "covered"（RAG検証済み）の場合はスキップ
+    # RAGに該当情報があるなら、LLMの言及は捏造ではなくマニュアル準拠
+    if manual_coverage == "covered":
+        matched = []
+    else:
+        matched = detect_fabrications(message)
     fabrication_detected = len(matched) > 0
     if fabrication_detected:
         logger.warning(
@@ -616,18 +1058,19 @@ async def handle_diagnosing(session: SessionState, request: ChatRequest) -> Chat
     else:
         session.not_covered_count = 0
 
-    # Fix A: 1回not_covered + 2ターン以上経過で即escalate（初回は質問許可）
-    if session.not_covered_count >= 1 and session.diagnostic_turn >= 2:
+    # Fix A: 1回not_covered + 3ターン以上経過でescalate（ターン1-2は質問許可、rewritten_queryの機会を確保）
+    if session.not_covered_count >= 1 and session.diagnostic_turn >= 3:
         session.current_step = ChatStep.RESERVATION
         msg = "マニュアルに該当する記載が見つかりませんでした。Honda販売店またはディーラーでの点検をお勧めします。"
         session.conversation_history.append({"role": "assistant", "content": msg})
         from app.chat_flow.step_reservation import handle_reservation
         return await handle_reservation(session, request)
 
-    # Fix A2 (Phase5-3): identifyingフェーズ4ターン強制遷移
-    # 4ターン以上ask_questionを続けているidentifyingフェーズを強制終了
+    # Fix A2 (Phase5-3): identifyingフェーズ強制遷移
+    # partially_covered は6ターン、not_covered は4ターンで強制終了
+    _id_turn_limit = 4 if manual_coverage == "not_covered" else 6
     if (action == "ask_question"
-            and session.diagnostic_turn >= 4
+            and session.diagnostic_turn >= _id_turn_limit
             and session.guide_phase == "identifying"
             and not session.critical_safety_pending):
         if manual_coverage in ("not_covered", "partially_covered"):
@@ -653,13 +1096,30 @@ async def handle_diagnosing(session: SessionState, request: ChatRequest) -> Chat
             action = "provide_answer"
 
     # Fix B: COVERED高信頼度ケースの早期結論
-    # manual_coverage==covered かつ confidence>=0.8 かつ 2ターン以上 → ask_question を provide_answer に上書き
+    # manual_coverage==covered かつ confidence>=0.9 かつ 3ターン以上 → ask_question を provide_answer に上書き
+    # Fix v2: 閾値を厳格化(0.8→0.9, 2→3ターン)して手順ガイドを優先
+    #         guiding中はLLMの判断に任せる（手順完了後に自然にprovide_answerになる）
     if (action == "ask_question"
             and manual_coverage == "covered"
-            and session.last_confidence >= 0.8
-            and session.diagnostic_turn >= 2):
+            and session.last_confidence >= 0.9
+            and session.diagnostic_turn >= 3
+            and session.guide_phase != "guiding"):
         logger.info("High-confidence covered case: overriding ask_question → provide_answer")
         action = "provide_answer"
+
+    # Global soft limit: turn 10+でまだask_questionなら結論を強制
+    # provide_answerの繰り返しループも検出してescalate
+    if (action == "ask_question"
+            and session.diagnostic_turn >= 10
+            and not session.critical_safety_pending):
+        logger.warning(
+            "Global turn-10 soft limit: forcing provide_answer (turn=%d, phase=%s)",
+            session.diagnostic_turn, session.guide_phase,
+        )
+        action = "provide_answer"
+
+    # Phase 2 fix: turn 10+でguiding中のprovide_answerは自然完了を許可
+    # （以前はescalateに強制変換していたが、手順完了後はprovide_answerが正しい終了方法）
 
     # F2: visit_urgency
     visit_urgency_llm = result.get("visit_urgency")
@@ -769,7 +1229,19 @@ async def handle_diagnosing(session: SessionState, request: ChatRequest) -> Chat
 
     # 10. Check urgency_flag from LLM
     # Fix 1: Block instant escalation when critical_safety_pending is active
-    _block_escalate = session.critical_safety_pending and session.diagnostic_turn < 4
+    # guiding中はguide_turn_limitまでescalateをブロック
+    _in_guide_range = (
+        session.guide_phase == "guiding"
+        and session.guide_start_turn > 0
+        and (session.diagnostic_turn - session.guide_start_turn) < session.guide_turn_limit
+    )
+    _block_escalate = (
+        (session.critical_safety_pending and session.diagnostic_turn < 4)
+        or _in_guide_range
+        or (manual_coverage == "covered"
+            and session.guide_phase == "identifying"
+            and session.diagnostic_turn <= 4)
+    )
     if urgency_flag in ("high", "critical"):
         session.urgency_level = urgency_flag
         session.can_drive = can_drive_llm if can_drive_llm is not None else (urgency_flag != "critical")
@@ -782,15 +1254,42 @@ async def handle_diagnosing(session: SessionState, request: ChatRequest) -> Chat
     # 11. Dispatch based on action
     if action == "escalate":
         if _block_escalate:
-            # Override: deliver safety message as ask_question instead of escalating
+            if (manual_coverage == "covered"
+                    and session.guide_phase == "identifying"
+                    and session.diagnostic_turn >= 3):
+                # Covered case with enough info → promote to provide_answer for guide entry
+                action = "provide_answer"
+                message = (
+                    "お伺いした症状について、マニュアルに関連する手順が見つかりました。"
+                    "ステップごとに確認してみましょう。"
+                )
+                logger.info(
+                    "Blocked escalate for covered case → promoting to provide_answer (turn=%d)",
+                    session.diagnostic_turn,
+                )
+            else:
+                # Override: deliver safety message as ask_question instead of escalating
+                action = "ask_question"
+                if "停車" not in message and "安全な場所" not in message:
+                    message = "安全な場所に停車してください。\n\n" + message
+                if not choices:
+                    choices = ["はい、停車しました", "まだ走行中です"]
+                logger.info("Blocked instant escalate for critical_safety_pending (turn=%d)", session.diagnostic_turn)
+        elif (manual_coverage in ("covered", "partially_covered")
+              and session.guide_phase in ("identifying", "guiding")
+              and (
+                  session.diagnostic_turn <= 3  # Early turns: always block
+                  or _in_guide_range  # Guiding phase: block until guide limit
+              )):
+            # covered/partially_covered + non-critical → escalateを阻止
+            # マニュアルに記載があるケースは手順案内を優先する
             action = "ask_question"
-            if "停車" not in message and "安全な場所" not in message:
-                message = "安全な場所に停車してください。\n\n" + message
-            if not choices:
-                choices = ["はい、停車しました", "まだ走行中です"]
-            logger.info("Blocked instant escalate for critical_safety_pending (turn=%d)", session.diagnostic_turn)
+            logger.info(
+                "Blocked early escalate for covered case: coverage=%s, phase=%s, turn=%d, in_guide=%s",
+                manual_coverage, session.guide_phase, session.diagnostic_turn, _in_guide_range,
+            )
         else:
-            session.urgency_level = urgency_flag if urgency_flag in ("high", "critical") else "high"
+            session.urgency_level = urgency_flag if urgency_flag in ("high", "critical") else (session.urgency_level or urgency_flag or "none")
             session.can_drive = session.urgency_level != "critical"
             session.conversation_history.append({"role": "assistant", "content": message})
             session.current_step = ChatStep.RESERVATION
@@ -850,7 +1349,46 @@ async def handle_diagnosing(session: SessionState, request: ChatRequest) -> Chat
                 question_topic = result.get("question_topic", "")
             except Exception as e:
                 logger.warning(f"Early provide_answer guard re-call failed: {e}")
+        elif manual_coverage == "not_covered":
+            # not_covered でガイドモードに入らない → escalate
+            logger.info(
+                "Blocking guide_offered for not_covered case (turn=%d)",
+                session.diagnostic_turn,
+            )
+            session.manual_coverage = "not_covered"
+            session.current_step = ChatStep.RESERVATION
+            msg = (
+                "マニュアルに該当する記載が見つかりませんでした。"
+                "Honda販売店またはディーラーでの点検をお勧めします。"
+            )
+            session.conversation_history.append(
+                {"role": "assistant", "content": msg}
+            )
+            from app.chat_flow.step_reservation import handle_reservation
+            return await handle_reservation(session, request)
         else:
+            # ユーザーが解決を報告している場合は guide_offered をスキップ
+            _user_says_resolved = any(
+                kw in user_input for kw in ("動きました", "解決し", "直りました", "治りました", "入りました")
+            )
+            if _user_says_resolved:
+                logger.info(
+                    "User reported resolution during identifying (turn=%d), skipping guide_offered",
+                    session.diagnostic_turn,
+                )
+                session.conversation_history.append({"role": "assistant", "content": message})
+                session.current_step = ChatStep.DONE
+                return ChatResponse(
+                    session_id=session.session_id,
+                    current_step=ChatStep.DONE.value,
+                    prompt=PromptInfo(
+                        type="text",
+                        message=message + "\n\n問題が解決したようですね。他にご質問があれば、新しい問診を開始してください。\n安全運転をお願いいたします。",
+                    ),
+                    rag_sources=rag_sources,
+                    manual_coverage=session.manual_coverage,
+                    diagnostic_turn=session.diagnostic_turn,
+                )
             # 事象特定 → 遷移選択肢へ
             session.identified_issue = message
             session.guide_phase = "guide_offered"
@@ -866,11 +1404,24 @@ async def handle_diagnosing(session: SessionState, request: ChatRequest) -> Chat
         if session.guide_phase == "guide_offered":
             session.rag_answer = message
             session.conversation_history.append({"role": "assistant", "content": message})
-            transition_choices = [
-                {"value": "guide_start", "label": "解決手順を教えてください"},
-                {"value": "yes", "label": "解決しました"},
-                {"value": "no", "label": "試してみたが解決しなかった"},
-            ]
+            # LLMの回答に自己対処手順への言及があるかチェック
+            # （RAGの_extract_procedure_stepsは無関係ソースの手順も拾うため不正確）
+            has_procedure = any(
+                kw in message
+                for kw in ("手順が記載", "手順に従", "手順として", "操作を行", "解除の手順", "解除穴")
+            )
+            if has_procedure:
+                transition_choices = [
+                    {"value": "guide_start", "label": "解決手順を教えてください"},
+                    {"value": "yes", "label": "解決しました"},
+                    {"value": "no", "label": "試してみたが解決しなかった"},
+                ]
+            else:
+                # 対処手順なし → ディーラー案内中心の選択肢
+                transition_choices = [
+                    {"value": "dealer", "label": "ディーラーに相談したい"},
+                    {"value": "yes", "label": "理解しました"},
+                ]
             return ChatResponse(
                 session_id=session.session_id,
                 current_step=ChatStep.DIAGNOSING.value,
@@ -890,9 +1441,16 @@ async def handle_diagnosing(session: SessionState, request: ChatRequest) -> Chat
         # C) high/critical → 強い警告 + 予約導線（reservation_choice）
         # Fix 1: Block when critical_safety_pending is active (safety steps first)
         # Fix Phase5-2: ガイド未開始(identifying)なら手順案内を経由させる
-        if (urgency_flag in ("high", "critical")
+        # Fix: 手順ガイド完了後(guiding)はcriticalのみエスカレート。highは推奨テキストに留める
+        # Fix v2: guide_offered もガイド開始前なので escalate しない
+        _guide_completed = session.guide_phase == "guiding"
+        _should_escalate = (
+            urgency_flag == "critical"
+            or (urgency_flag == "high" and not _guide_completed)
+        )
+        if (_should_escalate
                 and not _block_escalate
-                and session.guide_phase != "identifying"):
+                and session.guide_phase not in ("identifying", "guide_offered")):
             effective_can_drive = can_drive_llm if can_drive_llm is True else False
             session.urgency_level = urgency_flag
             session.can_drive = effective_can_drive
@@ -934,14 +1492,33 @@ async def handle_diagnosing(session: SessionState, request: ChatRequest) -> Chat
                 diagnostic_turn=session.diagnostic_turn,
             )
 
-        # guiding or fallback → LLM生成の動的選択肢（最終結論）
+        # ガイド完了 → 解決確認選択肢（固定）
+        if session.guide_phase == "guiding":
+            resolution_msg = message + "\n\n手順は以上です。問題は解決しましたか？"
+            resolution_choices = [
+                {"value": "resolved_yes", "label": "解決しました"},
+                {"value": "resolved_no", "label": "解決しなかった"},
+                {"value": "dealer", "label": "ディーラーに相談したい"},
+            ]
+            return ChatResponse(
+                session_id=session.session_id,
+                current_step=ChatStep.DIAGNOSING.value,
+                prompt=PromptInfo(
+                    type="single_choice",
+                    message=resolution_msg,
+                    choices=resolution_choices,
+                ),
+                rag_sources=rag_sources,
+                manual_coverage=session.manual_coverage,
+                diagnostic_turn=session.diagnostic_turn,
+            )
+
+        # fallback → LLM生成の動的選択肢（最終結論）
         llm_choices = result.get("choices")
         if llm_choices:
-            # LLMが生成した選択肢を使用
             dynamic_choices = [{"value": f"followup_{i}", "label": c} for i, c in enumerate(llm_choices)]
             prompt_type = "single_choice"
         else:
-            # choicesがnull → 最終回答、会話終了
             dynamic_choices = None
             prompt_type = "text"
             session.current_step = ChatStep.DONE
@@ -972,6 +1549,7 @@ async def handle_diagnosing(session: SessionState, request: ChatRequest) -> Chat
                 choices=prompt_choices,
             ),
             manual_coverage=session.manual_coverage,
+            diagnostic_turn=session.diagnostic_turn,
         )
 
     # ---------------------------------------------------------------
@@ -996,4 +1574,5 @@ async def handle_diagnosing(session: SessionState, request: ChatRequest) -> Chat
             choices=choices_for_prompt,
         ),
         manual_coverage=session.manual_coverage,
+        diagnostic_turn=session.diagnostic_turn,
     )

@@ -93,7 +93,8 @@ export function ChatContainer() {
   };
 
   const handleDiagnosingChoice = (value: string, label: string) => {
-    if (value === "yes" || value === "no" || value === "book" || value === "guide_start") {
+    const actionValues = ["yes", "no", "book", "guide_start", "resolved_yes", "resolved_no", "dealer"];
+    if (actionValues.includes(value)) {
       sendAction("resolved", value, label);
     } else {
       sendMessage(label);
